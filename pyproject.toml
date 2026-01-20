@@ -1,0 +1,16 @@
+[project]
+name = "open-ithageneia-core"
+description = ""
+version = "0.1.0"
+requires-python = ">=3.12"
+readme = "README.md"
+
+dependencies = [
+  "django==6.0.1",
+  "inertia-django==1.2.0",
+]
+
+[tool.uv.workspace]
+members = [
+    "test",
+]
