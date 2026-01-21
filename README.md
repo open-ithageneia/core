@@ -4,6 +4,8 @@ Install [nvm](https://github.com/nvm-sh/nvm) and run `nvm use`.
 
 Install npm dependencies with `npm install`
 
+Create a `.env` file and add a `SECRET_KEY`.
+
 In separate terminals, run:
 
 * `npm run dev`
