@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --no-dev
 
 # Stage 2: Build the frontend files
-FROM node:23-bookworm-slim AS node-builder
+FROM node:24-bookworm-slim AS node-builder
 RUN nodejs -v && npm -v
 WORKDIR /code
 COPY . /code
