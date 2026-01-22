@@ -9,10 +9,17 @@ Django + Inertia.js + React (Vite) + Tailwind + shadcn/ui.
 - Python: **3.12+** (see `.python-version`)
 - Package manager: **uv**
 
-Install uv (Linux/macOS):
+Install uv:
+
+Linux/macOS
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Windows
+```bash
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
 ### Node (nvm)
