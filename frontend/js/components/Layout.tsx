@@ -1,6 +1,8 @@
+import type { PropsWithChildren, ReactNode } from "react";
+
 import { Link } from "@inertiajs/react";
 
-const Layout = ({ children }) => (
+const Layout = ({ children }: PropsWithChildren) => (
 	<>
 		<div>
 			<nav className="flex items-start justify-center">
@@ -15,4 +17,4 @@ const Layout = ({ children }) => (
 	</>
 );
 
-export default (page) => <Layout>{page}</Layout>;
+export default (page: ReactNode) => <Layout>{page}</Layout>;
