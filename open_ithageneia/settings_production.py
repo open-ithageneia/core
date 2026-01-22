@@ -22,8 +22,6 @@ SECURE_HSTS_PRELOAD = True
 
 USE_HTTPS_IN_ABSOLUTE_URLS = True
 
-# Update your allowed hosts and CSRF trusted origins here.
-ALLOWED_HOSTS = [
-    "*",
-]
-CSRF_TRUSTED_ORIGINS = []
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+SECRET_KEY = env("SECRET_KEY")

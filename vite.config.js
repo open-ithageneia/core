@@ -41,7 +41,7 @@ export default defineConfig((mode) => {
 			outDir: resolve(OUTPUT_DIR),
 			rollupOptions: {
 				input: {
-					main: join(INPUT_DIR, "/js/main.jsx"),
+					main: join(INPUT_DIR, "/js/main.tsx"),
 					css: join(INPUT_DIR, "/css/main.css"),
 				},
 			},

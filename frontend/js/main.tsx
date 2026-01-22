@@ -1,0 +1,34 @@
+import "vite/modulepreload-polyfill";
+import axios from "axios";
+
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { createInertiaApp } from "@inertiajs/react";
+import Layout from "./components/Layout";
+
+import "../css/main.css";
+
+const pages = import.meta.glob("./pages/**/*.tsx");
+
+document.addEventListener("DOMContentLoaded", () => {
+	axios.defaults.xsrfCookieName = "csrftoken";
+	axios.defaults.xsrfHeaderName = "X-CSRFToken";
+
+	createInertiaApp({
+		resolve: async (name) => {
+			const importPage = pages[`./pages/${name}.tsx`];
+			if (!importPage) {
+				throw new Error(`Page not found: ${name}`);
+			}
+
+			const module = (await importPage()) as { default: any };
+			const page = module.default;
+			page.layout = page.layout || Layout;
+			return page;
+		},
+		setup({ el, App, props }) {
+			if (!el) return;
+			createRoot(el).render(<App {...(props as any)} />);
+		},
+	});
+});
