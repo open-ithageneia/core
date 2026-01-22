@@ -22,3 +22,7 @@ node_modules/
 
 # Virtual environments
 .venv
+
+
+# Editor files
+.idea
