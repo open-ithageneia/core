@@ -6,7 +6,7 @@ on:
 
 
 jobs:
-  quality:
+  linting:
     runs-on: ubuntu-latest
     permissions:
       contents: read
