@@ -124,7 +124,7 @@ Editor setup: https://docs.astral.sh/ruff/editors/setup/
 
 Biome is used for JS/TS linting and formatting.
 
-- Lint: `npm run biome:lint`
+- Lint: `npm run lint`
 - Lint/format + auto-fix: `npm run biome:fixall`
 
 Editor setup: https://biomejs.dev/guides/editors/first-party-extensions/
