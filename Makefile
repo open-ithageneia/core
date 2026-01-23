@@ -26,4 +26,4 @@ lint-js:
 	npm run lint
 
 fix-js:
-	npm run biome:fixall
+	npm run biome:fix

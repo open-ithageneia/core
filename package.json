@@ -6,8 +6,8 @@
 		"build": "TAILWIND_MODE=build vite build",
 		"typecheck": "tsc -p tsconfig.json",
 		"prepare": "husky",
-		"biome:fixall": "biome check --write",
-		"lint": "biome lint"
+		"biome:fix": "biome check --write",
+		"lint": "biome check"
 	},
 	"overrides": {
 		"vite": {
