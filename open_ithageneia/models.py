@@ -3,8 +3,8 @@ from .managers.py import TimeStampedQueryset
 
 
 class TimeStampedModel(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-    updated_at = models.DateTimeField(auto_now=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     objects = TimeStampedQueryset.as_manager()
 
