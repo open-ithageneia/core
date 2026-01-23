@@ -1,14 +1,25 @@
 import "vite/modulepreload-polyfill";
-import axios from "axios";
-
-import React from "react";
-import { createRoot } from "react-dom/client";
 import { createInertiaApp } from "@inertiajs/react";
+import axios from "axios";
+import type { ComponentType, ReactElement, ReactNode } from "react";
+import { createRoot } from "react-dom/client";
 import Layout from "./components/Layout";
 
 import "../css/main.css";
 
-const pages = import.meta.glob("./pages/**/*.tsx");
+type SharedProps = Record<string, unknown>;
+
+type LayoutRenderer = (page: ReactElement) => ReactNode;
+
+type InertiaPageComponent = ComponentType<SharedProps> & {
+	layout?: LayoutRenderer;
+};
+
+type PageModule = {
+	default: InertiaPageComponent;
+};
+
+const pages = import.meta.glob<PageModule>("./pages/**/*.tsx");
 
 document.addEventListener("DOMContentLoaded", () => {
 	axios.defaults.xsrfCookieName = "csrftoken";
@@ -21,14 +32,13 @@ document.addEventListener("DOMContentLoaded", () => {
 				throw new Error(`Page not found: ${name}`);
 			}
 
-			const module = (await importPage()) as { default: any };
-			const page = module.default;
-			page.layout = page.layout || Layout;
-			return page;
+			const { default: Page } = await importPage();
+			Page.layout = Page.layout ?? Layout;
+			return Page;
 		},
 		setup({ el, App, props }) {
 			if (!el) return;
-			createRoot(el).render(<App {...(props as any)} />);
+			createRoot(el).render(<App {...props} />);
 		},
 	});
 });

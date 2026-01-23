@@ -1,46 +1,46 @@
-import { Button } from "@/components/ui/button";
 import {
 	AlertDialog,
 	AlertDialogAction,
 	AlertDialogCancel,
 	AlertDialogContent,
+	AlertDialogDescription,
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
 	AlertDialogTrigger,
-	AlertDialogDescription,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 export default function Index() {
 	return (
-		<>
-			<div>
-				<h2 className="text-3xl font-bold underline">This is the home page</h2>
-				<p className="text-lg font-mono">Find it in 'frontend/js/pages/Index.tsx'</p>
+		<div>
+			<h2 className="text-3xl font-bold underline">This is the home page</h2>
+			<p className="text-lg font-mono">
+				Find it in 'frontend/js/pages/Index.tsx'
+			</p>
 
-				<p className="p-4">
-					You can also use Shadcn UI components. Learn more at{" "}
-					<a href="https://ui.shadcn.com/docs">Shadcn UI</a>.
-				</p>
-				<AlertDialog>
-					<AlertDialogTrigger asChild>
-						<Button variant="outline">Show Dialog</Button>
-					</AlertDialogTrigger>
-					<AlertDialogContent>
-						<AlertDialogHeader>
-							<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-							<AlertDialogDescription>
-								This action cannot be undone. This will permanently delete your account and
-								remove your data from our servers.
-							</AlertDialogDescription>
-						</AlertDialogHeader>
-						<AlertDialogFooter>
-							<AlertDialogCancel>Cancel</AlertDialogCancel>
-							<AlertDialogAction>Continue</AlertDialogAction>
-						</AlertDialogFooter>
-					</AlertDialogContent>
-				</AlertDialog>
-			</div>
-		</>
+			<p className="p-4">
+				You can also use Shadcn UI components. Learn more at{" "}
+				<a href="https://ui.shadcn.com/docs">Shadcn UI</a>.
+			</p>
+			<AlertDialog>
+				<AlertDialogTrigger asChild>
+					<Button variant="outline">Show Dialog</Button>
+				</AlertDialogTrigger>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+						<AlertDialogDescription>
+							This action cannot be undone. This will permanently delete your
+							account and remove your data from our servers.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction>Continue</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</div>
 	);
 }

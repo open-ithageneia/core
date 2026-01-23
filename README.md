@@ -103,6 +103,32 @@ Open http://localhost:8000
 - Frontend production build: `npm run build`
 - Create admin user: `uv run python manage.py createsuperuser`
 
+## Linting and formatting
+
+If you just want the “project standard” commands, use:
+
+- Lint everything: `make lint`
+- Auto-fix everything: `make fix`
+
+### Python (Ruff)
+
+Ruff is used for Python linting and formatting. It’s included in the project’s dev dependencies, so it is installed automatically when you run `uv sync` (unless you pass `--no-dev`).
+
+- Lint: `uv run ruff check .`
+- Lint + auto-fix: `uv run ruff check --fix .`
+- Format: `uv run ruff format .`
+
+Editor setup: https://docs.astral.sh/ruff/editors/setup/
+
+### JavaScript/TypeScript (Biome)
+
+Biome is used for JS/TS linting and formatting.
+
+- Lint: `npm run biome:lint`
+- Lint/format + auto-fix: `npm run biome:fixall`
+
+Editor setup: https://biomejs.dev/guides/editors/first-party-extensions/
+
 ## shadcn/ui
 
 shadcn/ui is configured via `components.json`:

@@ -1,6 +1,5 @@
-import type { PropsWithChildren, ReactNode } from "react";
-
-import { Link } from "@inertiajs/react";
+import { Link } from "@inertiajs/react"
+import type { PropsWithChildren, ReactElement } from "react"
 
 const Layout = ({ children }: PropsWithChildren) => (
 	<>
@@ -15,6 +14,6 @@ const Layout = ({ children }: PropsWithChildren) => (
 			<div className="flex items-center justify-center mt-32">{children}</div>
 		</div>
 	</>
-);
+)
 
-export default (page: ReactNode) => <Layout>{page}</Layout>;
+export default (page: ReactElement) => <Layout>{page}</Layout>
