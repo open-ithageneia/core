@@ -23,7 +23,7 @@ fix-python:
 	uv run ruff format .
 
 lint-js:
-	npm run lint
+	npm run lint && npm run typecheck
 
 fix-js:
 	npm run biome:fix
