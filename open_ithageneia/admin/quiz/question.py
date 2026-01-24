@@ -82,12 +82,12 @@ class QuizQuestionResource(resources.ModelResource):
 
     @staticmethod
     def import_mapping_answers(instance: QuizQuestionModel, row: OrderedDict):
-        first_group = MappingGroupModel.objects.create(
+        first_group = ItemGroupModel.objects.create(
             question=instance,
             name=row.get('group_a_name', None),
             is_first=True
         )
-        second_group = MappingGroupModel.objects.create(
+        second_group = ItemGroupModel.objects.create(
             question=instance,
             name=row.get('group_b_name', None),
             is_first=False
@@ -109,7 +109,7 @@ class QuizQuestionResource(resources.ModelResource):
                 question=instance,
             )
 
-            MappingPairModel.objects.create(
+            ItemPairModel.objects.create(
                 first=first,
                 second=second,
             )

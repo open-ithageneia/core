@@ -1,7 +1,5 @@
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import OneToOneField
-from django.utils.functional import cached_property
 
 from open_ithageneia.models.shared import TimeStampedModel, Semester
 
@@ -66,7 +64,7 @@ class QuizQuestionModel(TimeStampedModel):
         return f"{self.semester} {self.category.name} ΘΕΜΑ {self.number}"
 
 
-class MappingGroupModel(TimeStampedModel):
+class ItemGroupModel(TimeStampedModel):
     class GroupType(models.IntegerChoices):
         Choices = 0, 'Choices'
         Categories = 2, 'Categories'
@@ -79,11 +77,11 @@ class MappingGroupModel(TimeStampedModel):
     question = models.ForeignKey(
         QuizQuestionModel,
         on_delete=models.CASCADE,
-        related_name='mapping_groups'
+        related_name='item_groups'
     )
 
     class Meta:
-        db_table = 'quiz_mapping_group'
+        db_table = 'quiz_item_group'
 
 
 class QuizQuestionItemModel(TimeStampedModel):
@@ -91,20 +89,20 @@ class QuizQuestionItemModel(TimeStampedModel):
     image = models.ImageField(null=True, blank=True)
 
     is_correct = models.BooleanField(null=True, blank=True)
-    mapping_group = models.ForeignKey(MappingGroupModel, null=True, on_delete=models.RESTRICT)
+    item_group = models.ForeignKey(ItemGroupModel, null=True, on_delete=models.RESTRICT)
     question = models.ForeignKey(QuizQuestionModel, on_delete=models.RESTRICT)
 
     class Meta:
         db_table = 'quiz_question_item'
 
     def clean(self):
-        if self.mapping_group and self.mapping_group.question_id != self.question_id:
+        if self.item_group and self.item_group.question_id != self.question_id:
             raise ValidationError(
-                "Answer question must match mapping group question"
+                "Answer question must match item group question"
             )
 
 
-class MappingPairModel(TimeStampedModel):
+class ItemPairModel(TimeStampedModel):
     first = models.ForeignKey(
         QuizQuestionItemModel,
         on_delete=models.RESTRICT,
@@ -117,7 +115,7 @@ class MappingPairModel(TimeStampedModel):
     )
 
     class Meta:
-        db_table = 'quiz_mapping_pair'
+        db_table = 'quiz_item_pair'
 
         constraints = [
             models.UniqueConstraint(
@@ -128,11 +126,11 @@ class MappingPairModel(TimeStampedModel):
 
     def clean(self):
         if self.first.question_id != self.second.question_id:
-            raise ValidationError("Mapping pairs must belong to the same question")
+            raise ValidationError("Item pairs must belong to the same question")
 
-        if not self.second.mapping_group.is_first:
+        if not self.second.item_group.is_first:
             raise ValidationError("First answer must be from first group")
 
-        if self.second.mapping_group.is_first:
+        if self.second.item_group.is_first:
             raise ValidationError("Second answer must be from second group")
 
