@@ -1,34 +1,44 @@
-import "vite/modulepreload-polyfill";
-import axios from "axios";
+import "vite/modulepreload-polyfill"
+import { createInertiaApp } from "@inertiajs/react"
+import axios from "axios"
+import type { ComponentType, ReactElement, ReactNode } from "react"
+import { createRoot } from "react-dom/client"
+import Layout from "./components/Layout"
 
-import React from "react";
-import { createRoot } from "react-dom/client";
-import { createInertiaApp } from "@inertiajs/react";
-import Layout from "./components/Layout";
+import "../css/main.css"
 
-import "../css/main.css";
+type SharedProps = Record<string, unknown>
 
-const pages = import.meta.glob("./pages/**/*.tsx");
+type LayoutRenderer = (page: ReactElement) => ReactNode
+
+type InertiaPageComponent = ComponentType<SharedProps> & {
+	layout?: LayoutRenderer
+}
+
+type PageModule = {
+	default: InertiaPageComponent
+}
+
+const pages = import.meta.glob<PageModule>("./pages/**/*.tsx")
 
 document.addEventListener("DOMContentLoaded", () => {
-	axios.defaults.xsrfCookieName = "csrftoken";
-	axios.defaults.xsrfHeaderName = "X-CSRFToken";
+	axios.defaults.xsrfCookieName = "csrftoken"
+	axios.defaults.xsrfHeaderName = "X-CSRFToken"
 
 	createInertiaApp({
 		resolve: async (name) => {
-			const importPage = pages[`./pages/${name}.tsx`];
+			const importPage = pages[`./pages/${name}.tsx`]
 			if (!importPage) {
-				throw new Error(`Page not found: ${name}`);
+				throw new Error(`Page not found: ${name}`)
 			}
 
-			const module = (await importPage()) as { default: any };
-			const page = module.default;
-			page.layout = page.layout || Layout;
-			return page;
+			const { default: Page } = await importPage()
+			Page.layout = Page.layout ?? Layout
+			return Page
 		},
 		setup({ el, App, props }) {
-			if (!el) return;
-			createRoot(el).render(<App {...(props as any)} />);
+			if (!el) return
+			createRoot(el).render(<App {...props} />)
 		},
-	});
-});
+	})
+})
