@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
+    "open_ithageneia.apps.OpenIthageneiaConfig",
     "django_vite",
     "inertia",
     "allauth",
@@ -66,9 +67,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-
     "allauth.account.middleware.AccountMiddleware",
-
     "inertia.middleware.InertiaMiddleware",
     "open_ithageneia.middleware.DataShareMiddleware",
 ]
@@ -118,7 +117,7 @@ else:
                 """,
             },
         }
-}
+    }
 
 
 # Password validation
@@ -144,13 +143,11 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
     # `allauth` specific authentication methods, such as login by email
     "allauth.account.auth_backends.AuthenticationBackend",
-
 ]
 
 LOGIN_REDIRECT_URL = "/"
 
 ACCOUNT_EMAIL_VERIFICATION = "none"
-
 
 
 # Internationalization
@@ -196,10 +193,12 @@ INERTIA_JSON_ENCODER = inertia_settings.INERTIA_JSON_ENCODER
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+
 # http://whitenoise.evans.io/en/stable/django.html#WHITENOISE_IMMUTABLE_FILE_TEST
 def immutable_file_test(path, url):
     # Match vite (rollup)-generated hashes, à la, `some_file-CSliV9zW.js`
     return re.match(r"^.+[.-][0-9a-zA-Z_-]{8,12}\..+$", url)
+
 
 WHITENOISE_IMMUTABLE_FILE_TEST = immutable_file_test
 
