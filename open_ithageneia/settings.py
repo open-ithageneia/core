@@ -54,8 +54,6 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     'import_export',
-
-    "open_ithageneia",
 ]
 
 MIDDLEWARE = [
