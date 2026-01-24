@@ -12,4 +12,7 @@ dependencies = [
     "django-allauth~=65.14.0",
     "whitenoise~=6.11.0",
     "gunicorn~=23.0.0",
+    "pillow~=12.1.0",
+    "django-import-export~=4.4.0",
+    "openpyxl~=3.1.5",
 ]

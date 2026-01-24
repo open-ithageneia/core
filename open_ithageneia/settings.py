@@ -15,6 +15,7 @@ import re
 from pathlib import Path
 
 import environ
+from import_export.formats.base_formats import CSV, XLSX
 from inertia.settings import settings as inertia_settings
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -51,6 +52,9 @@ INSTALLED_APPS = [
     "inertia",
     "allauth",
     "allauth.account",
+    'import_export',
+
+    "open_ithageneia",
 ]
 
 MIDDLEWARE = [
@@ -97,7 +101,7 @@ if "DATABASE_URL" in env:
     DATABASES = {"default": env.db()}
 else:
     DATABASES = {
-        "default": {  
+        "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / "db.sqlite3",
             "OPTIONS": {
@@ -140,7 +144,7 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
     # `allauth` specific authentication methods, such as login by email
     "allauth.account.auth_backends.AuthenticationBackend",
-    
+
 ]
 
 LOGIN_REDIRECT_URL = "/"
@@ -198,3 +202,7 @@ def immutable_file_test(path, url):
     return re.match(r"^.+[.-][0-9a-zA-Z_-]{8,12}\..+$", url)
 
 WHITENOISE_IMMUTABLE_FILE_TEST = immutable_file_test
+
+
+IMPORT_FORMATS = [CSV, XLSX]
+EXPORT_FORMATS = [CSV, XLSX]
