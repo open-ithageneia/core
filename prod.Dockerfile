@@ -42,12 +42,12 @@ RUN addgroup --system django \
 # Copy the application from the builders
 COPY --from=python-builder /code /code
 COPY --from=node-builder /code/static /code/static
+COPY --from=node-builder /code/frontend/dist /code/frontend/dist
 
 WORKDIR /code
 COPY --chown=django:django . /code
 
-RUN DEBUG=False python ./manage.py collectstatic --noinput --settings=open_ithageneia.settings_production
-RUN chown django:django -R static
+RUN chown -R django:django /code
 
 USER django
 

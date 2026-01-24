@@ -6,6 +6,9 @@ set -o nounset
 
 PORT=${PORT:-8000}
 
+echo "Collecting static files..."
+python ./manage.py collectstatic --noinput --settings=open_ithageneia.settings_production
+
 echo "Running migrations..."
 python ./manage.py migrate --noinput
 
