@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
+    "open_ithageneia.apps.OpenIthageneiaConfig",
     "django_vite",
     "inertia",
     "allauth",

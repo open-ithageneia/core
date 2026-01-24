@@ -1,5 +1,6 @@
 from django.db import models
-from .managers.py import TimeStampedQueryset
+
+from .managers import TimeStampedQueryset
 
 
 class TimeStampedModel(models.Model):
