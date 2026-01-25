@@ -92,31 +92,50 @@ WSGI_APPLICATION = "open_ithageneia.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-if "DATABASE_URL" in env:
-    DATABASES = {"default": env.db()}
-else:
-    SQLITE_DB_DIR = BASE_DIR / "db"
-    SQLITE_DB_DIR.mkdir(parents=True, exist_ok=True)
+SQLITE_PERSISTENT_DB_DIR = BASE_DIR / "db"
+SQLITE_PERSISTENT_DB_DIR.mkdir(parents=True, exist_ok=True)
 
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": SQLITE_DB_DIR / "db.sqlite3",
-            "OPTIONS": {
-                "transaction_mode": "IMMEDIATE",
-                "timeout": 5,  # seconds
-                "init_command": """
-                    PRAGMA foreign_keys = ON;
-                    PRAGMA journal_mode = WAL;
-                    PRAGMA synchronous = NORMAL;
-                    PRAGMA temp_store = MEMORY;
-                    PRAGMA mmap_size = 134217728;
-                    PRAGMA journal_size_limit = 67108864;
-                    PRAGMA cache_size = 2000;
-                """,
-            },
-        }
+SQLITE_DB_DIR = SQLITE_PERSISTENT_DB_DIR
+
+# Optional: for preview/branch deployments, use a SQLite location not in
+# the persisted /code/db volume so preview DBs are cleaned up when the container is
+# destroyed. Read more in the README file.
+SQLITE_DB_FILENAME = env.str("SQLITE_DB_FILENAME", default="db.sqlite3").strip()
+
+if not env.str("SQLITE_DB_FILENAME", default="").strip():
+    sqlite_branch_envvar = env.str("SQLITE_BRANCH_ENVVAR", default="").strip()
+    sqlite_prod_branch = env.str("SQLITE_PROD_BRANCH", default="main").strip().lower()
+
+    deploy_branch = (
+        (env.str(sqlite_branch_envvar, default="") if sqlite_branch_envvar else "")
+        .strip()
+        .lower()
+    )
+
+    if deploy_branch and deploy_branch != sqlite_prod_branch:
+        SQLITE_DB_DIR = Path("/tmp/open_ithageneia_db")
+        SQLITE_DB_DIR.mkdir(parents=True, exist_ok=True)
+        SQLITE_DB_FILENAME = "db.sqlite3"
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": SQLITE_DB_DIR / SQLITE_DB_FILENAME,
+        "OPTIONS": {
+            "transaction_mode": "IMMEDIATE",
+            "timeout": 5,  # seconds
+            "init_command": """
+                PRAGMA foreign_keys = ON;
+                PRAGMA journal_mode = WAL;
+                PRAGMA synchronous = NORMAL;
+                PRAGMA temp_store = MEMORY;
+                PRAGMA mmap_size = 134217728;
+                PRAGMA journal_size_limit = 67108864;
+                PRAGMA cache_size = 2000;
+            """,
+        },
     }
+}
 
 
 # Password validation

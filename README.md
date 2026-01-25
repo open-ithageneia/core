@@ -68,9 +68,6 @@ Optional:
 # Vite dev server settings used by django-vite
 DJANGO_VITE_DEV_SERVER_HOST=localhost
 DJANGO_VITE_DEV_SERVER_PORT=5173
-
-# Use Postgres/etc instead of sqlite
-# DATABASE_URL=postgres://user:pass@localhost:5432/dbname
 ```
 
 ### 3) Run migrations
@@ -159,9 +156,52 @@ If your installed CLI uses the older package name, use `npx shadcn-ui@latest …
 ## Notes
 
 - Always prefix Python commands with `uv run` to use the project’s virtual environment.
-- SQLite is used by default (`db.sqlite3`). Set `DATABASE_URL` to use another database.
+- SQLite is used by default (`db/db.sqlite3`).
 
-## Production build (Docker)
+## Deployment & production
+
+### Environment variables
+
+This project loads environment variables from `.env` in the repo root (see `.env.example`).
+
+| Name | Required | Default | Notes |
+| --- | --- | --- | --- |
+| `DJANGO_SETTINGS_MODULE` | No | - | Optional. Set to `open_ithageneia.settings_production` for production defaults. |
+| `SECRET_KEY` | Yes | - | Django secret key. Use a strong value in production. |
+| `DEBUG` | No | `True` | Used by `open_ithageneia.settings`. Production settings force `DEBUG=False`. |
+| `ALLOWED_HOSTS` | No | `*` | Comma-separated list in dev. Production defaults to an empty list and should be set explicitly. |
+| `CSRF_TRUSTED_ORIGINS` | No | `[]` | Comma-separated list. Often required in production. |
+| `DJANGO_VITE_DEV_SERVER_HOST` | No | `localhost` | Dev only (HMR). |
+| `DJANGO_VITE_DEV_SERVER_PORT` | No | `5173` | Dev only (HMR). |
+| `SQLITE_DB_FILENAME` | No | `db.sqlite3` | SQLite filename under `db/` (persisted). If set, preview logic is bypassed. |
+| `SQLITE_BRANCH_ENVVAR` | No | - | Name of an env var that contains the branch name (used to detect preview deployments). |
+| `SQLITE_PROD_BRANCH` | No | `main` | Branch name considered “production”. |
+
+### Preview deployments (SQLite)
+
+If you deploy preview environments (PRs/branches) and still use SQLite, you generally want previews
+to use a different DB so migrations don’t touch the production DB.
+
+This repo also avoids persisting preview DBs: when a deployment is detected as a preview, the SQLite
+file is placed under `/tmp/...` inside the container (so it’s cleaned up when the container is
+destroyed), rather than under `db/` (which is typically mounted as a persistent volume).
+
+This project supports that in a provider-agnostic way:
+
+- Force a filename explicitly (simplest): `SQLITE_DB_FILENAME=db_preview.sqlite3`
+	- This will be stored under `db/` and therefore persisted if you mount that directory.
+- Or detect previews from your platform’s “branch” variable:
+	- `SQLITE_BRANCH_ENVVAR` = name of the env var that contains the branch
+	- `SQLITE_PROD_BRANCH` = production branch name (default: `main`)
+
+Example for Coolify:
+
+```env
+SQLITE_BRANCH_ENVVAR=COOLIFY_BRANCH
+SQLITE_PROD_BRANCH=main
+```
+
+### Production build (Docker)
 
 There is a multi-stage Docker build that:
 
@@ -175,11 +215,8 @@ Build:
 docker build -t open-ithageneia .
 ```
 
-Run (example):
+Run production image locally (recommended):
 
 ```bash
-docker run --rm -p 8000:8000 \
-	-e SECRET_KEY=replace-me \
-	-e DEBUG=0 \
-	open-ithageneia
+./scripts/run_prod_local.sh
 ```
