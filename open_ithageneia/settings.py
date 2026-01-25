@@ -95,10 +95,13 @@ WSGI_APPLICATION = "open_ithageneia.wsgi.application"
 if "DATABASE_URL" in env:
     DATABASES = {"default": env.db()}
 else:
+    SQLITE_DB_DIR = BASE_DIR / "db"
+    SQLITE_DB_DIR.mkdir(parents=True, exist_ok=True)
+
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            "NAME": SQLITE_DB_DIR / "db.sqlite3",
             "OPTIONS": {
                 "transaction_mode": "IMMEDIATE",
                 "timeout": 5,  # seconds
