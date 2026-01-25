@@ -172,7 +172,7 @@ There is a multi-stage Docker build that:
 Build:
 
 ```bash
-docker build -f prod.Dockerfile -t open-ithageneia .
+docker build -t open-ithageneia .
 ```
 
 Run (example):

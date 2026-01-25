@@ -46,13 +46,22 @@ COPY --from=node-builder /code/static /code/static
 COPY --from=node-builder /code/frontend/dist /code/frontend/dist
 
 WORKDIR /code
-COPY --chown=django:django . /code
+COPY . .
 
-RUN mkdir -p /code/db \
-    && chown -R django:django /code
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+RUN mkdir -p db
+RUN chown -R django:django /code
 
 USER django
 
-COPY --chown=django:django docker_startup.sh /start
-RUN chmod +x /start
-CMD /start
+EXPOSE 8000
+
+ENTRYPOINT ["/entrypoint.sh"]
+
+CMD ["gunicorn", "open_ithageneia.wsgi", \
+     "--bind", "0.0.0.0:8000", \
+     "--workers", "4", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-"]

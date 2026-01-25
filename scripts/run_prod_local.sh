@@ -24,7 +24,7 @@ SECRET_KEY_VALUE="${SECRET_KEY:-local-only-insecure-secret-key}"
 mkdir -p "${ROOT_DIR}/db"
 
 echo "Building production image: $IMAGE_TAG"
-docker build -f prod.Dockerfile -t "$IMAGE_TAG" .
+docker build -t "$IMAGE_TAG" .
 
 # If a container with the same name exists, remove it to avoid conflicts.
 if docker ps -a --format '{{.Names}}' | grep -qx "$CONTAINER_NAME"; then
