@@ -47,7 +47,8 @@ COPY --from=node-builder /code/frontend/dist /code/frontend/dist
 WORKDIR /code
 COPY --chown=django:django . /code
 
-RUN chown -R django:django /code
+RUN mkdir -p /code/db \
+    && chown -R django:django /code
 
 USER django
 

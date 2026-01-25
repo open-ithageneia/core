@@ -178,6 +178,10 @@ DJANGO_VITE = {
 }
 # Where ViteJS assets are built.
 DJANGO_VITE_ASSETS_PATH = BASE_DIR / "frontend" / "dist"
+
+# django-vite reads its manifest from `manifest_path`. Our Vite build outputs it to
+# `frontend/dist/manifest.json`.
+DJANGO_VITE["default"]["manifest_path"] = DJANGO_VITE_ASSETS_PATH / "manifest.json"
 # Include DJANGO_VITE_ASSETS_PATH into STATICFILES_DIRS to be copied inside
 # when run command python manage.py collectstatic
 STATICFILES_DIRS = [DJANGO_VITE_ASSETS_PATH]
