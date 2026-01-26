@@ -168,7 +168,7 @@ This project loads environment variables from `.env` in the repo root (see `.env
 | --- | --- | --- | --- |
 | `DJANGO_SETTINGS_MODULE` | No | - | Optional. Set to `open_ithageneia.settings_production` for production defaults. |
 | `SECRET_KEY` | Yes | - | Django secret key. Use a strong value in production. |
-| `DEBUG` | No | `True` | Used by `open_ithageneia.settings`. Production settings force `DEBUG=False`. |
+| `DEBUG` | No | `True` | Base settings default to `True`. Production settings default to `False` but you can temporarily set `DEBUG=True` for troubleshooting. |
 | `ALLOWED_HOSTS` | No | `*` | Comma-separated list in dev. Production defaults to an empty list and should be set explicitly. |
 | `CSRF_TRUSTED_ORIGINS` | No | `[]` | Comma-separated list. Often required in production. |
 | `DJANGO_VITE_DEV_SERVER_HOST` | No | `localhost` | Dev only (HMR). |
@@ -176,7 +176,10 @@ This project loads environment variables from `.env` in the repo root (see `.env
 | `IS_PREVIEW_DEPLOYMENT` | No | `False` | Marks the current running container as a preview deployment. Set this only in preview environments. |
 | `PREVIEW_SUPERUSER_USERNAME` | No | - | If set (with `PREVIEW_SUPERUSER_PASSWORD`), entrypoint runs `createsuperuser --noinput` on startup (preview-only). |
 | `PREVIEW_SUPERUSER_PASSWORD` | No | - | Password for `PREVIEW_SUPERUSER_USERNAME` (preview-only). |
+| `PREVIEW_SUPERUSER_EMAIL` | No | - | Optional. If omitted, a placeholder email is generated automatically (preview-only). |
 | `SQLITE_DB_FILENAME` | No | `db.sqlite3` | SQLite filename. |
+
+**Important for production:** set `DJANGO_SETTINGS_MODULE=open_ithageneia.settings_production` as a **runtime** environment variable for both production and preview deployments. If you don’t, Django will fall back to `open_ithageneia.settings` and `DEBUG=True` can make django-vite try to load the Vite dev server.
 
 ### Preview deployments (SQLite)
 

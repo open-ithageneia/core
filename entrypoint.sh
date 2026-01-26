@@ -14,6 +14,7 @@ if [[ "${IS_PREVIEW_DEPLOYMENT:-}" == "1" || "${IS_PREVIEW_DEPLOYMENT:-}" == "tr
 	if [[ -n "${PREVIEW_SUPERUSER_USERNAME:-}" && -n "${PREVIEW_SUPERUSER_PASSWORD:-}" ]]; then
 		export DJANGO_SUPERUSER_USERNAME="${PREVIEW_SUPERUSER_USERNAME}"
 		export DJANGO_SUPERUSER_PASSWORD="${PREVIEW_SUPERUSER_PASSWORD}"
+		export DJANGO_SUPERUSER_EMAIL="${PREVIEW_SUPERUSER_EMAIL:-${PREVIEW_SUPERUSER_USERNAME}@example.invalid}"
 		python ./manage.py createsuperuser --noinput --settings=open_ithageneia.settings_production || true
 	fi
 fi
