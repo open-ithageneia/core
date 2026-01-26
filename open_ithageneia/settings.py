@@ -15,6 +15,7 @@ import re
 from pathlib import Path
 
 import environ
+from import_export.formats.base_formats import CSV, XLSX
 from inertia.settings import settings as inertia_settings
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -52,6 +53,7 @@ INSTALLED_APPS = [
     "inertia",
     "allauth",
     "allauth.account",
+    "import_export",
 ]
 
 MIDDLEWARE = [
@@ -197,3 +199,7 @@ def immutable_file_test(path, url):
 
 
 WHITENOISE_IMMUTABLE_FILE_TEST = immutable_file_test
+
+
+IMPORT_FORMATS = [CSV, XLSX]
+EXPORT_FORMATS = [CSV, XLSX]
