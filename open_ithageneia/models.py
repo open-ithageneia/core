@@ -125,7 +125,6 @@ class QuizGapFillMultipleChoiceQuestionModel(QuizQuestionBaseModel):
 
 
 class QuizQuestionItemModel(TimeStampedModel):
-
     class Meta:
         abstract = True
 
@@ -144,7 +143,9 @@ class QuizMultipleChoiceItem(TimeStampedModel):
     text = models.TextField(null=True, blank=True)
     image = models.ImageField(null=True, blank=True, upload_to="quiz/questions")
     is_correct = models.BooleanField(default=False)
-    question = models.ForeignKey(QuizMultipleChoiceQuestionModel, on_delete=models.RESTRICT)
+    question = models.ForeignKey(
+        QuizMultipleChoiceQuestionModel, on_delete=models.RESTRICT
+    )
 
     class Meta:
         db_table = "quiz_multiple_choice_item"
@@ -209,7 +210,9 @@ class QuizGapItem(TimeStampedModel):
 class QuizGapMultipleChoice(TimeStampedModel):
     text = models.TextField(null=True, blank=True)
     image = models.ImageField(null=True, blank=True, upload_to="quiz/questions")
-    question = models.ForeignKey(QuizGapFillMultipleChoiceQuestionModel, on_delete=models.RESTRICT)
+    question = models.ForeignKey(
+        QuizGapFillMultipleChoiceQuestionModel, on_delete=models.RESTRICT
+    )
 
     class Meta:
         db_table = "quiz_gap_multiple_choice"

@@ -191,15 +191,11 @@ class Command(BaseCommand):
         )
 
         greece = QuizMappingItem.objects.get_or_create(
-            question=q,
-            column_name="Χώρες",
-            text="Ελλάδα"
+            question=q, column_name="Χώρες", text="Ελλάδα"
         )[0]
 
         france = QuizMappingItem.objects.get_or_create(
-            question=q,
-            column_name="Χώρες",
-            text="Γαλλία"
+            question=q, column_name="Χώρες", text="Γαλλία"
         )[0]
 
         athens = QuizMappingItem.objects.get_or_create(
@@ -241,17 +237,11 @@ class Command(BaseCommand):
             text="Νησιωτική Ελλάδα",
         )[0]
 
-        _ = QuizCategoryItem.objects.get_or_create(
-            group=land, text="Αλεξανδρούπολη"
-        )[0]
+        _ = QuizCategoryItem.objects.get_or_create(group=land, text="Αλεξανδρούπολη")[0]
 
-        _ = QuizCategoryItem.objects.get_or_create(
-            group=sea, text="Σίφνος"
-        )[0]
+        _ = QuizCategoryItem.objects.get_or_create(group=sea, text="Σίφνος")[0]
 
-        _ = QuizCategoryItem.objects.get_or_create(
-            group=land, text="Πύργος"
-        )[0]
+        _ = QuizCategoryItem.objects.get_or_create(group=land, text="Πύργος")[0]
 
     @staticmethod
     def add_gf_sample(semester, category, q_type, number):
@@ -284,7 +274,6 @@ class Command(BaseCommand):
             gap=reboutsika_blank, text="Ευανθία Ρεμπούτσικα"
         )[0]
 
-
     @staticmethod
     def add_gfmc_sample(semester, category, q_type, number):
         q, _ = QuizGapFillMultipleChoiceQuestionModel.objects.get_or_create(
@@ -302,9 +291,7 @@ class Command(BaseCommand):
         )[0]
 
         _ = QuizGapChoiceItem.objects.get_or_create(
-            gap=blank_1,
-            text="Μυκηνών",
-            is_correct=True
+            gap=blank_1, text="Μυκηνών", is_correct=True
         )[0]
 
         _ = QuizGapChoiceItem.objects.get_or_create(
@@ -317,9 +304,7 @@ class Command(BaseCommand):
             text="η οποία πιστεύεται ότι απεικονίζει τον _",
         )[0]
 
-        _ = QuizGapChoiceItem.objects.get_or_create(
-            gap=blank_2, text="Όμηρο"
-        )[0]
+        _ = QuizGapChoiceItem.objects.get_or_create(gap=blank_2, text="Όμηρο")[0]
 
         _ = QuizGapChoiceItem.objects.get_or_create(
             gap=blank_2, text="Αγαμέμνονα", is_correct=True
