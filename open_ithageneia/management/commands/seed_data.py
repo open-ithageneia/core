@@ -319,12 +319,14 @@ class Command(BaseCommand):
         hatzidakis_blank = QuizQuestionItemModel.objects.get_or_create(
             question=q,
             item_group=group_blanks,
+            pair=hatzidakis,
             text="Ο _ συνέθεσε τη μουσική στο τραγούδι: «Τα παιδιά του Πειραιά» που έγινε πολύ γνωστό με την ερμηνεία της Μελίνας Μερκούρη.",
         )[0]
 
         reboutsika_blank = QuizQuestionItemModel.objects.get_or_create(
             question=q,
             item_group=group_blanks,
+            pair=reboutsika,
             text="Η _ συνέθεσε τη μουσική για την κινηματογραφική ταινία: «Πολίτικη Κουζίνα»",
         )[0]
 
@@ -374,29 +376,28 @@ class Command(BaseCommand):
             question=q, item_group=group_answers, text="random word"
         )[0]
 
-        blank_1 = QuizQuestionItemModel.objects.get_or_create(
+        _ = QuizQuestionItemModel.objects.get_or_create(
             question=q,
             item_group=group_blanks,
+            pair=ans4,
             text="Για να εκλεγεί κάποιος Πρόεδρος της Δημοκρατίας, θα πρέπει να έχει _",
         )[0]
-        blank_2 = QuizQuestionItemModel.objects.get_or_create(
-            question=q, item_group=group_blanks, text="για τουλάχιστον _ χρόνια"
+        _ = QuizQuestionItemModel.objects.get_or_create(
+            question=q, item_group=group_blanks, text="για τουλάχιστον _ χρόνια",
+            pair=ans1,
         )[0]
-        blank_3 = QuizQuestionItemModel.objects.get_or_create(
+        _ = QuizQuestionItemModel.objects.get_or_create(
             question=q,
             item_group=group_blanks,
             text="Επίσης, θα πρέπει να έχει από πατέρα ή μητέρα _, να είναι τουλάχιστον 40 ετών και να έχει τη νόμιμη ικανότητα του εκλέγειν.",
+            pair=ans2,
         )[0]
-        blank_4 = QuizQuestionItemModel.objects.get_or_create(
+        _ = QuizQuestionItemModel.objects.get_or_create(
             question=q,
             item_group=group_blanks,
             text="Η διαδικασία εκλογής νέου Προέδρου της Δημοκρατίας, σε περίπτωση που ο εν ενεργεία Πρόεδρος αδυνατεί να ασκήσει τα καθήκοντά του για πάνω από 30 ημέρες, σε καμία περίπτωση δεν μπορεί να καθυστερήσει περισσότερο από _ συνολικά μήνες, αφότου άρχισε η διαδικασία αναπλήρωσής του.",
+            pair=ans3,
         )[0]
-
-        ItemPairModel.objects.get_or_create(first=ans1, second=blank_2)
-        ItemPairModel.objects.get_or_create(first=ans2, second=blank_3)
-        ItemPairModel.objects.get_or_create(first=ans3, second=blank_4)
-        ItemPairModel.objects.get_or_create(first=ans4, second=blank_1)
 
     @staticmethod
     def add_gfmc_sample(semester, category, q_type, number):
@@ -426,15 +427,13 @@ class Command(BaseCommand):
             type=ItemGroupModel.GroupType.Choices,
         )[0]
 
-        choice_1 = QuizQuestionItemModel.objects.get_or_create(
-            question=q, item_group=choices_1, linked_item=blank_1, text="Μυκηνών"
+        _ = QuizQuestionItemModel.objects.get_or_create(
+            question=q, item_group=choices_1, pair=blank_1, text="Μυκηνών"
         )[0]
 
         _ = QuizQuestionItemModel.objects.get_or_create(
-            question=q, item_group=choices_1, linked_item=blank_1, text="Δελφών"
+            question=q, item_group=choices_1, pair=blank_1, text="Δελφών"
         )[0]
-
-        ItemPairModel.objects.get_or_create(first=choice_1, second=blank_1)
 
         choices_2 = ItemGroupModel.objects.get_or_create(
             question=q,
@@ -448,11 +447,9 @@ class Command(BaseCommand):
         )[0]
 
         _ = QuizQuestionItemModel.objects.get_or_create(
-            question=q, item_group=choices_2, linked_item=blank_2, text="Όμηρο"
+            question=q, item_group=choices_2, pair=blank_2, text="Όμηρο"
         )[0]
 
-        choice_2 = QuizQuestionItemModel.objects.get_or_create(
-            question=q, item_group=choices_2, linked_item=blank_2, text="Αγαμέμνονα"
+        _ = QuizQuestionItemModel.objects.get_or_create(
+            question=q, item_group=choices_2, pair=blank_2, text="Αγαμέμνονα"
         )[0]
-
-        ItemPairModel.objects.get_or_create(first=choice_2, second=blank_2)

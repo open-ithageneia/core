@@ -88,7 +88,7 @@ class QuizQuestionItemModel(TimeStampedModel):
 
     is_correct = models.BooleanField(null=True, blank=True)
     item_group = models.ForeignKey(ItemGroupModel, null=True, on_delete=models.RESTRICT)
-    linked_item = models.ForeignKey("self", null=True, on_delete=models.RESTRICT)
+    pair_item = models.OneToOneField("self", null=True, on_delete=models.RESTRICT)
     question = models.ForeignKey(QuizQuestionModel, on_delete=models.RESTRICT)
 
     class Meta:
@@ -97,29 +97,3 @@ class QuizQuestionItemModel(TimeStampedModel):
     def clean(self):
         if self.item_group and self.item_group.question_id != self.question_id:
             raise ValidationError("Answer question must match item group question")
-
-
-class ItemPairModel(TimeStampedModel):
-    first = models.ForeignKey(
-        QuizQuestionItemModel, on_delete=models.RESTRICT, related_name="first_pairs"
-    )
-    second = models.ForeignKey(
-        QuizQuestionItemModel, on_delete=models.RESTRICT, related_name="second_pairs"
-    )
-
-    class Meta:
-        db_table = "quiz_item_pair"
-
-        constraints = [
-            models.UniqueConstraint(fields=["first"], name="first_unique"),
-        ]
-
-    def clean(self):
-        if self.first.question_id != self.second.question_id:
-            raise ValidationError("Item pairs must belong to the same question")
-
-        if not self.second.item_group.is_first:
-            raise ValidationError("First answer must be from first group")
-
-        if self.second.item_group.is_first:
-            raise ValidationError("Second answer must be from second group")
