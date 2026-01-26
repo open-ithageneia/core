@@ -8,8 +8,6 @@ DEBUG = env.bool("DEBUG", default=False)
 DJANGO_VITE["default"]["dev_mode"] = DEBUG
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-USE_X_FORWARDED_HOST = True
-USE_X_FORWARDED_PORT = True
 
 # Django security checklist settings
 # More details here: https://docs.djangoproject.com/en/dev/howto/deployment/checklist/
