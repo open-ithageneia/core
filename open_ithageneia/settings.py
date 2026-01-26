@@ -92,30 +92,19 @@ WSGI_APPLICATION = "open_ithageneia.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+IS_PREVIEW_DEPLOYMENT = env.bool("IS_PREVIEW_DEPLOYMENT", default=False)
+
 SQLITE_PERSISTENT_DB_DIR = BASE_DIR / "db"
-SQLITE_PERSISTENT_DB_DIR.mkdir(parents=True, exist_ok=True)
+SQLITE_DB_DIR = (
+    Path("/tmp/open_ithageneia_db")
+    if IS_PREVIEW_DEPLOYMENT
+    else SQLITE_PERSISTENT_DB_DIR
+)
+SQLITE_DB_DIR.mkdir(parents=True, exist_ok=True)
 
-SQLITE_DB_DIR = SQLITE_PERSISTENT_DB_DIR
-
-# Optional: for preview/branch deployments, use a SQLite location not in
-# the persisted /code/db volume so preview DBs are cleaned up when the container is
-# destroyed. Read more in the README file.
-SQLITE_DB_FILENAME = env.str("SQLITE_DB_FILENAME", default="db.sqlite3").strip()
-
-if not env.str("SQLITE_DB_FILENAME", default="").strip():
-    sqlite_branch_envvar = env.str("SQLITE_BRANCH_ENVVAR", default="").strip()
-    sqlite_prod_branch = env.str("SQLITE_PROD_BRANCH", default="main").strip().lower()
-
-    deploy_branch = (
-        (env.str(sqlite_branch_envvar, default="") if sqlite_branch_envvar else "")
-        .strip()
-        .lower()
-    )
-
-    if deploy_branch and deploy_branch != sqlite_prod_branch:
-        SQLITE_DB_DIR = Path("/tmp/open_ithageneia_db")
-        SQLITE_DB_DIR.mkdir(parents=True, exist_ok=True)
-        SQLITE_DB_FILENAME = "db.sqlite3"
+SQLITE_DB_FILENAME = (
+    env.str("SQLITE_DB_FILENAME", default="db.sqlite3").strip() or "db.sqlite3"
+)
 
 DATABASES = {
     "default": {

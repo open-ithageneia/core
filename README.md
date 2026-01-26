@@ -173,9 +173,10 @@ This project loads environment variables from `.env` in the repo root (see `.env
 | `CSRF_TRUSTED_ORIGINS` | No | `[]` | Comma-separated list. Often required in production. |
 | `DJANGO_VITE_DEV_SERVER_HOST` | No | `localhost` | Dev only (HMR). |
 | `DJANGO_VITE_DEV_SERVER_PORT` | No | `5173` | Dev only (HMR). |
-| `SQLITE_DB_FILENAME` | No | `db.sqlite3` | SQLite filename under `db/` (persisted). If set, preview logic is bypassed. |
-| `SQLITE_BRANCH_ENVVAR` | No | - | Name of an env var that contains the branch name (used to detect preview deployments). |
-| `SQLITE_PROD_BRANCH` | No | `main` | Branch name considered “production”. |
+| `IS_PREVIEW_DEPLOYMENT` | No | `False` | Marks the current running container as a preview deployment. Set this only in preview environments. |
+| `PREVIEW_SUPERUSER_USERNAME` | No | - | If set (with `PREVIEW_SUPERUSER_PASSWORD`), entrypoint runs `createsuperuser --noinput` on startup (preview-only). |
+| `PREVIEW_SUPERUSER_PASSWORD` | No | - | Password for `PREVIEW_SUPERUSER_USERNAME` (preview-only). |
+| `SQLITE_DB_FILENAME` | No | `db.sqlite3` | SQLite filename. |
 
 ### Preview deployments (SQLite)
 
@@ -186,19 +187,24 @@ This repo also avoids persisting preview DBs: when a deployment is detected as a
 file is placed under `/tmp/...` inside the container (so it’s cleaned up when the container is
 destroyed), rather than under `db/` (which is typically mounted as a persistent volume).
 
-This project supports that in a provider-agnostic way:
+This project supports that in a provider-agnostic way with explicit flags.
 
-- Force a filename explicitly (simplest): `SQLITE_DB_FILENAME=db_preview.sqlite3`
-	- This will be stored under `db/` and therefore persisted if you mount that directory.
-- Or detect previews from your platform’s “branch” variable:
-	- `SQLITE_BRANCH_ENVVAR` = name of the env var that contains the branch
-	- `SQLITE_PROD_BRANCH` = production branch name (default: `main`)
+Recommended setup:
 
-Example for Coolify:
+- In your preview deployment env vars, set:
+	- `IS_PREVIEW_DEPLOYMENT=True`
+
+When this is true, the SQLite file is stored under `/tmp/open_ithageneia_db/` inside the container.
+
+#### Preview admin user (SQLite previews)
+
+Since preview SQLite databases are ephemeral, you may want an admin user recreated on every start.
+
+Set these in preview environments (they are ignored unless `IS_PREVIEW_DEPLOYMENT` is enabled):
 
 ```env
-SQLITE_BRANCH_ENVVAR=COOLIFY_BRANCH
-SQLITE_PROD_BRANCH=main
+PREVIEW_SUPERUSER_USERNAME=admin
+PREVIEW_SUPERUSER_PASSWORD=change-me
 ```
 
 ### Production build (Docker)
