@@ -441,6 +441,18 @@ class Command(BaseCommand):
             }
         )
 
+        blanks = ItemGroupModel.objects.get_or_create(
+            question=q,
+            type=ItemGroupModel.GroupType.Blanks,
+        )[0]
+
+
+        blank_1 = QuizQuestionItemModel.objects.get_or_create(
+            question=q,
+            item_group=blanks,
+            text="Στις ανασκαφές των _ εντοπίσθηκε η χρυσή προσωπίδα της φωτογραφίας,"
+        )[0]
+
         choices_1 = ItemGroupModel.objects.get_or_create(
             question=q,
             type=ItemGroupModel.GroupType.Choices,
@@ -449,18 +461,15 @@ class Command(BaseCommand):
         choice_1 = QuizQuestionItemModel.objects.get_or_create(
             question=q,
             item_group=choices_1,
+            linked_item=blank_1,
             text="Μυκηνών"
         )[0]
+
         _ = QuizQuestionItemModel.objects.get_or_create(
             question=q,
             item_group=choices_1,
+            linked_item=blank_1,
             text="Δελφών"
-        )[0]
-
-        blank_1 = QuizQuestionItemModel.objects.get_or_create(
-            question=q,
-            item_group=choices_1,
-            text="Στις ανασκαφές των _ εντοπίσθηκε η χρυσή προσωπίδα της φωτογραφίας,"
         )[0]
 
         ItemPairModel.objects.get_or_create(first=choice_1, second=blank_1)
@@ -470,21 +479,24 @@ class Command(BaseCommand):
             type=ItemGroupModel.GroupType.Choices,
         )[0]
 
-        _ = QuizQuestionItemModel.objects.get_or_create(
-            question=q,
-            item_group=choices_2,
-            text="Όμηρο"
-        )[0]
-        choice_2 = QuizQuestionItemModel.objects.get_or_create(
-            question=q,
-            item_group=choices_2,
-            text="Αγαμέμνονα"
-        )[0]
-
         blank_2 = QuizQuestionItemModel.objects.get_or_create(
             question=q,
             item_group=choices_2,
             text="η οποία πιστεύεται ότι απεικονίζει τον _"
+        )[0]
+
+        _ = QuizQuestionItemModel.objects.get_or_create(
+            question=q,
+            item_group=choices_2,
+            linked_item=blank_2,
+            text="Όμηρο"
+        )[0]
+
+        choice_2 = QuizQuestionItemModel.objects.get_or_create(
+            question=q,
+            item_group=choices_2,
+            linked_item=blank_2,
+            text="Αγαμέμνονα"
         )[0]
 
         ItemPairModel.objects.get_or_create(first=choice_2, second=blank_2)
