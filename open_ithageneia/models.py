@@ -125,82 +125,99 @@ class QuizGapFillMultipleChoiceQuestionModel(QuizQuestionBaseModel):
 
 
 class QuizQuestionItemModel(TimeStampedModel):
-    text = models.TextField(null=True, blank=True)
-    image = models.ImageField(null=True, blank=True, upload_to="quiz/questions")
 
     class Meta:
         abstract = True
 
 
-class QuizTrueFalseItem(QuizQuestionItemModel):
-    question = models.ForeignKey(QuizTrueFalseQuestionModel, on_delete=models.RESTRICT)
+class QuizTrueFalseItem(TimeStampedModel):
+    text = models.TextField(null=True, blank=True)
+    image = models.ImageField(null=True, blank=True, upload_to="quiz/questions")
     is_correct = models.BooleanField(default=False)
+    question = models.ForeignKey(QuizTrueFalseQuestionModel, on_delete=models.RESTRICT)
 
     class Meta:
         db_table = "quiz_true_false_item"
 
 
-class QuizMultipleChoiceItem(QuizQuestionItemModel):
-    question = models.ForeignKey(
-        QuizMultipleChoiceQuestionModel, on_delete=models.RESTRICT
-    )
+class QuizMultipleChoiceItem(TimeStampedModel):
+    text = models.TextField(null=True, blank=True)
+    image = models.ImageField(null=True, blank=True, upload_to="quiz/questions")
     is_correct = models.BooleanField(default=False)
+    question = models.ForeignKey(QuizMultipleChoiceQuestionModel, on_delete=models.RESTRICT)
 
     class Meta:
         db_table = "quiz_multiple_choice_item"
 
 
-class QuizRecallItem(QuizQuestionItemModel):
+class QuizRecallItem(TimeStampedModel):
+    text = models.TextField(null=True, blank=True)
+    image = models.ImageField(null=True, blank=True, upload_to="quiz/questions")
     question = models.ForeignKey(QuizRecallQuestionModel, on_delete=models.RESTRICT)
 
     class Meta:
         db_table = "quiz_recall_item"
 
 
-class QuizMappingItem(QuizQuestionItemModel):
+class QuizMappingItem(TimeStampedModel):
+    text = models.TextField(null=True, blank=True)
+    image = models.ImageField(null=True, blank=True, upload_to="quiz/questions")
     question = models.ForeignKey(QuizMappingQuestionModel, on_delete=models.RESTRICT)
-    pair = models.OneToOneField("self", on_delete=models.RESTRICT)
+    column_name = models.TextField(null=True, blank=True)
+    pair = models.OneToOneField("self", null=True, on_delete=models.RESTRICT)
 
     class Meta:
         db_table = "quiz_mapping_item"
 
 
-class QuizCategoryGroup(QuizQuestionItemModel):
+class QuizCategoryGroup(TimeStampedModel):
+    text = models.TextField(null=True, blank=True)
+    image = models.ImageField(null=True, blank=True, upload_to="quiz/questions")
     question = models.ForeignKey(QuizCategorizeQuestionModel, on_delete=models.RESTRICT)
 
     class Meta:
         db_table = "quiz_categorize_group"
 
 
-class QuizCategoryItem(QuizQuestionItemModel):
+class QuizCategoryItem(TimeStampedModel):
+    text = models.TextField(null=True, blank=True)
+    image = models.ImageField(null=True, blank=True, upload_to="quiz/questions")
     group = models.ForeignKey(QuizCategoryGroup, on_delete=models.RESTRICT)
 
     class Meta:
         db_table = "quiz_categorize_item"
 
 
-class QuizGap(QuizQuestionItemModel):
+class QuizGap(TimeStampedModel):
+    text = models.TextField(null=True, blank=True)
+    image = models.ImageField(null=True, blank=True, upload_to="quiz/questions")
     question = models.ForeignKey(QuizGapFillQuestionModel, on_delete=models.RESTRICT)
 
     class Meta:
         db_table = "quiz_gap"
 
 
-class QuizGapItem(QuizQuestionItemModel):
+class QuizGapItem(TimeStampedModel):
+    text = models.TextField(null=True, blank=True)
+    image = models.ImageField(null=True, blank=True, upload_to="quiz/questions")
     gap = models.OneToOneField(QuizGap, on_delete=models.RESTRICT)
 
     class Meta:
         db_table = "quiz_gap_item"
 
 
-class QuizGapMultipleChoice(QuizQuestionItemModel):
-    question = models.ForeignKey(QuizGapFillQuestionModel, on_delete=models.RESTRICT)
+class QuizGapMultipleChoice(TimeStampedModel):
+    text = models.TextField(null=True, blank=True)
+    image = models.ImageField(null=True, blank=True, upload_to="quiz/questions")
+    question = models.ForeignKey(QuizGapFillMultipleChoiceQuestionModel, on_delete=models.RESTRICT)
 
     class Meta:
         db_table = "quiz_gap_multiple_choice"
 
 
-class QuizGapChoiceItem(QuizQuestionItemModel):
+class QuizGapChoiceItem(TimeStampedModel):
+    text = models.TextField(null=True, blank=True)
+    image = models.ImageField(null=True, blank=True, upload_to="quiz/questions")
     gap = models.ForeignKey(QuizGapMultipleChoice, on_delete=models.RESTRICT)
     is_correct = models.BooleanField(default=False)
 
