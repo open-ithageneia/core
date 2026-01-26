@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     "inertia",
     "allauth",
     "allauth.account",
-    'import_export',
+    "import_export",
 ]
 
 MIDDLEWARE = [

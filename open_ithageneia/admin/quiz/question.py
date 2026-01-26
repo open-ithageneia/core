@@ -11,46 +11,64 @@ from open_ithageneia.models.shared import Semester
 
 class QuizQuestionResource(resources.ModelResource):
     category = fields.Field(
-        column_name='category',
-        attribute='category',
-        widget=ForeignKeyWidget(QuizCategoryModel, field='name'), )
+        column_name="category",
+        attribute="category",
+        widget=ForeignKeyWidget(QuizCategoryModel, field="name"),
+    )
 
     type = fields.Field(
-        column_name='type',
-        attribute='type',
-        widget=ForeignKeyWidget(QuizQuestionTypeModel, field='code'), )
+        column_name="type",
+        attribute="type",
+        widget=ForeignKeyWidget(QuizQuestionTypeModel, field="code"),
+    )
 
     semester = fields.Field(
-        column_name='semester',
+        column_name="semester",
         attribute="semester",
-        widget=ForeignKeyWidget(Semester, field='id'),
+        widget=ForeignKeyWidget(Semester, field="id"),
     )
 
     class Meta:
         model = QuizQuestionModel
-        fields = ( 'category', 'type', 'semester', 'number', 'context', 'min_correct_answers',
-                   'are_sentences_continuous')
-        exclude = ('id',)
+        fields = (
+            "category",
+            "type",
+            "semester",
+            "number",
+            "context",
+            "min_correct_answers",
+            "are_sentences_continuous",
+        )
+        exclude = ("id",)
         import_id_fields = ()
         skip_unchanged = False
 
     def before_import_row(self, row: OrderedDict, **kwargs):
         row["semester"] = Semester.objects.get(year=row["year"], half=row["half"]).id
 
-    def after_save_instance(self, instance: QuizQuestionModel, row: OrderedDict, **kwargs):
-
+    def after_save_instance(
+        self, instance: QuizQuestionModel, row: OrderedDict, **kwargs
+    ):
         if instance.type.code == "TF" or instance.type.code == "MC":
             self.import_statement_answers(instance, row)
         elif instance.type.code == "REC":
             self.import_recall_answers(instance, row)
-        elif instance.type.code == "CAT" or instance.type.code == "MAP" or instance.type.code == "GF":
+        elif (
+            instance.type.code == "CAT"
+            or instance.type.code == "MAP"
+            or instance.type.code == "GF"
+        ):
             self.import_mapping_answers(instance, row)
         elif instance.type.code == "GFMC":
             self.import_fill_blank_answers(instance, row)
 
     @staticmethod
     def import_statement_answers(instance: QuizQuestionModel, row: OrderedDict):
-        answer_cols = [k for k in row.keys() if k and k.lower().startswith("s_") and not k.lower().endswith("_correct")]
+        answer_cols = [
+            k
+            for k in row.keys()
+            if k and k.lower().startswith("s_") and not k.lower().endswith("_correct")
+        ]
 
         for col in sorted(answer_cols):
             text = row[col]
@@ -61,9 +79,7 @@ class QuizQuestionResource(resources.ModelResource):
             is_correct = row.get(correct_col, False)
 
             QuizQuestionItemModel.objects.create(
-                question=instance,
-                text=text,
-                is_correct=bool(is_correct)
+                question=instance, text=text, is_correct=bool(is_correct)
             )
 
     @staticmethod
@@ -83,18 +99,18 @@ class QuizQuestionResource(resources.ModelResource):
     @staticmethod
     def import_mapping_answers(instance: QuizQuestionModel, row: OrderedDict):
         first_group = ItemGroupModel.objects.create(
-            question=instance,
-            name=row.get('group_a_name', None),
-            is_first=True
+            question=instance, name=row.get("group_a_name", None), is_first=True
         )
         second_group = ItemGroupModel.objects.create(
-            question=instance,
-            name=row.get('group_b_name', None),
-            is_first=False
+            question=instance, name=row.get("group_b_name", None), is_first=False
         )
 
-        first_group_answers = [k for k in row.keys() if k and k.lower().startswith("a_")]
-        second_group_answers = [k for k in row.keys() if k and k.lower().startswith("b_")]
+        first_group_answers = [
+            k for k in row.keys() if k and k.lower().startswith("a_")
+        ]
+        second_group_answers = [
+            k for k in row.keys() if k and k.lower().startswith("b_")
+        ]
         for a, b in zip(first_group_answers, second_group_answers):
             a_text = row[a]
             b_text = row[b]

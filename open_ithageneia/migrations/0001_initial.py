@@ -5,133 +5,266 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='ItemGroupModel',
+            name="ItemGroupModel",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('name', models.CharField(blank=True, max_length=100, null=True)),
-                ('is_first', models.BooleanField(blank=True, null=True)),
-                ('type', models.IntegerField(choices=[(0, 'Choices'), (2, 'Categories'), (3, 'Blanks')], default=0)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("name", models.CharField(blank=True, max_length=100, null=True)),
+                ("is_first", models.BooleanField(blank=True, null=True)),
+                (
+                    "type",
+                    models.IntegerField(
+                        choices=[(0, "Choices"), (2, "Categories"), (3, "Blanks")],
+                        default=0,
+                    ),
+                ),
             ],
             options={
-                'db_table': 'quiz_item_group',
+                "db_table": "quiz_item_group",
             },
         ),
         migrations.CreateModel(
-            name='QuizCategoryModel',
+            name="QuizCategoryModel",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('name', models.CharField(max_length=100, unique=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("name", models.CharField(max_length=100, unique=True)),
             ],
             options={
-                'db_table': 'quiz_category',
+                "db_table": "quiz_category",
             },
         ),
         migrations.CreateModel(
-            name='QuizQuestionTypeModel',
+            name="QuizQuestionTypeModel",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('name', models.CharField(max_length=100)),
-                ('code', models.CharField(max_length=100)),
-                ('instructions', models.TextField()),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("name", models.CharField(max_length=100)),
+                ("code", models.CharField(max_length=100)),
+                ("instructions", models.TextField()),
             ],
             options={
-                'db_table': 'quiz_question_type',
+                "db_table": "quiz_question_type",
             },
         ),
         migrations.CreateModel(
-            name='QuizQuestionModel',
+            name="QuizQuestionModel",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('number', models.IntegerField()),
-                ('context', models.TextField(blank=True, null=True)),
-                ('image', models.ImageField(blank=True, null=True, upload_to='quiz/questions')),
-                ('min_correct_answers', models.IntegerField(blank=True, null=True)),
-                ('are_sentences_continuous', models.BooleanField(blank=True, null=True)),
-                ('are_answers_hidden', models.BooleanField(blank=True, null=True)),
-                ('category', models.ForeignKey(on_delete=django.db.models.deletion.RESTRICT, to='open_ithageneia.quizcategorymodel')),
-                ('type', models.ForeignKey(on_delete=django.db.models.deletion.RESTRICT, to='open_ithageneia.quizquestiontypemodel')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("number", models.IntegerField()),
+                ("context", models.TextField(blank=True, null=True)),
+                (
+                    "image",
+                    models.ImageField(
+                        blank=True, null=True, upload_to="quiz/questions"
+                    ),
+                ),
+                ("min_correct_answers", models.IntegerField(blank=True, null=True)),
+                (
+                    "are_sentences_continuous",
+                    models.BooleanField(blank=True, null=True),
+                ),
+                ("are_answers_hidden", models.BooleanField(blank=True, null=True)),
+                (
+                    "category",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        to="open_ithageneia.quizcategorymodel",
+                    ),
+                ),
+                (
+                    "type",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        to="open_ithageneia.quizquestiontypemodel",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'quiz_question',
-                'ordering': ['number'],
+                "db_table": "quiz_question",
+                "ordering": ["number"],
             },
         ),
         migrations.CreateModel(
-            name='QuizQuestionItemModel',
+            name="QuizQuestionItemModel",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('text', models.TextField(blank=True, null=True)),
-                ('image', models.ImageField(blank=True, null=True, upload_to='')),
-                ('is_correct', models.BooleanField(blank=True, null=True)),
-                ('item_group', models.ForeignKey(null=True, on_delete=django.db.models.deletion.RESTRICT, to='open_ithageneia.itemgroupmodel')),
-                ('linked_item', models.ForeignKey(null=True, on_delete=django.db.models.deletion.RESTRICT, to='open_ithageneia.quizquestionitemmodel')),
-                ('question', models.ForeignKey(on_delete=django.db.models.deletion.RESTRICT, to='open_ithageneia.quizquestionmodel')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("text", models.TextField(blank=True, null=True)),
+                ("image", models.ImageField(blank=True, null=True, upload_to="")),
+                ("is_correct", models.BooleanField(blank=True, null=True)),
+                (
+                    "item_group",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        to="open_ithageneia.itemgroupmodel",
+                    ),
+                ),
+                (
+                    "linked_item",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        to="open_ithageneia.quizquestionitemmodel",
+                    ),
+                ),
+                (
+                    "question",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        to="open_ithageneia.quizquestionmodel",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'quiz_question_item',
+                "db_table": "quiz_question_item",
             },
         ),
         migrations.AddField(
-            model_name='itemgroupmodel',
-            name='question',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='item_groups', to='open_ithageneia.quizquestionmodel'),
+            model_name="itemgroupmodel",
+            name="question",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="item_groups",
+                to="open_ithageneia.quizquestionmodel",
+            ),
         ),
         migrations.CreateModel(
-            name='Semester',
+            name="Semester",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('year', models.PositiveSmallIntegerField()),
-                ('half', models.PositiveSmallIntegerField(choices=[(0, 'First half'), (1, 'Second half')])),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("year", models.PositiveSmallIntegerField()),
+                (
+                    "half",
+                    models.PositiveSmallIntegerField(
+                        choices=[(0, "First half"), (1, "Second half")]
+                    ),
+                ),
             ],
             options={
-                'db_table': 'semester',
-                'ordering': ['-year', '-half'],
-                'unique_together': {('year', 'half')},
+                "db_table": "semester",
+                "ordering": ["-year", "-half"],
+                "unique_together": {("year", "half")},
             },
         ),
         migrations.AddField(
-            model_name='quizquestionmodel',
-            name='semester',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.RESTRICT, to='open_ithageneia.semester'),
+            model_name="quizquestionmodel",
+            name="semester",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.RESTRICT,
+                to="open_ithageneia.semester",
+            ),
         ),
         migrations.CreateModel(
-            name='ItemPairModel',
+            name="ItemPairModel",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('first', models.ForeignKey(on_delete=django.db.models.deletion.RESTRICT, related_name='first_pairs', to='open_ithageneia.quizquestionitemmodel')),
-                ('second', models.ForeignKey(on_delete=django.db.models.deletion.RESTRICT, related_name='second_pairs', to='open_ithageneia.quizquestionitemmodel')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "first",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        related_name="first_pairs",
+                        to="open_ithageneia.quizquestionitemmodel",
+                    ),
+                ),
+                (
+                    "second",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.RESTRICT,
+                        related_name="second_pairs",
+                        to="open_ithageneia.quizquestionitemmodel",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'quiz_item_pair',
-                'constraints': [models.UniqueConstraint(fields=('first',), name='first_unique')],
+                "db_table": "quiz_item_pair",
+                "constraints": [
+                    models.UniqueConstraint(fields=("first",), name="first_unique")
+                ],
             },
         ),
         migrations.AddIndex(
-            model_name='quizquestionmodel',
-            index=models.Index(fields=['semester', 'category'], name='quiz_questi_semeste_87512f_idx'),
+            model_name="quizquestionmodel",
+            index=models.Index(
+                fields=["semester", "category"], name="quiz_questi_semeste_87512f_idx"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='quizquestionmodel',
-            constraint=models.UniqueConstraint(fields=('semester', 'category', 'number'), name='unique_question_per_semester_category'),
+            model_name="quizquestionmodel",
+            constraint=models.UniqueConstraint(
+                fields=("semester", "category", "number"),
+                name="unique_question_per_semester_category",
+            ),
         ),
     ]

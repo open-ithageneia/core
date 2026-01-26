@@ -8,7 +8,7 @@ class QuizCategoryModel(TimeStampedModel):
     name = models.CharField(max_length=100, unique=True)
 
     class Meta:
-        db_table = 'quiz_category'
+        db_table = "quiz_category"
 
     def __str__(self):
         return self.name
@@ -27,7 +27,7 @@ class QuizQuestionTypeModel(TimeStampedModel):
     instructions = models.TextField()
 
     class Meta:
-        db_table = 'quiz_question_type'
+        db_table = "quiz_question_type"
 
     def __str__(self):
         return self.name
@@ -36,7 +36,7 @@ class QuizQuestionTypeModel(TimeStampedModel):
 class QuizQuestionModel(TimeStampedModel):
     number = models.IntegerField()
     context = models.TextField(null=True, blank=True)
-    image = models.ImageField(null=True, blank=True, upload_to='quiz/questions')
+    image = models.ImageField(null=True, blank=True, upload_to="quiz/questions")
     semester = models.ForeignKey(Semester, on_delete=models.RESTRICT)
     category = models.ForeignKey(QuizCategoryModel, on_delete=models.RESTRICT)
     type = models.ForeignKey(QuizQuestionTypeModel, on_delete=models.RESTRICT)
@@ -45,20 +45,20 @@ class QuizQuestionModel(TimeStampedModel):
     are_answers_hidden = models.BooleanField(null=True, blank=True)
 
     class Meta:
-        db_table = 'quiz_question'
+        db_table = "quiz_question"
 
         constraints = [
             models.UniqueConstraint(
-                fields=['semester', 'category', 'number'],
-                name='unique_question_per_semester_category'
+                fields=["semester", "category", "number"],
+                name="unique_question_per_semester_category",
             )
         ]
 
         indexes = [
-            models.Index(fields=['semester', 'category']),
+            models.Index(fields=["semester", "category"]),
         ]
 
-        ordering = ['number']
+        ordering = ["number"]
 
     def __str__(self):
         return f"{self.semester} {self.category.name} ΘΕΜΑ {self.number}"
@@ -66,22 +66,20 @@ class QuizQuestionModel(TimeStampedModel):
 
 class ItemGroupModel(TimeStampedModel):
     class GroupType(models.IntegerChoices):
-        Choices = 0, 'Choices'
-        Categories = 2, 'Categories'
-        Blanks = 3, 'Blanks'
+        Choices = 0, "Choices"
+        Categories = 2, "Categories"
+        Blanks = 3, "Blanks"
 
     name = models.CharField(max_length=100, null=True, blank=True)
     is_first = models.BooleanField(null=True, blank=True)
     type = models.IntegerField(choices=GroupType, default=GroupType.Choices)
 
     question = models.ForeignKey(
-        QuizQuestionModel,
-        on_delete=models.CASCADE,
-        related_name='item_groups'
+        QuizQuestionModel, on_delete=models.CASCADE, related_name="item_groups"
     )
 
     class Meta:
-        db_table = 'quiz_item_group'
+        db_table = "quiz_item_group"
 
 
 class QuizQuestionItemModel(TimeStampedModel):
@@ -94,35 +92,26 @@ class QuizQuestionItemModel(TimeStampedModel):
     question = models.ForeignKey(QuizQuestionModel, on_delete=models.RESTRICT)
 
     class Meta:
-        db_table = 'quiz_question_item'
+        db_table = "quiz_question_item"
 
     def clean(self):
         if self.item_group and self.item_group.question_id != self.question_id:
-            raise ValidationError(
-                "Answer question must match item group question"
-            )
+            raise ValidationError("Answer question must match item group question")
 
 
 class ItemPairModel(TimeStampedModel):
     first = models.ForeignKey(
-        QuizQuestionItemModel,
-        on_delete=models.RESTRICT,
-        related_name="first_pairs"
+        QuizQuestionItemModel, on_delete=models.RESTRICT, related_name="first_pairs"
     )
     second = models.ForeignKey(
-        QuizQuestionItemModel,
-        on_delete=models.RESTRICT,
-        related_name="second_pairs"
+        QuizQuestionItemModel, on_delete=models.RESTRICT, related_name="second_pairs"
     )
 
     class Meta:
-        db_table = 'quiz_item_pair'
+        db_table = "quiz_item_pair"
 
         constraints = [
-            models.UniqueConstraint(
-                fields=['first'],
-                name='first_unique'
-            ),
+            models.UniqueConstraint(fields=["first"], name="first_unique"),
         ]
 
     def clean(self):
@@ -134,4 +123,3 @@ class ItemPairModel(TimeStampedModel):
 
         if self.second.item_group.is_first:
             raise ValidationError("Second answer must be from second group")
-
