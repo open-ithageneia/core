@@ -93,9 +93,6 @@ class QuizTrueFalseQuestionModel(QuizQuestionBaseModel):
 
 
 class QuizMultipleChoiceQuestionModel(QuizQuestionBaseModel):
-    # Can be removed
-    has_multiple = models.BooleanField(default=False)
-
     class Meta:
         db_table = "quiz_multiple_question"
 
