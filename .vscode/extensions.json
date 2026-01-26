@@ -1,13 +1,13 @@
 {
-  "recommendations": [
-    "charliermarsh.ruff",
-    "biomejs.biome",
-    "ms-azuretools.vscode-containers",
-    "ms-vscode-remote.remote-containers",
-    "ms-azuretools.vscode-docker",
-    "mikestead.dotenv",
-    "editorconfig.editorconfig",
-    "ms-python.python",
-    "bradlc.vscode-tailwindcss"
-  ]
+	"recommendations": [
+		"charliermarsh.ruff",
+		"biomejs.biome",
+		"ms-azuretools.vscode-containers",
+		"ms-vscode-remote.remote-containers",
+		"ms-azuretools.vscode-docker",
+		"mikestead.dotenv",
+		"editorconfig.editorconfig",
+		"ms-python.python",
+		"bradlc.vscode-tailwindcss"
+	]
 }
