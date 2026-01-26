@@ -40,32 +40,13 @@ class QuizCategoryModel(TimeStampedModel):
         return self.name
 
 
-# TRUE_FALSE
-# MULTIPLE_CHOICE
-# MAPPING
-# CATEGORIZE
-# RECALL
-# GAP_FILL
-# GAP_FILL_MULTIPLE_CHOICE
-class QuizQuestionTypeModel(TimeStampedModel):
-    name = models.CharField(max_length=100)
-    code = models.CharField(max_length=100)
-    instructions = models.TextField()
-
-    class Meta:
-        db_table = "quiz_question_type"
-
-    def __str__(self):
-        return self.name
-
-
 class QuizQuestionBaseModel(TimeStampedModel):
+    instructions = models.TextField()
     number = models.IntegerField()
     context = models.TextField(null=True, blank=True)
     image = models.ImageField(null=True, blank=True, upload_to="quiz/questions")
     semester = models.ForeignKey(Semester, on_delete=models.RESTRICT)
     category = models.ForeignKey(QuizCategoryModel, on_delete=models.RESTRICT)
-    type = models.ForeignKey(QuizQuestionTypeModel, on_delete=models.RESTRICT)
 
     class Meta:
         abstract = True
