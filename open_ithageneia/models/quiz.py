@@ -88,7 +88,7 @@ class QuizQuestionItemModel(TimeStampedModel):
 
     is_correct = models.BooleanField(null=True, blank=True)
     item_group = models.ForeignKey(ItemGroupModel, null=True, on_delete=models.RESTRICT)
-    pair_item = models.OneToOneField("self", null=True, on_delete=models.RESTRICT)
+    pair = models.ForeignKey("self", null=True, on_delete=models.RESTRICT)
     question = models.ForeignKey(QuizQuestionModel, on_delete=models.RESTRICT)
 
     class Meta:

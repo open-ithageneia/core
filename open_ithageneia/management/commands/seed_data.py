@@ -7,7 +7,6 @@ from open_ithageneia.models import (
     QuizQuestionItemModel,
     QuizQuestionModel,
     ItemGroupModel,
-    ItemPairModel,
 )
 from django.db import transaction
 
@@ -227,16 +226,16 @@ class Command(BaseCommand):
 
         # Second column (capitals)
         athens = QuizQuestionItemModel.objects.get_or_create(
-            question=q, item_group=group_capitals, text="Αθήνα"
+            question=q, item_group=group_capitals, text="Αθήνα", pair=greece
         )[0]
+
+        greece.pair = athens
 
         paris = QuizQuestionItemModel.objects.get_or_create(
-            question=q, item_group=group_capitals, text="Παρίσι"
+            question=q, item_group=group_capitals, text="Παρίσι", pair=france
         )[0]
 
-        # Mapping pairs
-        ItemPairModel.objects.get_or_create(first=greece, second=athens)
-        ItemPairModel.objects.get_or_create(first=france, second=paris)
+        france.pair = paris
 
     # ΓΕΩΓΡΦΙΑ ΘΕΜΑ 46
     @staticmethod
@@ -263,29 +262,26 @@ class Command(BaseCommand):
             is_first=False,
         )[0]
 
-        alexandroupoli = QuizQuestionItemModel.objects.get_or_create(
-            question=q, item_group=group_areas, text="Αλεξανδρούπολη"
-        )[0]
-
-        sifnos = QuizQuestionItemModel.objects.get_or_create(
-            question=q, item_group=group_areas, text="Σίφνος"
-        )[0]
-
-        pyrgos = QuizQuestionItemModel.objects.get_or_create(
-            question=q, item_group=group_areas, text="Πύργος"
-        )[0]
 
         land = QuizQuestionItemModel.objects.get_or_create(
             question=q, item_group=group_categories, text="Ηπειρωτική Ελλάδα"
         )[0]
 
         sea = QuizQuestionItemModel.objects.get_or_create(
-            question=q, item_group=group_categories, text="Νησιωτική Ελλάδα"
+            question=q, item_group=group_categories, text="Νησιωτική Ελλάδα",
         )[0]
 
-        ItemPairModel.objects.get_or_create(first=alexandroupoli, second=land)
-        ItemPairModel.objects.get_or_create(first=pyrgos, second=land)
-        ItemPairModel.objects.get_or_create(first=sifnos, second=sea)
+        _ = QuizQuestionItemModel.objects.get_or_create(
+            question=q, item_group=group_areas, text="Αλεξανδρούπολη", pair=land
+        )[0]
+
+        _ = QuizQuestionItemModel.objects.get_or_create(
+            question=q, item_group=group_areas, text="Σίφνος", pair=sea
+        )[0]
+
+        _ = QuizQuestionItemModel.objects.get_or_create(
+            question=q, item_group=group_areas, text="Πύργος", pair=land
+        )[0]
 
     @staticmethod
     def add_gf_sample(semester, category, q_type, number):
@@ -322,6 +318,7 @@ class Command(BaseCommand):
             pair=hatzidakis,
             text="Ο _ συνέθεσε τη μουσική στο τραγούδι: «Τα παιδιά του Πειραιά» που έγινε πολύ γνωστό με την ερμηνεία της Μελίνας Μερκούρη.",
         )[0]
+        hatzidakis.pair = hatzidakis_blank
 
         reboutsika_blank = QuizQuestionItemModel.objects.get_or_create(
             question=q,
@@ -329,9 +326,7 @@ class Command(BaseCommand):
             pair=reboutsika,
             text="Η _ συνέθεσε τη μουσική για την κινηματογραφική ταινία: «Πολίτικη Κουζίνα»",
         )[0]
-
-        ItemPairModel.objects.get_or_create(first=hatzidakis, second=hatzidakis_blank)
-        ItemPairModel.objects.get_or_create(first=reboutsika, second=reboutsika_blank)
+        reboutsika.pair = reboutsika_blank
 
     # Not all answers should be used example: 5 answers -  4 blanks
     @staticmethod
@@ -376,28 +371,35 @@ class Command(BaseCommand):
             question=q, item_group=group_answers, text="random word"
         )[0]
 
-        _ = QuizQuestionItemModel.objects.get_or_create(
+        blank_1 = QuizQuestionItemModel.objects.get_or_create(
             question=q,
             item_group=group_blanks,
             pair=ans4,
             text="Για να εκλεγεί κάποιος Πρόεδρος της Δημοκρατίας, θα πρέπει να έχει _",
         )[0]
-        _ = QuizQuestionItemModel.objects.get_or_create(
+        ans4.pair = blank_1
+
+        blank_2 = QuizQuestionItemModel.objects.get_or_create(
             question=q, item_group=group_blanks, text="για τουλάχιστον _ χρόνια",
             pair=ans1,
         )[0]
-        _ = QuizQuestionItemModel.objects.get_or_create(
+        ans1.pair = blank_2
+
+        blank_3 = QuizQuestionItemModel.objects.get_or_create(
             question=q,
             item_group=group_blanks,
             text="Επίσης, θα πρέπει να έχει από πατέρα ή μητέρα _, να είναι τουλάχιστον 40 ετών και να έχει τη νόμιμη ικανότητα του εκλέγειν.",
             pair=ans2,
         )[0]
-        _ = QuizQuestionItemModel.objects.get_or_create(
+        ans2.pair = blank_3
+
+        blank_4 = QuizQuestionItemModel.objects.get_or_create(
             question=q,
             item_group=group_blanks,
             text="Η διαδικασία εκλογής νέου Προέδρου της Δημοκρατίας, σε περίπτωση που ο εν ενεργεία Πρόεδρος αδυνατεί να ασκήσει τα καθήκοντά του για πάνω από 30 ημέρες, σε καμία περίπτωση δεν μπορεί να καθυστερήσει περισσότερο από _ συνολικά μήνες, αφότου άρχισε η διαδικασία αναπλήρωσής του.",
             pair=ans3,
         )[0]
+        ans3.pair = blank_4
 
     @staticmethod
     def add_gfmc_sample(semester, category, q_type, number):
