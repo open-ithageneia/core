@@ -68,9 +68,6 @@ Optional:
 # Vite dev server settings used by django-vite
 DJANGO_VITE_DEV_SERVER_HOST=localhost
 DJANGO_VITE_DEV_SERVER_PORT=5173
-
-# Use Postgres/etc instead of sqlite
-# DATABASE_URL=postgres://user:pass@localhost:5432/dbname
 ```
 
 ### 3) Run migrations
@@ -159,9 +156,61 @@ If your installed CLI uses the older package name, use `npx shadcn-ui@latest …
 ## Notes
 
 - Always prefix Python commands with `uv run` to use the project’s virtual environment.
-- SQLite is used by default (`db.sqlite3`). Set `DATABASE_URL` to use another database.
+- SQLite is used by default (`db/db.sqlite3`).
 
-## Production build (Docker)
+## Deployment & production
+
+### Environment variables
+
+This project loads environment variables from `.env` in the repo root (see `.env.example`).
+
+| Name | Required | Default | Notes |
+| --- | --- | --- | --- |
+| `DJANGO_SETTINGS_MODULE` | No | - | Optional. Set to `open_ithageneia.settings_production` for production defaults. |
+| `SECRET_KEY` | Yes | - | Django secret key. Use a strong value in production. |
+| `DEBUG` | No | `True` | Base settings default to `True`. Production settings default to `False` but you can temporarily set `DEBUG=True` for troubleshooting. |
+| `ALLOWED_HOSTS` | No | `*` | Comma-separated list in dev. Production defaults to an empty list and should be set explicitly. |
+| `CSRF_TRUSTED_ORIGINS` | No | `[]` | Comma-separated list. Often required in production. |
+| `DJANGO_VITE_DEV_SERVER_HOST` | No | `localhost` | Dev only (HMR). |
+| `DJANGO_VITE_DEV_SERVER_PORT` | No | `5173` | Dev only (HMR). |
+| `IS_PREVIEW_DEPLOYMENT` | No | `False` | Marks the current running container as a preview deployment. Set this only in preview environments. |
+| `PREVIEW_SUPERUSER_USERNAME` | No | - | If set (with `PREVIEW_SUPERUSER_PASSWORD`), entrypoint runs `createsuperuser --noinput` on startup (preview-only). |
+| `PREVIEW_SUPERUSER_PASSWORD` | No | - | Password for `PREVIEW_SUPERUSER_USERNAME` (preview-only). |
+| `PREVIEW_SUPERUSER_EMAIL` | No | - | Optional. If omitted, a placeholder email is generated automatically (preview-only). |
+| `SQLITE_DB_FILENAME` | No | `db.sqlite3` | SQLite filename. |
+
+**Important for production:** set `DJANGO_SETTINGS_MODULE=open_ithageneia.settings_production` as a **runtime** environment variable for both production and preview deployments. If you don’t, Django will fall back to `open_ithageneia.settings` and `DEBUG=True` can make django-vite try to load the Vite dev server.
+
+### Preview deployments (SQLite)
+
+If you deploy preview environments (PRs/branches) and still use SQLite, you generally want previews
+to use a different DB so migrations don’t touch the production DB.
+
+This repo also avoids persisting preview DBs: when a deployment is detected as a preview, the SQLite
+file is placed under `/tmp/...` inside the container (so it’s cleaned up when the container is
+destroyed), rather than under `db/` (which is typically mounted as a persistent volume).
+
+This project supports that in a provider-agnostic way with explicit flags.
+
+Recommended setup:
+
+- In your preview deployment env vars, set:
+	- `IS_PREVIEW_DEPLOYMENT=True`
+
+When this is true, the SQLite file is stored under `/tmp/open_ithageneia_db/` inside the container.
+
+#### Preview admin user (SQLite previews)
+
+Since preview SQLite databases are ephemeral, you may want an admin user recreated on every start.
+
+Set these in preview environments (they are ignored unless `IS_PREVIEW_DEPLOYMENT` is enabled):
+
+```env
+PREVIEW_SUPERUSER_USERNAME=admin
+PREVIEW_SUPERUSER_PASSWORD=change-me
+```
+
+### Production build (Docker)
 
 There is a multi-stage Docker build that:
 
@@ -172,14 +221,11 @@ There is a multi-stage Docker build that:
 Build:
 
 ```bash
-docker build -f prod.Dockerfile -t open-ithageneia .
+docker build -t open-ithageneia .
 ```
 
-Run (example):
+Run production image locally (recommended):
 
 ```bash
-docker run --rm -p 8000:8000 \
-	-e SECRET_KEY=replace-me \
-	-e DEBUG=0 \
-	open-ithageneia
+./scripts/run_prod_local.sh
 ```

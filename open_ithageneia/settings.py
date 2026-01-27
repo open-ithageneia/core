@@ -92,28 +92,39 @@ WSGI_APPLICATION = "open_ithageneia.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-if "DATABASE_URL" in env:
-    DATABASES = {"default": env.db()}
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-            "OPTIONS": {
-                "transaction_mode": "IMMEDIATE",
-                "timeout": 5,  # seconds
-                "init_command": """
-                    PRAGMA foreign_keys = ON;
-                    PRAGMA journal_mode = WAL;
-                    PRAGMA synchronous = NORMAL;
-                    PRAGMA temp_store = MEMORY;
-                    PRAGMA mmap_size = 134217728;
-                    PRAGMA journal_size_limit = 67108864;
-                    PRAGMA cache_size = 2000;
-                """,
-            },
-        }
+IS_PREVIEW_DEPLOYMENT = env.bool("IS_PREVIEW_DEPLOYMENT", default=False)
+
+SQLITE_PERSISTENT_DB_DIR = BASE_DIR / "db"
+SQLITE_DB_DIR = (
+    Path("/tmp/open_ithageneia_db")
+    if IS_PREVIEW_DEPLOYMENT
+    else SQLITE_PERSISTENT_DB_DIR
+)
+SQLITE_DB_DIR.mkdir(parents=True, exist_ok=True)
+
+SQLITE_DB_FILENAME = (
+    env.str("SQLITE_DB_FILENAME", default="db.sqlite3").strip() or "db.sqlite3"
+)
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": SQLITE_DB_DIR / SQLITE_DB_FILENAME,
+        "OPTIONS": {
+            "transaction_mode": "IMMEDIATE",
+            "timeout": 5,  # seconds
+            "init_command": """
+                PRAGMA foreign_keys = ON;
+                PRAGMA journal_mode = WAL;
+                PRAGMA synchronous = NORMAL;
+                PRAGMA temp_store = MEMORY;
+                PRAGMA mmap_size = 134217728;
+                PRAGMA journal_size_limit = 67108864;
+                PRAGMA cache_size = 2000;
+            """,
+        },
     }
+}
 
 
 # Password validation
@@ -175,6 +186,10 @@ DJANGO_VITE = {
 }
 # Where ViteJS assets are built.
 DJANGO_VITE_ASSETS_PATH = BASE_DIR / "frontend" / "dist"
+
+# django-vite reads its manifest from `manifest_path`. Our Vite build outputs it to
+# `frontend/dist/manifest.json`.
+DJANGO_VITE["default"]["manifest_path"] = DJANGO_VITE_ASSETS_PATH / "manifest.json"
 # Include DJANGO_VITE_ASSETS_PATH into STATICFILES_DIRS to be copied inside
 # when run command python manage.py collectstatic
 STATICFILES_DIRS = [DJANGO_VITE_ASSETS_PATH]

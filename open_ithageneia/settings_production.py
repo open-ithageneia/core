@@ -1,7 +1,7 @@
 # ruff: noqa: F403, F405
 from .settings import *
 
-DEBUG = False
+DEBUG = env.bool("DEBUG", default=False)
 
 # Override DJANGO_VITE dev_mode to match production DEBUG setting
 # This is necessary because DJANGO_VITE is evaluated at import time

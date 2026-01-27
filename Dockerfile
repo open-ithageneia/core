@@ -31,6 +31,7 @@ ENV DEBUG=0
 
 RUN apt-get update \
     && apt-get install -y \
+    bash \
     curl \
     libpq-dev \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
@@ -42,15 +43,25 @@ RUN addgroup --system django \
 # Copy the application from the builders
 COPY --from=python-builder /code /code
 COPY --from=node-builder /code/static /code/static
+COPY --from=node-builder /code/frontend/dist /code/frontend/dist
 
 WORKDIR /code
-COPY --chown=django:django . /code
+COPY . .
 
-RUN DEBUG=False python ./manage.py collectstatic --noinput --settings=open_ithageneia.settings_production
-RUN chown django:django -R static
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+RUN mkdir -p db
+RUN chown -R django:django /code
 
 USER django
 
-COPY --chown=django:django docker_startup.sh /start
-RUN chmod +x /start
-CMD /start
+EXPOSE 8000
+
+ENTRYPOINT ["/entrypoint.sh"]
+
+CMD ["gunicorn", "open_ithageneia.wsgi", \
+     "--bind", "0.0.0.0:8000", \
+     "--workers", "4", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-"]
