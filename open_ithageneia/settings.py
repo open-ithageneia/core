@@ -40,6 +40,7 @@ SITE_ID = 1
 
 # Application definition
 INSTALLED_APPS = [
+    # Django built-in apps
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -47,11 +48,15 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
-    "open_ithageneia.apps.OpenIthageneiaConfig",
+    # Installed apps
+    "django_jsonform",
     "django_vite",
     "inertia",
     "allauth",
     "allauth.account",
+    # Our apps
+    "open_ithageneia.apps.OpenIthageneiaConfig",
+    "quiz"
 ]
 
 MIDDLEWARE = [
