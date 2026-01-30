@@ -1,4 +1,5 @@
 from django.db import models
+from django.dispatch import receiver
 from django_jsonform.models.fields import JSONField
 
 from open_ithageneia.models import TimeStampedModel
@@ -51,7 +52,8 @@ What we want:
 3) Fixtures
 4) Check django-import-export
 5) Τι κάνουμε με τις εικόνες?
-6) Categories?
+6) Categories = unified TF and MC or separate?
+7) Semester?
 '''
 
 # Check https://docs.djangoproject.com/en/6.0/ref/databases/#enabling-json1-extension-on-sqlite
@@ -64,28 +66,115 @@ TRUE_FALSE_BASE_INSTRUCTION = "Γράψτε στο τετράδιό σας το�
 # MULTIPLE_CHOICE_BASE_INSTRUCTION = "Γράψτε στο τετράδιό σας τον αριθμό του θέματος και δίπλα τη σωστή απάντηση, σημειώνοντας το αντίστοιχο γράμμα (Α ή Β ή Γ ή Δ)."
 
 
-class TrueFalseQuiz(TimeStampedModel):
-    STATEMENTS_SCHEMA = {
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": {
-                "statement": { "type": "string", "title": "Statement" },
-                "is_true": { "type": "boolean", "title": "Correct?", "default": False },
+def get_quiz_asset_upload_to(instance, filename):
+    return f"quizzes/assets/{instance.id}/{filename}"
+
+
+class QuizAsset(TimeStampedModel):
+    title = models.CharField(max_length=255, blank=True, default="")
+    image = models.ImageField(upload_to=get_quiz_asset_upload_to)
+
+
+# We use signals because get_quiz_asset_upload_to function will fail
+# since instance.id does not exist before creation
+
+
+@receiver(models.signals.pre_save, sender=QuizAsset)
+def quiz_asset_instance_pre_save(sender, instance, **kwargs):
+    """QuizAsset model instance pre save"""
+
+    if not instance.pk and instance.image:
+        # quiz instance not created and user uploads a image
+        instance._tmp_image_on_create = instance.image
+        instance.image = None
+
+
+@receiver(models.signals.post_save, sender=QuizAsset)
+def quiz_asset_instance_post_save(sender, instance, created, **kwargs):
+    """QuizAsset model instance post save"""
+
+    if created and hasattr(instance, "_tmp_image_on_create"):
+        instance.image = getattr(instance, "_tmp_image_on_create")
+
+        instance.save(update_fields=["image"])
+
+
+def get_true_false_quiz_upload_to(instance, filename):
+    return f"quizzes/tf/{instance.id}/{filename}"
+
+
+class QuestionQuiz(TimeStampedModel):
+    ITEMS_SCHEMA = {
+        "type": "object",
+        "properties": {
+            "prompt_text": { "type": "string", "title": "Question" },
+            "prompt_asset_id": { "type": "integer", "title": "Question image asset ID" },
+            "choices": {
+                "type": "array",
+                "title": "Choices",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "text": { "type": "string", "title": "Choice text" },
+                        "asset_id": { "type": "integer", "title": "Choice image asset ID" },
+                        "is_correct": { "type": "boolean", "title": "Correct?", "default": False},
+                    },
+                    "required": ["is_correct"],
+                },
+                "default": [],
             },
-            "required": ["statement", "is_true"],
         },
-        "default": [],
-        # "maxItems": 4,
+        "required": ["choices"],
     }
 
-    instructions = models.TextField(blank=True, default=TRUE_FALSE_BASE_INSTRUCTION)
-    context = models.TextField(blank=True, default="")
-    statements = JSONField(blank=True, default=list, schema=STATEMENTS_SCHEMA)
-    # statements = models.JSONField(blank=True, default=list)
+    # question_type -> TODO: TF or MC
+
+    instructions = models.TextField(blank=True, default=TRUE_FALSE_BASE_INSTRUCTION) # TODO: it a choicefield
+    items = JSONField(blank=True, default=list, schema=ITEMS_SCHEMA)
 
 
-# class MutlipleChoice(TimeStampedModel):
-#     instructions = models.TextField(blank=True, default=MULTIPLE_CHOICE_BASE_INSTRUCTION)
+# class TrueFalseQuiz(TimeStampedModel):
+#     STATEMENTS_SCHEMA = {
+#         "type": "array",
+#         "default": [],
+#         "items": {
+#             "type": "object",
+#             "properties": {
+#                 "statement": { "type": "string", "title": "Statement" },
+#                 # "image": {"type": "string", "title": "Image URL/path" },
+#                 "asset_id": {"type": "integer", "title": "Image asset ID", "required": False},
+#                 "is_correct": { "type": "boolean", "title": "Correct?", "default": False },
+#             },
+#             "required": ["is_correct"],
+#         },
+#         # "maxItems": 4,
+#     }
+
+#     instructions = models.TextField(blank=True, default=TRUE_FALSE_BASE_INSTRUCTION)
 #     context = models.TextField(blank=True, default="")
-#     statements = models.JSONField(blank=True, default=list)
+#     # context_image = models.ImageField(null=True, blank=True, upload_to=get_true_false_quiz_upload_to)
+#     statements = JSONField(blank=True, default=list, schema=STATEMENTS_SCHEMA)
+
+
+# We use signals because get_true_false_quiz_upload_to function will fail
+# since instance.id does not exist before creation
+
+
+# @receiver(models.signals.pre_save, sender=TrueFalseQuiz)
+# def tf_quiz_instance_pre_save(sender, instance, **kwargs):
+#     """TrueFalseQuiz model instance pre save"""
+
+#     if not instance.pk and instance.context_image:
+#         # quiz instance not created and user uploads a context_image
+#         instance._tmp_context_image_on_create = instance.context_image
+#         instance.context_image = None
+
+
+# @receiver(models.signals.post_save, sender=TrueFalseQuiz)
+# def tf_quiz_instance_post_save(sender, instance, created, **kwargs):
+#     """TrueFalseQuiz model instance post save"""
+
+#     if created and hasattr(instance, "_tmp_context_image_on_create"):
+#         instance.context_image = getattr(instance, "_tmp_context_image_on_create")
+
+#         instance.save(update_fields=["context_image"])
