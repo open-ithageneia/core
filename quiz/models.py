@@ -2,7 +2,7 @@ from django.db import models
 from django.dispatch import receiver
 from django_jsonform.models.fields import JSONField
 
-from open_ithageneia.models import TimeStampedModel
+from open_ithageneia.models import TimeStampedModel, ActivatableModel
 
 
 # class TrueFalseQuiz(TimeStampedModel):
@@ -115,7 +115,7 @@ class QuizCategory(models.TextChoices):
 
 
 
-class QuestionQuiz(TimeStampedModel):
+class QuestionQuiz(TimeStampedModel, ActivatableModel):
     '''
     Currently works for True/False and Multiple Choice Quizzes
     '''
