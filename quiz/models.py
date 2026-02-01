@@ -49,11 +49,10 @@ from open_ithageneia.models import TimeStampedModel
 What we want:
 1) Show JSON field properly in admin
 2) Validate JSON field structure according to quiz rules
-3) Fixtures
 4) Check django-import-export
-5) Τι κάνουμε με τις εικόνες?
-6) Categories = unified TF and MC or separate?
-7) Semester?
+8) Semester? (May, November each year)
+9) Pillow?
+10) Admin
 '''
 
 # Check https://docs.djangoproject.com/en/6.0/ref/databases/#enabling-json1-extension-on-sqlite
@@ -103,8 +102,25 @@ def get_true_false_quiz_upload_to(instance, filename):
     return f"quizzes/tf/{instance.id}/{filename}"
 
 
+class QuizType(models.TextChoices):
+    TRUE_FALSE = "TRUE_FALSE", "True/False"
+    MULTIPLE_CHOICE = "MULTIPLE_CHOICE", "Mutliple Choice"
+
+
+class QuizCategory(models.TextChoices):
+    GEORGRAPHY = "GEORGRAPHY", "Geography"
+    CIVICS = "CIVICS", "Civics"
+    HISTORY = "HISTORY", "History"
+    CULTURE = "CULTURE", "Culture"
+
+
+
 class QuestionQuiz(TimeStampedModel):
-    ITEMS_SCHEMA = {
+    '''
+    Currently works for True/False and Multiple Choice Quizzes
+    '''
+
+    CONTENT_SCHEMA = {
         "type": "object",
         "properties": {
             "prompt_text": { "type": "string", "title": "Question" },
@@ -127,10 +143,18 @@ class QuestionQuiz(TimeStampedModel):
         "required": ["choices"],
     }
 
-    # question_type -> TODO: TF or MC
-
-    instructions = models.TextField(blank=True, default=TRUE_FALSE_BASE_INSTRUCTION) # TODO: it a choicefield
-    items = JSONField(blank=True, default=list, schema=ITEMS_SCHEMA)
+    type = models.CharField(
+        max_length=15,
+        choices=QuizType,
+        default=QuizType.TRUE_FALSE,
+    )
+    category = models.CharField(
+        max_length=10,
+        choices=QuizCategory,
+        default=QuizCategory.GEORGRAPHY,
+    )
+    instructions = models.TextField(blank=True, default=TRUE_FALSE_BASE_INSTRUCTION) # Choices also?
+    content = JSONField(blank=True, default=lambda: {"choices": []}, schema=CONTENT_SCHEMA)
 
 
 # class TrueFalseQuiz(TimeStampedModel):
@@ -155,26 +179,3 @@ class QuestionQuiz(TimeStampedModel):
 #     # context_image = models.ImageField(null=True, blank=True, upload_to=get_true_false_quiz_upload_to)
 #     statements = JSONField(blank=True, default=list, schema=STATEMENTS_SCHEMA)
 
-
-# We use signals because get_true_false_quiz_upload_to function will fail
-# since instance.id does not exist before creation
-
-
-# @receiver(models.signals.pre_save, sender=TrueFalseQuiz)
-# def tf_quiz_instance_pre_save(sender, instance, **kwargs):
-#     """TrueFalseQuiz model instance pre save"""
-
-#     if not instance.pk and instance.context_image:
-#         # quiz instance not created and user uploads a context_image
-#         instance._tmp_context_image_on_create = instance.context_image
-#         instance.context_image = None
-
-
-# @receiver(models.signals.post_save, sender=TrueFalseQuiz)
-# def tf_quiz_instance_post_save(sender, instance, created, **kwargs):
-#     """TrueFalseQuiz model instance post save"""
-
-#     if created and hasattr(instance, "_tmp_context_image_on_create"):
-#         instance.context_image = getattr(instance, "_tmp_context_image_on_create")
-
-#         instance.save(update_fields=["context_image"])

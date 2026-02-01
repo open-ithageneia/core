@@ -1,0 +1,239 @@
+[
+	{
+		"model": "quiz.questionquiz",
+		"pk": 1,
+		"fields": {
+			"type": "TRUE_FALSE",
+			"category": "CIVICS",
+			"content": {
+				"prompt_text": "Στην Ελλάδα η ελευθερία της Τέχνης προστατεύεται από το Σύνταγμα. Παρ’όλα αυτά σε ποιες περιπτώσεις θα μπορούσαν να επιβληθούν περιορισμοί στην καλλιτεχνική δημιουργία;",
+				"choices": [
+					{
+						"text": "Απαγόρευση εισόδου ανηλίκων σε κινηματογραφική αίθουσα, αν το έργο που προβάλλεται κρίνεται ως ακατάλληλο",
+						"is_correct": true
+					},
+					{
+						"text": "Απαγόρευση κυκλοφορίας βιβλίου μυθοπλασίας, επειδή θεωρήθηκε από μερίδα πολιτών ότι προσβάλλει το θρησκευτικό τους αίσθημα",
+						"is_correct": false
+					},
+					{
+						"text": "Απαγόρευση αυτοσχέδιας παράστασης σε κοινόχρηστο χώρο χωρίς να έχει ζητηθεί άδεια",
+						"is_correct": true
+					},
+					{
+						"text": "Απαγόρευση δημιουργίας graﬃti στους τοίχους ενός ξένου σπιτιού, χωρίς τη συναίνεση του ιδιοκτήτη",
+						"is_correct": true
+					}
+				]
+			},
+			"created": "2026-01-01T10:00:00Z",
+			"modified": "2026-01-01T10:00:00Z"
+		}
+	},
+	{
+		"model": "quiz.questionquiz",
+		"pk": 2,
+		"fields": {
+			"type": "TRUE_FALSE",
+			"category": "GEORGRAPHY",
+			"content": {
+				"choices": [
+					{ "text": "Στην Κάλυμνο αλιεύονται σφουγγάρια", "is_correct": true },
+					{ "text": "Στην Πιερία ευδοκιμούν τα ακτινίδια", "is_correct": true },
+					{
+						"text": "Ο Παγασητικός κόλπος φημίζεται για τις μυδοκαλλιέργειες",
+						"is_correct": false
+					},
+					{ "text": "Στην Κρήτη παράγονται μπανάνες", "is_correct": true }
+				]
+			},
+			"created": "2026-01-01T10:00:00Z",
+			"modified": "2026-01-01T10:00:00Z"
+		}
+	},
+	{
+		"model": "quiz.questionquiz",
+		"pk": 3,
+		"fields": {
+			"type": "TRUE_FALSE",
+			"category": "HISTORY",
+			"content": {
+				"choices": [
+					{
+						"text": "Η Ελένη Σκούρα, η πρώτη ελληνίδα βουλευτής, εκλέχθηκε το 1953.",
+						"is_correct": true
+					},
+					{
+						"text": "Ο βασιλιάς Όθωνας ήρθε στην Ελλάδα το 1821.",
+						"is_correct": false
+					},
+					{
+						"text": "Η Ελλάδα ήταν το πρώτο εθνικό κράτος στα Βαλκάνια που έγινε ανεξάρτητο το 1830",
+						"is_correct": true
+					},
+					{
+						"text": "Τόσο στον Πρώτο όσο και στον Δεύτερο Παγκόσμιο Πόλεμο η Ελλάδα ήταν με τη μεριά των νικητών.",
+						"is_correct": true
+					}
+				]
+			},
+
+			"created": "2026-01-01T10:00:00Z",
+			"modified": "2026-01-01T10:00:00Z"
+		}
+	},
+	{
+		"model": "quiz.questionquiz",
+		"pk": 4,
+		"fields": {
+			"type": "TRUE_FALSE",
+			"category": "CULTURE",
+			"content": {
+				"choices": [
+					{
+						"text": "Σαράντα ημέρες μετά τον θάνατο τελείται μνημόσυνο και φτιάχνουμε κόλλυβα",
+						"is_correct": true
+					},
+					{
+						"text": "Οι Καλικάντζαροι, σύμφωνα με την παράδοση, είναι τα καλά πνεύματα των Χριστουγέννων που φέρνουν καλοτυχία",
+						"is_correct": false
+					},
+					{
+						"text": "Όταν ξεκινάει η καινούρια σχολική χρονιά τελούμε αγιασμό",
+						"is_correct": true
+					},
+					{
+						"text": "Όταν κάποιος αρρωσταίνει φτιάχνουμε Φανουρόπιτα για να γίνει καλά",
+						"is_correct": false
+					}
+				]
+			},
+			"created": "2026-01-01T10:00:00Z",
+			"modified": "2026-01-01T10:00:00Z"
+		}
+	},
+	{
+		"model": "quiz.questionquiz",
+		"pk": 5,
+		"fields": {
+			"type": "MULTIPLE_CHOICE",
+			"category": "CULTURE",
+			"content": {
+				"prompt_text": "Τι είναι η μαγειρίτσα;",
+				"choices": [
+					{
+						"text": "Μαγειρευτό φαγητό που τρώγεται την πρώτη μέρα του νέου έτους",
+						"is_correct": false
+					},
+					{
+						"text": "Το εθνικό φαγητό των Ελλήνων",
+						"is_correct": false
+					},
+					{
+						"text": "Παραδοσιακή σούπα με κρέας, που τρώγεται το βράδυ του Μεγάλου Σαββάτου",
+						"is_correct": true
+					},
+					{
+						"text": "Παραδοσιακή, ηπειρώτικη πίττα με κρέας",
+						"is_correct": false
+					}
+				]
+			},
+			"created": "2026-01-01T10:00:00Z",
+			"modified": "2026-01-01T10:00:00Z"
+		}
+	},
+	{
+		"model": "quiz.questionquiz",
+		"pk": 6,
+		"fields": {
+			"type": "MULTIPLE_CHOICE",
+			"category": "HISTORY",
+			"content": {
+				"prompt_text": "Σπουδαίος Έλληνας Πρωθυπουργός του 19ου αιώνα ήταν:",
+				"choices": [
+					{
+						"text": "Ο Κωνσταντίνος Καραμανλής",
+						"is_correct": false
+					},
+					{
+						"text": "Ο Θεόδωρος Κολοκοτρώνης",
+						"is_correct": false
+					},
+					{
+						"text": "Ο Χαρίλαος Τρικούπης",
+						"is_correct": true
+					},
+					{
+						"text": "Ο Ρήγας Βελεστινλής",
+						"is_correct": false
+					}
+				]
+			},
+			"created": "2026-01-01T10:00:00Z",
+			"modified": "2026-01-01T10:00:00Z"
+		}
+	},
+	{
+		"model": "quiz.questionquiz",
+		"pk": 7,
+		"fields": {
+			"type": "MULTIPLE_CHOICE",
+			"category": "CIVICS",
+			"content": {
+				"prompt_text": "Κατά το διάστημα που η Βουλή είναι ανοιχτή πόσες φορές την εβδομάδα απαντάειο Πρωθυπουργός σε Επίκαιρες Ερωτήσεις (Ώρα του Πρωθυπουργού);",
+				"choices": [
+					{
+						"text": "Μια φορά",
+						"is_correct": true
+					},
+					{
+						"text": "Δύο φορές",
+						"is_correct": false
+					},
+					{
+						"text": "Καμία φορά",
+						"is_correct": false
+					},
+					{
+						"text": "Απεριόριστος αριθμός",
+						"is_correct": false
+					}
+				]
+			},
+			"created": "2026-01-01T10:00:00Z",
+			"modified": "2026-01-01T10:00:00Z"
+		}
+	},
+	{
+		"model": "quiz.questionquiz",
+		"pk": 8,
+		"fields": {
+			"type": "MULTIPLE_CHOICE",
+			"category": "GEORGRAPHY",
+			"content": {
+				"prompt_text": "Η Ερμούπολη είναι πρωτεύουσα:",
+				"choices": [
+					{
+						"text": "της Νάξου",
+						"is_correct": false
+					},
+					{
+						"text": "της Σύρου",
+						"is_correct": true
+					},
+					{
+						"text": "της Περιφερειακής Ενότητας Λακωνίας",
+						"is_correct": false
+					},
+					{
+						"text": "της Περιφερειακής Ενότητας Αχαΐας",
+						"is_correct": false
+					}
+				]
+			},
+			"created": "2026-01-01T10:00:00Z",
+			"modified": "2026-01-01T10:00:00Z"
+		}
+	}
+]
