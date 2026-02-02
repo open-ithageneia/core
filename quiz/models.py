@@ -82,10 +82,6 @@ def quiz_asset_instance_post_save(sender, instance, created, **kwargs):
         instance.save(update_fields=["image"])
 
 
-def get_true_false_quiz_upload_to(instance, filename):
-    return f"quizzes/tf/{instance.id}/{filename}"
-
-
 class QuizType(models.TextChoices):
     TRUE_FALSE = "TRUE_FALSE", "True/False"
     MULTIPLE_CHOICE = "MULTIPLE_CHOICE", "Mutliple Choice"
@@ -157,6 +153,31 @@ class QuestionQuiz(TimeStampedModel, ActivatableModel):
         default=default_quiz_content,
         schema=CONTENT_SCHEMA
     )
+
+    def get_asset_image(self, asset_id):
+        if not asset_id:
+            return None
+
+        try:
+            return QuizAsset.objects.get(id=asset_id).image
+        except QuizAsset.DoesNotExist:
+            return None
+    
+    def get_choices_with_images(self):
+        choices = self.content.get("choices", None)
+
+        if not choices:
+            return None
+        
+        asset_ids = [(choice.get("asset_id", None)) for choice in choices ]
+        assets = QuizAsset.objects.in_bulk(asset_ids)
+
+        for choice in choices:
+            asset_id = choice.get("asset_id", None)
+            asset = assets.get(asset_id)
+            choice["image"] = self.get_asset_image(asset.id) if asset else None
+        
+        return choices
 
     def __str__(self):
         return f"id: {self.id}, {self.type} - {self.category} - {self.exam_session}"
