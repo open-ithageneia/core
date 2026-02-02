@@ -7,21 +7,6 @@ from django_jsonform.models.fields import JSONField
 from open_ithageneia.models import TimeStampedModel, ActivatableModel
 
 
-'''
-What we want:
-1) Show JSON field properly in admin
-2) Validate JSON field structure according to quiz rules
-4) Check django-import-export
-9) Pillow?
-10) Admin
-'''
-
-# Check https://docs.djangoproject.com/en/6.0/ref/databases/#enabling-json1-extension-on-sqlite
-# The JSON1 extension is enabled by default on SQLite 3.38+. -> 3.51.1 OK
-
-# There is also this: https://pypi.org/project/django-json-widget/
-
-
 TRUE_FALSE_BASE_INSTRUCTION = "Γράψτε στο τετράδιό σας τον αριθμό του θέματος και τον αριθμό της κάθε πρότασης, σημειώνοντας Σ, αν η πρόταση που σας δίνεται παρακάτω είναι σωστή, ή Λ, αν είναι λάθος."
 # MULTIPLE_CHOICE_BASE_INSTRUCTION = "Γράψτε στο τετράδιό σας τον αριθμό του θέματος και δίπλα τη σωστή απάντηση, σημειώνοντας το αντίστοιχο γράμμα (Α ή Β ή Γ ή Δ)."
 
@@ -113,6 +98,10 @@ class QuizCategory(models.TextChoices):
     CULTURE = "CULTURE", "Culture"
 
 
+def default_quiz_content():
+    return {
+        "choices": []
+    }
 
 class QuestionQuiz(TimeStampedModel, ActivatableModel):
     '''
@@ -165,8 +154,14 @@ class QuestionQuiz(TimeStampedModel, ActivatableModel):
     )
     content = JSONField(
         blank=True,
-        default=lambda: {"choices": []},
+        default=default_quiz_content,
         schema=CONTENT_SCHEMA
     )
+
+    def __str__(self):
+        return f"id: {self.id}, {self.type} - {self.category} - {self.exam_session}"
+
+    class Meta:
+        verbose_name_plural = "Question quizzes"
 
 

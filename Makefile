@@ -22,6 +22,9 @@ fix-python:
 	uv run ruff check --fix .
 	uv run ruff format .
 
+fixtures-all:
+	uv run python manage.py loaddata fixtures/*
+
 lint-js:
 	npm run lint && npm run typecheck
 
