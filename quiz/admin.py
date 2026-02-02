@@ -159,7 +159,7 @@ class QuestionQuizAdmin(ImportExportModelAdmin):
             (
                 "✅" if bool(choice.get("is_correct")) else "◻️",
                 choice.get("text", ""),
-                choice.get("image", None),
+                get_admin_image_thumb_preview(choice.get("image", None)),
             )
             for choice in choices
         ),
