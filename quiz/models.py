@@ -1,56 +1,17 @@
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
+from django.db.models import Q
 from django.dispatch import receiver
 from django_jsonform.models.fields import JSONField
 
 from open_ithageneia.models import TimeStampedModel, ActivatableModel
 
 
-# class TrueFalseQuiz(TimeStampedModel):
-#     instructions = models.TextField(default="") # add default text
-#     context = models.TextField(default="")
-
-# class TrueFalseStatement(TimeStampedModel):
-#     quiz = models.ForeignKey("TrueFalseQuiz", on_delete=models.CASCADE, related_name="statements")
-#     text = models.TextField(blank=True, default="")
-#     image = models.ImageField(upload_to="quiz_statements/", blank=True, null=True)
-#     is_correct = models.BooleanField()
-
-# The above is best if you will:
-
-# edit often in admin
-
-# track user answers
-
-# import/export data reliably
-
-# filter statements / reuse them
-
-# SQLite doesn't have a real "JSON column type" like Postgres, but it does support JSON via:
-
-# SQLite's JSON1 functions (very common in modern SQLite builds)
-
-# And Django's models.JSONField works on SQLite by storing JSON as TEXT and validating/serializing in Python.
-
-# So: Yes, you can use Django JSONField with SQLite, just expect limited querying power compared to Postgres.
-
-# Downsides of JSON approach (especially on SQLite):
-
-# Editing in admin is annoying unless you build a custom JSON editor UI
-
-# Harder to validate per-item
-
-# Harder to track per-statement answers historically
-
-# Querying/filtering individual items is limited
-
-# Import-export becomes more brittle
-
 '''
 What we want:
 1) Show JSON field properly in admin
 2) Validate JSON field structure according to quiz rules
 4) Check django-import-export
-8) Semester? (May, November each year)
 9) Pillow?
 10) Admin
 '''
@@ -65,6 +26,41 @@ TRUE_FALSE_BASE_INSTRUCTION = "Γράψτε στο τετράδιό σας το�
 # MULTIPLE_CHOICE_BASE_INSTRUCTION = "Γράψτε στο τετράδιό σας τον αριθμό του θέματος και δίπλα τη σωστή απάντηση, σημειώνοντας το αντίστοιχο γράμμα (Α ή Β ή Γ ή Δ)."
 
 
+class ExamSession(TimeStampedModel):
+    class Month(models.IntegerChoices):
+        JAN = 1, "January"
+        FEB = 2, "February"
+        MAR = 3, "March"
+        APR = 4, "April"
+        MAY = 5, "May"
+        JUN = 6, "June"
+        JUL = 7, "July"
+        AUG = 8, "August"
+        SEP = 9, "September"
+        OCT = 10, "October"
+        NOV = 11, "November"
+        DEC = 12, "December"
+
+    year = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(2000), MaxValueValidator(2100)]
+    )
+    month = models.PositiveSmallIntegerField(choices=Month.choices)
+
+    class Meta:
+        indexes = [models.Index(fields=["year", "month"])]
+        ordering = ["-year", "-month"]
+        constraints = [
+            models.UniqueConstraint(fields=["year", "month"], name="uniq_exam_session"),
+            models.CheckConstraint(
+                condition=Q(month__gte=1, month__lte=12),
+                name="month_between_1_and_12",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.get_month_display()}, {self.year}"
+
+
 def get_quiz_asset_upload_to(instance, filename):
     return f"quizzes/assets/{instance.id}/{filename}"
 
@@ -72,6 +68,9 @@ def get_quiz_asset_upload_to(instance, filename):
 class QuizAsset(TimeStampedModel):
     title = models.CharField(max_length=255, blank=True, default="")
     image = models.ImageField(upload_to=get_quiz_asset_upload_to)
+
+    def __str__(self):
+        return self.title if self.title else self.pk
 
 
 # We use signals because get_quiz_asset_upload_to function will fail
@@ -153,29 +152,21 @@ class QuestionQuiz(TimeStampedModel, ActivatableModel):
         choices=QuizCategory,
         default=QuizCategory.GEORGRAPHY,
     )
-    instructions = models.TextField(blank=True, default=TRUE_FALSE_BASE_INSTRUCTION) # Choices also?
-    content = JSONField(blank=True, default=lambda: {"choices": []}, schema=CONTENT_SCHEMA)
+    instructions = models.TextField(
+        blank=True,
+        default=TRUE_FALSE_BASE_INSTRUCTION
+    ) # Choices also?
+    exam_session = models.ForeignKey(
+        ExamSession,
+        null=True,
+        blank=True,
+        related_name="quiz_questions",
+        on_delete=models.SET_NULL, # or PROTECT?
+    )
+    content = JSONField(
+        blank=True,
+        default=lambda: {"choices": []},
+        schema=CONTENT_SCHEMA
+    )
 
-
-# class TrueFalseQuiz(TimeStampedModel):
-#     STATEMENTS_SCHEMA = {
-#         "type": "array",
-#         "default": [],
-#         "items": {
-#             "type": "object",
-#             "properties": {
-#                 "statement": { "type": "string", "title": "Statement" },
-#                 # "image": {"type": "string", "title": "Image URL/path" },
-#                 "asset_id": {"type": "integer", "title": "Image asset ID", "required": False},
-#                 "is_correct": { "type": "boolean", "title": "Correct?", "default": False },
-#             },
-#             "required": ["is_correct"],
-#         },
-#         # "maxItems": 4,
-#     }
-
-#     instructions = models.TextField(blank=True, default=TRUE_FALSE_BASE_INSTRUCTION)
-#     context = models.TextField(blank=True, default="")
-#     # context_image = models.ImageField(null=True, blank=True, upload_to=get_true_false_quiz_upload_to)
-#     statements = JSONField(blank=True, default=list, schema=STATEMENTS_SCHEMA)
 

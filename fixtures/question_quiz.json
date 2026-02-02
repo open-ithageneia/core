@@ -1,5 +1,13 @@
 [
 	{
+		"model": "quiz.examsession",
+		"pk": 1,
+		"fields": {
+			"year": 2026,
+			"month": 5
+		}
+	},
+	{
 		"model": "quiz.questionquiz",
 		"pk": 1,
 		"fields": {
@@ -26,6 +34,7 @@
 					}
 				]
 			},
+			"exam_session": 1,
 			"created": "2026-01-01T10:00:00Z",
 			"modified": "2026-01-01T10:00:00Z"
 		}
@@ -47,6 +56,7 @@
 					{ "text": "Στην Κρήτη παράγονται μπανάνες", "is_correct": true }
 				]
 			},
+			"exam_session": 1,
 			"created": "2026-01-01T10:00:00Z",
 			"modified": "2026-01-01T10:00:00Z"
 		}
@@ -78,6 +88,7 @@
 				]
 			},
 
+			"exam_session": 1,
 			"created": "2026-01-01T10:00:00Z",
 			"modified": "2026-01-01T10:00:00Z"
 		}
@@ -108,6 +119,7 @@
 					}
 				]
 			},
+			"exam_session": 1,
 			"created": "2026-01-01T10:00:00Z",
 			"modified": "2026-01-01T10:00:00Z"
 		}
@@ -139,6 +151,7 @@
 					}
 				]
 			},
+			"exam_session": 1,
 			"created": "2026-01-01T10:00:00Z",
 			"modified": "2026-01-01T10:00:00Z"
 		}
@@ -170,6 +183,7 @@
 					}
 				]
 			},
+			"exam_session": 1,
 			"created": "2026-01-01T10:00:00Z",
 			"modified": "2026-01-01T10:00:00Z"
 		}
@@ -201,6 +215,7 @@
 					}
 				]
 			},
+			"exam_session": 1,
 			"created": "2026-01-01T10:00:00Z",
 			"modified": "2026-01-01T10:00:00Z"
 		}
@@ -232,6 +247,7 @@
 					}
 				]
 			},
+			"exam_session": 1,
 			"created": "2026-01-01T10:00:00Z",
 			"modified": "2026-01-01T10:00:00Z"
 		}
