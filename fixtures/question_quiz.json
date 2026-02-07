@@ -26,7 +26,7 @@
 					}
 				]
 			},
-			"exam_session": 1,
+			"exam_sessions": [1, 2],
 			"created_at": "2026-01-01T10:00:00Z",
 			"updated_at": "2026-01-01T10:00:00Z"
 		}
@@ -48,7 +48,7 @@
 					{ "text": "Στην Κρήτη παράγονται μπανάνες", "is_correct": true }
 				]
 			},
-			"exam_session": 1,
+			"exam_sessions": [2],
 			"created_at": "2026-01-01T10:00:00Z",
 			"updated_at": "2026-01-01T10:00:00Z"
 		}
@@ -80,7 +80,7 @@
 				]
 			},
 
-			"exam_session": 1,
+			"exam_sessions": [2],
 			"created_at": "2026-01-01T10:00:00Z",
 			"updated_at": "2026-01-01T10:00:00Z"
 		}
@@ -111,7 +111,7 @@
 					}
 				]
 			},
-			"exam_session": 1,
+			"exam_sessions": [1, 2],
 			"created_at": "2026-01-01T10:00:00Z",
 			"updated_at": "2026-01-01T10:00:00Z"
 		}
@@ -143,7 +143,7 @@
 					}
 				]
 			},
-			"exam_session": 1,
+			"exam_sessions": [1, 2],
 			"created_at": "2026-01-01T10:00:00Z",
 			"updated_at": "2026-01-01T10:00:00Z"
 		}
@@ -175,7 +175,7 @@
 					}
 				]
 			},
-			"exam_session": 1,
+			"exam_sessions": [2],
 			"created_at": "2026-01-01T10:00:00Z",
 			"updated_at": "2026-01-01T10:00:00Z"
 		}
@@ -207,7 +207,7 @@
 					}
 				]
 			},
-			"exam_session": 1,
+			"exam_sessions": [2],
 			"created_at": "2026-01-01T10:00:00Z",
 			"updated_at": "2026-01-01T10:00:00Z"
 		}
@@ -239,7 +239,28 @@
 					}
 				]
 			},
-			"exam_session": 1,
+			"exam_sessions": [1, 2],
+			"created_at": "2026-01-01T10:00:00Z",
+			"updated_at": "2026-01-01T10:00:00Z"
+		}
+	},
+	{
+		"model": "quiz.questionquiz",
+		"pk": 9,
+		"fields": {
+			"type": "DRAG_AND_DROP",
+			"category": "GEORGRAPHY",
+			"content": [
+				{
+					"title": "Ποταμοί",
+					"values": ["Αλιάκμονας", "Πηνειός", "Εβρος", "Αχελώος"]
+				},
+				{
+					"title": "Λίμνες",
+					"values": ["Κερκίνη", "Τριχωνίδα", "Βιστωνίδα", "Κορώνεια"]
+				}
+			],
+			"exam_sessions": [1, 2],
 			"created_at": "2026-01-01T10:00:00Z",
 			"updated_at": "2026-01-01T10:00:00Z"
 		}

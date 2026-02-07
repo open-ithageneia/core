@@ -1,14 +1,12 @@
+import uuid, os
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.db.models import Q
-from django.dispatch import receiver
 from django_jsonform.models.fields import JSONField
 
 from open_ithageneia.models import TimeStampedModel, ActivatableModel
-
-
-TRUE_FALSE_BASE_INSTRUCTION = "Γράψτε στο τετράδιό σας τον αριθμό του θέματος και τον αριθμό της κάθε πρότασης, σημειώνοντας Σ, αν η πρόταση που σας δίνεται παρακάτω είναι σωστή, ή Λ, αν είναι λάθος."
-# MULTIPLE_CHOICE_BASE_INSTRUCTION = "Γράψτε στο τετράδιό σας τον αριθμό του θέματος και δίπλα τη σωστή απάντηση, σημειώνοντας το αντίστοιχο γράμμα (Α ή Β ή Γ ή Δ)."
+from .constants import QuizType, QuizCategory
+from .schemas import get_quiz_schema
 
 
 class ExamSession(TimeStampedModel):
@@ -41,13 +39,16 @@ class ExamSession(TimeStampedModel):
                 name="month_between_1_and_12",
             ),
         ]
+        verbose_name_plural = "Exam Sessions"
 
     def __str__(self):
-        return f"{self.get_month_display()}, {self.year}"
+        return f"{self.get_month_display()} - {self.year}"
 
 
 def get_quiz_asset_upload_to(instance, filename):
-    return f"quizzes/assets/{instance.id}/{filename}"
+    _, ext = os.path.splitext(filename)
+
+    return f"quizzes/assets/{uuid.uuid4()}{ext}"
 
 
 class QuizAsset(TimeStampedModel):
@@ -55,80 +56,15 @@ class QuizAsset(TimeStampedModel):
     image = models.ImageField(upload_to=get_quiz_asset_upload_to)
 
     def __str__(self):
-        return self.title if self.title else self.pk
+        return self.title if self.title else str(self.pk)
+
+    class Meta:
+        verbose_name_plural = "Quiz Assets"
 
 
-# We use signals because get_quiz_asset_upload_to function will fail
-# since instance.id does not exist before creation
-
-
-@receiver(models.signals.pre_save, sender=QuizAsset)
-def quiz_asset_instance_pre_save(sender, instance, **kwargs):
-    """QuizAsset model instance pre save"""
-
-    if not instance.pk and instance.image:
-        # quiz instance not created and user uploads a image
-        instance._tmp_image_on_create = instance.image
-        instance.image = None
-
-
-@receiver(models.signals.post_save, sender=QuizAsset)
-def quiz_asset_instance_post_save(sender, instance, created, **kwargs):
-    """QuizAsset model instance post save"""
-
-    if created and hasattr(instance, "_tmp_image_on_create"):
-        instance.image = getattr(instance, "_tmp_image_on_create")
-
-        instance.save(update_fields=["image"])
-
-
-class QuizType(models.TextChoices):
-    TRUE_FALSE = "TRUE_FALSE", "True/False"
-    MULTIPLE_CHOICE = "MULTIPLE_CHOICE", "Mutliple Choice"
-
-
-class QuizCategory(models.TextChoices):
-    GEORGRAPHY = "GEORGRAPHY", "Geography"
-    CIVICS = "CIVICS", "Civics"
-    HISTORY = "HISTORY", "History"
-    CULTURE = "CULTURE", "Culture"
-
-
-def default_quiz_content():
-    return {
-        "choices": []
-    }
-
-class QuestionQuiz(TimeStampedModel, ActivatableModel):
-    '''
-    Currently works for True/False and Multiple Choice Quizzes
-    '''
-
-    CONTENT_SCHEMA = {
-        "type": "object",
-        "properties": {
-            "prompt_text": { "type": "string", "title": "Question" },
-            "prompt_asset_id": { "type": "integer", "title": "Question image asset ID" },
-            "choices": {
-                "type": "array",
-                "title": "Choices",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "text": { "type": "string", "title": "Choice text" },
-                        "asset_id": { "type": "integer", "title": "Choice image asset ID" },
-                        "is_correct": { "type": "boolean", "title": "Correct?", "default": False},
-                    },
-                    "required": ["is_correct"],
-                },
-                "default": [],
-            },
-        },
-        "required": ["choices"],
-    }
-
+class Quiz(TimeStampedModel, ActivatableModel):
     type = models.CharField(
-        max_length=15,
+        max_length=17,
         choices=QuizType,
         default=QuizType.TRUE_FALSE,
     )
@@ -137,22 +73,18 @@ class QuestionQuiz(TimeStampedModel, ActivatableModel):
         choices=QuizCategory,
         default=QuizCategory.GEORGRAPHY,
     )
-    instructions = models.TextField(
-        blank=True,
-        default=TRUE_FALSE_BASE_INSTRUCTION
-    ) # Choices also?
-    exam_session = models.ForeignKey(
+    exam_sessions = models.ManyToManyField(
         ExamSession,
-        null=True,
         blank=True,
-        related_name="quiz_questions",
-        on_delete=models.SET_NULL, # or PROTECT?
+        related_name="quizzes",
     )
-    content = JSONField(
-        blank=True,
-        default=default_quiz_content,
-        schema=CONTENT_SCHEMA
-    )
+    content = JSONField(blank=True, default=dict, schema=get_quiz_schema)
+
+    @property
+    def exam_sessions_preview(self):
+        return ", ".join(
+            [str(exam_session) for exam_session in self.exam_sessions.all()]
+        )
 
     def get_asset_image(self, asset_id):
         if not asset_id:
@@ -162,27 +94,25 @@ class QuestionQuiz(TimeStampedModel, ActivatableModel):
             return QuizAsset.objects.get(id=asset_id).image
         except QuizAsset.DoesNotExist:
             return None
-    
+
     def get_choices_with_images(self):
         choices = self.content.get("choices", None)
 
         if not choices:
             return None
-        
-        asset_ids = [(choice.get("asset_id", None)) for choice in choices ]
+
+        asset_ids = [(choice.get("asset_id", None)) for choice in choices]
         assets = QuizAsset.objects.in_bulk(asset_ids)
 
         for choice in choices:
             asset_id = choice.get("asset_id", None)
             asset = assets.get(asset_id)
             choice["image"] = self.get_asset_image(asset.id) if asset else None
-        
+
         return choices
 
     def __str__(self):
         return f"id: {self.id}, {self.type} - {self.category} - {self.exam_session}"
 
     class Meta:
-        verbose_name_plural = "Question quizzes"
-
-
+        verbose_name_plural = "Quizzes"

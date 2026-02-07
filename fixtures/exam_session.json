@@ -8,5 +8,15 @@
 			"created_at": "2026-01-01T10:00:00Z",
 			"updated_at": "2026-01-01T10:00:00Z"
 		}
+	},
+	{
+		"model": "quiz.examsession",
+		"pk": 2,
+		"fields": {
+			"year": 2026,
+			"month": 11,
+			"created_at": "2026-01-01T10:00:00Z",
+			"updated_at": "2026-01-01T10:00:00Z"
+		}
 	}
 ]

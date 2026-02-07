@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html_join
 from import_export.admin import ImportExportModelAdmin
 
-from .models import ExamSession, QuizAsset, QuestionQuiz
+from .models import ExamSession, QuizAsset, Quiz
 from open_ithageneia.utils import get_admin_image_thumb_preview
 
 
@@ -75,23 +75,22 @@ class QuizAssetAdmin(ImportExportModelAdmin):
         return get_admin_image_thumb_preview(obj.image)
 
 
-@admin.register(QuestionQuiz)
-class QuestionQuizAdmin(ImportExportModelAdmin):
+@admin.register(Quiz)
+class QuizAdmin(ImportExportModelAdmin):
     list_display = [
         "id",
         "type",
         "category",
-        "exam_session",
+        "get_exam_sessions_preview",
         "prompt_preview",
         "choices_preview",
         "created_at",
         "updated_at",
-        "instructions"
     ]
     search_fields = [
         "id",
-        "exam_session__month",
-        "exam_session__year",
+        "exam_sessions__month",
+        "exam_sessions__year",
         "content__prompt_text",
         "content__prompt_asset_id",
         # "content__choices__text", # not working, TODO: Check it
@@ -99,14 +98,13 @@ class QuestionQuizAdmin(ImportExportModelAdmin):
     list_filter = [
         "type",
         "category",
-        "exam_session",
+        "exam_sessions",
         "created_at",
         "updated_at",
     ]
     fieldsets = (
         (None, {"fields": (
-            "type", "category", "exam_session",
-            "instructions", "content"
+            "type", "category", "exam_sessions", "content"
         )}),
         (
             "Other information",
@@ -118,13 +116,17 @@ class QuestionQuizAdmin(ImportExportModelAdmin):
     )
     readonly_fields = ["created_at", "updated_at"]
 
+    @admin.display(description="Exam sessions preview", ordering="exam_sessions__year")
+    def get_exam_sessions_preview(self, instance):
+        return instance.exam_sessions_preview
+    
 
     @admin.display(description="Prompt preview", ordering="content__prompt_text")
-    def prompt_preview(self, obj):
-        prompt_text = obj.content.get("prompt_text", "")
-        prompt_asset_id = obj.content.get("prompt_asset_id", None)
+    def prompt_preview(self, instance):
+        prompt_text = instance.content.get("prompt_text", "")
+        prompt_asset_id = instance.content.get("prompt_asset_id", None)
 
-        image_thumb_preview = get_admin_image_thumb_preview(obj.get_asset_image(prompt_asset_id))
+        image_thumb_preview = get_admin_image_thumb_preview(instance.get_asset_image(prompt_asset_id))
 
         if not prompt_text and not image_thumb_preview:
             return None
@@ -142,8 +144,8 @@ class QuestionQuizAdmin(ImportExportModelAdmin):
 
 
     @admin.display(description="Choices")
-    def choices_preview(self, obj):
-        choices = obj.get_choices_with_images()
+    def choices_preview(self, instance):
+        choices = instance.get_choices_with_images()
 
         if not choices:
             return None
