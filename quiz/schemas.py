@@ -39,20 +39,11 @@ DRAG_AND_DROP_QUIZ_SCHEMA = {
         "type": "object",
         "required": ["title", "values"],
         "properties": {
-            "title": {
-                "type": "string",
-                "title": "Title"
-            },
-            "values": {
-                "type": "array",
-                "title": "Values",
-                "items": {
-                    "type": "string"
-                }
-            }
+            "title": {"type": "string", "title": "Title"},
+            "values": {"type": "array", "title": "Values", "items": {"type": "string"}},
         },
-        "additionalProperties": False
-    }
+        "additionalProperties": False,
+    },
 }
 
 MATCHING_QUIZ_SCHEMA = {
@@ -60,10 +51,10 @@ MATCHING_QUIZ_SCHEMA = {
     "minItems": 2,
     "maxItems": 2,
     "items": {
-        'type': 'object',
-        'oneOf': [
+        "type": "object",
+        "oneOf": [
             # LEFT
-            {  
+            {
                 "type": "object",
                 "required": ["title", "items"],
                 "properties": {
@@ -77,11 +68,11 @@ MATCHING_QUIZ_SCHEMA = {
                                 "id": {"type": "integer"},
                                 "text": {"type": "string"},
                             },
-                            "additionalProperties": False
-                        }
-                    }
+                            "additionalProperties": False,
+                        },
+                    },
                 },
-                "additionalProperties": False
+                "additionalProperties": False,
             },
             # RIGHT
             {
@@ -98,14 +89,14 @@ MATCHING_QUIZ_SCHEMA = {
                                 "matched_id": {"type": "integer"},
                                 "text": {"type": "string"},
                             },
-                            "additionalProperties": False
-                        }
-                    }
+                            "additionalProperties": False,
+                        },
+                    },
                 },
-                "additionalProperties": False
-            }
+                "additionalProperties": False,
+            },
         ],
-    }
+    },
 }
 
 FILL_IN_THE_BLANK_QUIZ_SCHEMA = {
@@ -130,7 +121,7 @@ FILL_IN_THE_BLANK_QUIZ_SCHEMA = {
                                 "type": "object",
                                 "properties": {
                                     "id": {"type": "integer"},
-                                    "text": {"type": "string"}, # use placeholder "__"
+                                    "text": {"type": "string"},  # use placeholder "__"
                                 },
                                 "required": ["id", "text"],
                             },
@@ -165,7 +156,7 @@ FILL_IN_THE_BLANK_QUIZ_SCHEMA = {
                                 "type": "object",
                                 "properties": {
                                     "id": {"type": "integer"},
-                                    "text": {"type": "string"}, # use placeholder "__"
+                                    "text": {"type": "string"},  # use placeholder "__"
                                     "answers": {
                                         "type": "array",
                                         "items": {
@@ -195,6 +186,7 @@ FILL_IN_THE_BLANK_QUIZ_SCHEMA = {
     },
     "additionalProperties": False,
 }
+
 
 def get_quiz_schema(instance):
     quiz_type = instance.type

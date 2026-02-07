@@ -6,7 +6,6 @@ from .models import ExamSession, QuizAsset, Quiz
 from open_ithageneia.utils import get_admin_image_thumb_preview
 
 
-
 @admin.register(ExamSession)
 class ExamSessionAdmin(ImportExportModelAdmin):
     list_display = [
@@ -21,12 +20,7 @@ class ExamSessionAdmin(ImportExportModelAdmin):
         "month",
         "year",
     ]
-    list_filter = [
-        "month",
-        "year",
-        "created_at",
-        "updated_at"
-    ]
+    list_filter = ["month", "year", "created_at", "updated_at"]
     fieldsets = (
         (None, {"fields": ("month", "year")}),
         (
@@ -54,10 +48,7 @@ class QuizAssetAdmin(ImportExportModelAdmin):
         "id",
         "title",
     ]
-    list_filter = [
-        "created_at",
-        "updated_at"
-    ]
+    list_filter = ["created_at", "updated_at"]
     fieldsets = (
         (None, {"fields": ("title", "image")}),
         (
@@ -103,9 +94,7 @@ class QuizAdmin(ImportExportModelAdmin):
         "updated_at",
     ]
     fieldsets = (
-        (None, {"fields": (
-            "type", "category", "exam_sessions", "content"
-        )}),
+        (None, {"fields": ("type", "category", "exam_sessions", "content")}),
         (
             "Other information",
             {
@@ -119,14 +108,15 @@ class QuizAdmin(ImportExportModelAdmin):
     @admin.display(description="Exam sessions preview", ordering="exam_sessions__year")
     def get_exam_sessions_preview(self, instance):
         return instance.exam_sessions_preview
-    
 
     @admin.display(description="Prompt preview", ordering="content__prompt_text")
     def prompt_preview(self, instance):
         prompt_text = instance.content.get("prompt_text", "")
         prompt_asset_id = instance.content.get("prompt_asset_id", None)
 
-        image_thumb_preview = get_admin_image_thumb_preview(instance.get_asset_image(prompt_asset_id))
+        image_thumb_preview = get_admin_image_thumb_preview(
+            instance.get_asset_image(prompt_asset_id)
+        )
 
         if not prompt_text and not image_thumb_preview:
             return None
@@ -134,14 +124,11 @@ class QuizAdmin(ImportExportModelAdmin):
         return format_html_join(
             "",
             '<div style="display:flex;gap:10px;align-items:center;margin:10px 0;">'
-            '  <span>{}</span>'
-            '  <span>{}</span>'
+            "  <span>{}</span>"
+            "  <span>{}</span>"
             "</div>",
-            (
-                (prompt_text, image_thumb_preview),
-            ),
+            ((prompt_text, image_thumb_preview),),
         )
-
 
     @admin.display(description="Choices")
     def choices_preview(self, instance):
@@ -151,19 +138,18 @@ class QuizAdmin(ImportExportModelAdmin):
             return None
 
         return format_html_join(
-        "",
-        '<div style="display:flex;gap:10px;align-items:center;margin:10px 0;">'
-        '  <span style="width:20px">{}</span>'
-        '  <span>{}</span>'
-        '  <span>{}</span>'
-        "</div>",
-        (
+            "",
+            '<div style="display:flex;gap:10px;align-items:center;margin:10px 0;">'
+            '  <span style="width:20px">{}</span>'
+            "  <span>{}</span>"
+            "  <span>{}</span>"
+            "</div>",
             (
-                "✅" if bool(choice.get("is_correct")) else "◻️",
-                choice.get("text", ""),
-                get_admin_image_thumb_preview(choice.get("image", None)),
-            )
-            for choice in choices
-        ),
-    )
-
+                (
+                    "✅" if bool(choice.get("is_correct")) else "◻️",
+                    choice.get("text", ""),
+                    get_admin_image_thumb_preview(choice.get("image", None)),
+                )
+                for choice in choices
+            ),
+        )

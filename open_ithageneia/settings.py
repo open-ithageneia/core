@@ -57,7 +57,7 @@ INSTALLED_APPS = [
     "allauth.account",
     # Our apps
     "open_ithageneia.apps.OpenIthageneiaConfig",
-    "quiz"
+    "quiz",
 ]
 
 MIDDLEWARE = [
