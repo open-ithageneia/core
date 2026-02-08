@@ -246,4 +246,3 @@ def get_quiz_schema(instance):
     quiz_type = instance.type
 
     return SCHEMA_BY_TYPE.get(quiz_type, DEFAULT_SCHEMA)
-

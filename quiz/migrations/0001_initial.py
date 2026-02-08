@@ -7,56 +7,153 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='QuizAsset',
+            name="QuizAsset",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('title', models.CharField(blank=True, default='', max_length=255)),
-                ('image', models.ImageField(upload_to=quiz.models.get_quiz_asset_upload_to)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("title", models.CharField(blank=True, default="", max_length=255)),
+                (
+                    "image",
+                    models.ImageField(upload_to=quiz.models.get_quiz_asset_upload_to),
+                ),
             ],
             options={
-                'verbose_name_plural': 'Quiz Assets',
+                "verbose_name_plural": "Quiz Assets",
             },
         ),
         migrations.CreateModel(
-            name='ExamSession',
+            name="ExamSession",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('year', models.PositiveSmallIntegerField(validators=[django.core.validators.MinValueValidator(2000), django.core.validators.MaxValueValidator(2100)])),
-                ('month', models.PositiveSmallIntegerField(choices=[(1, 'January'), (2, 'February'), (3, 'March'), (4, 'April'), (5, 'May'), (6, 'June'), (7, 'July'), (8, 'August'), (9, 'September'), (10, 'October'), (11, 'November'), (12, 'December')])),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "year",
+                    models.PositiveSmallIntegerField(
+                        validators=[
+                            django.core.validators.MinValueValidator(2000),
+                            django.core.validators.MaxValueValidator(2100),
+                        ]
+                    ),
+                ),
+                (
+                    "month",
+                    models.PositiveSmallIntegerField(
+                        choices=[
+                            (1, "January"),
+                            (2, "February"),
+                            (3, "March"),
+                            (4, "April"),
+                            (5, "May"),
+                            (6, "June"),
+                            (7, "July"),
+                            (8, "August"),
+                            (9, "September"),
+                            (10, "October"),
+                            (11, "November"),
+                            (12, "December"),
+                        ]
+                    ),
+                ),
             ],
             options={
-                'verbose_name_plural': 'Exam Sessions',
-                'ordering': ['-year', '-month'],
-                'indexes': [models.Index(fields=['year', 'month'], name='quiz_examse_year_d8e3a8_idx')],
-                'constraints': [models.UniqueConstraint(fields=('year', 'month'), name='uniq_exam_session'), models.CheckConstraint(condition=models.Q(('month__gte', 1), ('month__lte', 12)), name='month_between_1_and_12')],
+                "verbose_name_plural": "Exam Sessions",
+                "ordering": ["-year", "-month"],
+                "indexes": [
+                    models.Index(
+                        fields=["year", "month"], name="quiz_examse_year_d8e3a8_idx"
+                    )
+                ],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("year", "month"), name="uniq_exam_session"
+                    ),
+                    models.CheckConstraint(
+                        condition=models.Q(("month__gte", 1), ("month__lte", 12)),
+                        name="month_between_1_and_12",
+                    ),
+                ],
             },
         ),
         migrations.CreateModel(
-            name='Quiz',
+            name="Quiz",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('is_active', models.BooleanField(default=True)),
-                ('type', models.CharField(choices=[('TRUE_FALSE', 'True/False'), ('MULTIPLE_CHOICE', 'Mutliple Choice'), ('FILL_IN_THE_BLANK', 'Fill In The Blank'), ('MATCHING', 'Matching'), ('DRAG_AND_DROP', 'Drag And Drop'), ('OPEN_TEXT', 'Open Text')], default='TRUE_FALSE', max_length=17)),
-                ('category', models.CharField(choices=[('GEORGRAPHY', 'Geography'), ('CIVICS', 'Civics'), ('HISTORY', 'History'), ('CULTURE', 'Culture')], default='GEORGRAPHY', max_length=10)),
-                ('content', django_jsonform.models.fields.JSONField(blank=True, default=dict)),
-                ('exam_sessions', models.ManyToManyField(blank=True, related_name='quizzes', to='quiz.examsession')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_active", models.BooleanField(default=True)),
+                (
+                    "type",
+                    models.CharField(
+                        choices=[
+                            ("TRUE_FALSE", "True/False"),
+                            ("MULTIPLE_CHOICE", "Mutliple Choice"),
+                            ("FILL_IN_THE_BLANK", "Fill In The Blank"),
+                            ("MATCHING", "Matching"),
+                            ("DRAG_AND_DROP", "Drag And Drop"),
+                            ("OPEN_TEXT", "Open Text"),
+                        ],
+                        default="TRUE_FALSE",
+                        max_length=17,
+                    ),
+                ),
+                (
+                    "category",
+                    models.CharField(
+                        choices=[
+                            ("GEORGRAPHY", "Geography"),
+                            ("CIVICS", "Civics"),
+                            ("HISTORY", "History"),
+                            ("CULTURE", "Culture"),
+                        ],
+                        default="GEORGRAPHY",
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "content",
+                    django_jsonform.models.fields.JSONField(blank=True, default=dict),
+                ),
+                (
+                    "exam_sessions",
+                    models.ManyToManyField(
+                        blank=True, related_name="quizzes", to="quiz.examsession"
+                    ),
+                ),
             ],
             options={
-                'verbose_name_plural': 'Quizzes',
+                "verbose_name_plural": "Quizzes",
             },
         ),
     ]

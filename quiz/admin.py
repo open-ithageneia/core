@@ -107,7 +107,6 @@ class QuizAdmin(ImportExportModelAdmin):
     )
     readonly_fields = ["created_at", "updated_at"]
 
-
     def get_form(self, request, instance=None, **kwargs):
         form = super().get_form(request, instance, **kwargs)
 
@@ -148,10 +147,10 @@ class QuizAdmin(ImportExportModelAdmin):
                 "</div>",
                 ((prompt_text, image_thumb_preview),),
             )
-        
+
         if instance.type in [QuizType.DRAG_AND_DROP, QuizType.MATCHING]:
             return None
-        
+
         return None
 
     @admin.display(description="Answer")
@@ -183,15 +182,19 @@ class QuizAdmin(ImportExportModelAdmin):
             content = getattr(instance, "content", [])
 
             if not isinstance(content, list) or len(content) != 2:
-                return format_html("<em>Invalid content shape (expected 2 columns).</em>", None)
-            
+                return format_html(
+                    "<em>Invalid content shape (expected 2 columns).</em>", None
+                )
+
             def render_col(col):
                 title = col.get("title", "")
                 values = col.get("values", [])
 
-                items_html = format_html_join(
-                    "", "<li>{}</li>", ((v,) for v in values)
-                ) if isinstance(values, list) else ""
+                items_html = (
+                    format_html_join("", "<li>{}</li>", ((v,) for v in values))
+                    if isinstance(values, list)
+                    else ""
+                )
 
                 return format_html(
                     """
@@ -221,20 +224,26 @@ class QuizAdmin(ImportExportModelAdmin):
                 left_html,
                 right_html,
             )
-        
+
         if instance.type == QuizType.MATCHING:
             content = getattr(instance, "content", [])
 
             if not isinstance(content, list) or len(content) != 2:
-                return format_html("<em>Invalid content shape (expected 2 columns).</em>", None)
-            
+                return format_html(
+                    "<em>Invalid content shape (expected 2 columns).</em>", None
+                )
+
             def render_col(col, list_type="1"):
                 title = col.get("title", "")
                 items = col.get("items", [])
 
-                items_html = format_html_join(
-                    "", "<li>{}</li>", ((item["text"],) for item in items)
-                ) if isinstance(items, list) else ""
+                items_html = (
+                    format_html_join(
+                        "", "<li>{}</li>", ((item["text"],) for item in items)
+                    )
+                    if isinstance(items, list)
+                    else ""
+                )
 
                 return [
                     format_html(
@@ -253,7 +262,7 @@ class QuizAdmin(ImportExportModelAdmin):
                         list_type,
                         items_html,
                     ),
-                    items
+                    items,
                 ]
 
             [left_html, left_items] = render_col(instance.content[0])
@@ -264,12 +273,18 @@ class QuizAdmin(ImportExportModelAdmin):
             for left_item in left_items:
                 for right_item in right_items:
                     if left_item.get("id", None) == right_item.get("matched_id", None):
-                        result_list.append(f"{left_item["text"]} → {right_item["text"]}")
+                        result_list.append(
+                            f"{left_item['text']} → {right_item['text']}"
+                        )
                         break
 
-            result_list_html = format_html_join(
-                "", "<p><em>{}</em></p>", ((result,) for result in result_list)
-            ) if isinstance(result_list, list) else ""
+            result_list_html = (
+                format_html_join(
+                    "", "<p><em>{}</em></p>", ((result,) for result in result_list)
+                )
+                if isinstance(result_list, list)
+                else ""
+            )
 
             return format_html(
                 """
@@ -282,10 +297,10 @@ class QuizAdmin(ImportExportModelAdmin):
                 """,
                 left_html,
                 right_html,
-                result_list_html
+                result_list_html,
             )
-        
+
         return None
-        
+
     class Media:
         js = ("admin/quiz_schema_switch.js",)

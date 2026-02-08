@@ -1,23 +1,23 @@
-(function () {
-  function onReady(fn) {
-    if (document.readyState !== "loading") fn();
-    else document.addEventListener("DOMContentLoaded", fn);
-  }
+;(() => {
+	const onReady = (fn) => {
+		if (document.readyState !== "loading") fn()
+		else document.addEventListener("DOMContentLoaded", fn)
+	}
 
-  onReady(function () {
-    // Only run on ADD pages
-    if (!window.location.pathname.endsWith("/add/")) return;
-    
-    const typeEl = document.getElementById("id_type");
+	onReady(() => {
+		// Only run on ADD pages
+		if (!window.location.pathname.endsWith("/add/")) return
 
-    if (!typeEl) return;
+		const typeEl = document.getElementById("id_type")
 
-    typeEl.addEventListener("change", function () {
-      const url = new URL(window.location.href);
+		if (!typeEl) return
 
-      url.searchParams.set("type", typeEl.value);
+		typeEl.addEventListener("change", () => {
+			const url = new URL(window.location.href)
 
-      window.location.href = url.toString();
-    });
-  });
-})();
+			url.searchParams.set("type", typeEl.value)
+
+			window.location.href = url.toString()
+		})
+	})
+})()
