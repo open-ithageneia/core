@@ -24,4 +24,6 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),
+    # TODO delete this example -alkis
+    path("map-example/", views.map_example, name="map-example"),
 ]

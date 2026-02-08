@@ -192,7 +192,11 @@ DJANGO_VITE_ASSETS_PATH = BASE_DIR / "frontend" / "dist"
 DJANGO_VITE["default"]["manifest_path"] = DJANGO_VITE_ASSETS_PATH / "manifest.json"
 # Include DJANGO_VITE_ASSETS_PATH into STATICFILES_DIRS to be copied inside
 # when run command python manage.py collectstatic
-STATICFILES_DIRS = [DJANGO_VITE_ASSETS_PATH]
+STATICFILES_DIRS = [
+    DJANGO_VITE_ASSETS_PATH,
+    # TODO remove -alkis
+    BASE_DIR / "frontend" / "static"
+  ]
 
 INERTIA_LAYOUT = "base.html"
 INERTIA_SSR_URL = inertia_settings.INERTIA_SSR_URL
