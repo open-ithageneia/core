@@ -1,6 +1,6 @@
 [
 	{
-		"model": "quiz.questionquiz",
+		"model": "quiz.quiz",
 		"pk": 1,
 		"fields": {
 			"type": "TRUE_FALSE",
@@ -32,7 +32,7 @@
 		}
 	},
 	{
-		"model": "quiz.questionquiz",
+		"model": "quiz.quiz",
 		"pk": 2,
 		"fields": {
 			"type": "TRUE_FALSE",
@@ -54,7 +54,7 @@
 		}
 	},
 	{
-		"model": "quiz.questionquiz",
+		"model": "quiz.quiz",
 		"pk": 3,
 		"fields": {
 			"type": "TRUE_FALSE",
@@ -86,7 +86,7 @@
 		}
 	},
 	{
-		"model": "quiz.questionquiz",
+		"model": "quiz.quiz",
 		"pk": 4,
 		"fields": {
 			"type": "TRUE_FALSE",
@@ -117,7 +117,7 @@
 		}
 	},
 	{
-		"model": "quiz.questionquiz",
+		"model": "quiz.quiz",
 		"pk": 5,
 		"fields": {
 			"type": "MULTIPLE_CHOICE",
@@ -149,7 +149,7 @@
 		}
 	},
 	{
-		"model": "quiz.questionquiz",
+		"model": "quiz.quiz",
 		"pk": 6,
 		"fields": {
 			"type": "MULTIPLE_CHOICE",
@@ -181,7 +181,7 @@
 		}
 	},
 	{
-		"model": "quiz.questionquiz",
+		"model": "quiz.quiz",
 		"pk": 7,
 		"fields": {
 			"type": "MULTIPLE_CHOICE",
@@ -213,7 +213,7 @@
 		}
 	},
 	{
-		"model": "quiz.questionquiz",
+		"model": "quiz.quiz",
 		"pk": 8,
 		"fields": {
 			"type": "MULTIPLE_CHOICE",
@@ -245,7 +245,7 @@
 		}
 	},
 	{
-		"model": "quiz.questionquiz",
+		"model": "quiz.quiz",
 		"pk": 9,
 		"fields": {
 			"type": "DRAG_AND_DROP",
@@ -258,6 +258,61 @@
 				{
 					"title": "Λίμνες",
 					"values": ["Κερκίνη", "Τριχωνίδα", "Βιστωνίδα", "Κορώνεια"]
+				}
+			],
+			"exam_sessions": [1, 2],
+			"created_at": "2026-01-01T10:00:00Z",
+			"updated_at": "2026-01-01T10:00:00Z"
+		}
+	},
+	{
+		"model": "quiz.quiz",
+		"pk": 10,
+		"fields": {
+			"type": "MATCHING",
+			"category": "GEORGRAPHY",
+			"content": [
+				{
+					"title": "Γεωγραφικά διαμερίσματα",
+					"items": [
+						{
+							"id": 1,
+							"text": "Στερεά Ελλάδα - Εύβοια"
+						},
+						{
+							"id": 2,
+							"text": "Πελοπόννησος"
+						},
+						{
+							"id": 3,
+							"text": "Kρήτη"
+						},
+						{
+							"id": 4,
+							"text": "Νησιά Αιγαίου"
+						}
+					]
+				},
+				{
+					"title": "Περιφερειακές ενότητες",
+					"items": [
+						{
+							"matched_id": 3,
+							"text": "Λασιθίου"
+						},
+						{
+							"matched_id": 4,
+							"text": "Λέσβου"
+						},
+						{
+							"matched_id": 1,
+							"text": "Βοιωτίας"
+						},
+						{
+							"matched_id": 2,
+							"text": "Αρκαδίας"
+						}
+					]
 				}
 			],
 			"exam_sessions": [1, 2],

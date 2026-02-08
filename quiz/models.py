@@ -113,7 +113,7 @@ class Quiz(TimeStampedModel, ActivatableModel):
         return choices
 
     def __str__(self):
-        return f"id: {self.id}, {self.type} - {self.category} - {self.exam_session}"
+        return f"id: {self.id}, {self.type} - {self.category}"
 
     class Meta:
         verbose_name_plural = "Quizzes"

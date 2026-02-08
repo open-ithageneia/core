@@ -46,58 +46,101 @@ DRAG_AND_DROP_QUIZ_SCHEMA = {
     },
 }
 
+# DRAG_AND_DROP_QUIZ_SCHEMA = {
+#     "type": "object",
+#     "required": ["pairs"],
+#     "properties": {
+#         "pairs": {
+#             "type": "array",
+#             "minItems": 2,
+#             "maxItems": 2,
+#             "items": {
+#                 "type": "object",
+#                 "required": ["title", "values"],
+#                 "properties": {
+#                     "title": {"type": "string", "title": "Title"},
+#                     "values": {"type": "array", "title": "Values", "items": {"type": "string"}},
+#                 },
+#                 "additionalProperties": False,
+#             },
+#         }
+#     }
+# }
+
 MATCHING_QUIZ_SCHEMA = {
     "type": "array",
     "minItems": 2,
     "maxItems": 2,
     "items": {
         "type": "object",
-        "oneOf": [
-            # LEFT
-            {
-                "type": "object",
-                "required": ["title", "items"],
-                "properties": {
-                    "title": {"type": "string"},
-                    "items": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": ["id", "text"],
-                            "properties": {
-                                "id": {"type": "integer"},
-                                "text": {"type": "string"},
-                            },
-                            "additionalProperties": False,
-                        },
+        "required": ["title", "items"],
+        "properties": {
+            "title": {"type": "string"},
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": ["text"],
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "matched_id": {"type": "integer"},
+                        "text": {"type": "string"},
                     },
+                    "additionalProperties": False,
                 },
-                "additionalProperties": False,
             },
-            # RIGHT
-            {
-                "type": "object",
-                "required": ["title", "items"],
-                "properties": {
-                    "title": {"type": "string"},
-                    "items": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": ["matched_id", "text"],
-                            "properties": {
-                                "matched_id": {"type": "integer"},
-                                "text": {"type": "string"},
-                            },
-                            "additionalProperties": False,
-                        },
-                    },
-                },
-                "additionalProperties": False,
-            },
-        ],
+        },
     },
 }
+
+# MATCHING_QUIZ_SCHEMA = {
+#     "type": "array",
+#     "minItems": 2,
+#     "maxItems": 2,
+#     "items": {
+#         "type": "object",
+#         "oneOf": [
+#             # LEFT
+#             {
+#                 "required": ["title", "items"],
+#                 "properties": {
+#                     "title": {"type": "string"},
+#                     "items": {
+#                         "type": "array",
+#                         "items": {
+#                             "type": "object",
+#                             "required": ["id", "text"],
+#                             "properties": {
+#                                 "id": {"type": "integer"},
+#                                 "text": {"type": "string"},
+#                             },
+#                             "additionalProperties": False,
+#                         },
+#                     },
+#                 },
+#             },
+#             # RIGHT
+#             {
+#                 "required": ["title", "items"],
+#                 "properties": {
+#                     "title": {"type": "string"},
+#                     "items": {
+#                         "type": "array",
+#                         "items": {
+#                             "type": "object",
+#                             "required": ["matched_id", "text"],
+#                             "properties": {
+#                                 "matched_id": {"type": "integer"},
+#                                 "text": {"type": "string"},
+#                             },
+#                             "additionalProperties": False,
+#                         },
+#                     },
+#                 },
+#             },
+#         ],
+#     },
+# }
 
 FILL_IN_THE_BLANK_QUIZ_SCHEMA = {
     "type": "object",
@@ -188,14 +231,19 @@ FILL_IN_THE_BLANK_QUIZ_SCHEMA = {
 }
 
 
+SCHEMA_BY_TYPE = {
+    QuizType.TRUE_FALSE: TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA,
+    QuizType.MULTIPLE_CHOICE: TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA,
+    QuizType.DRAG_AND_DROP: DRAG_AND_DROP_QUIZ_SCHEMA,
+    QuizType.MATCHING: MATCHING_QUIZ_SCHEMA,
+    QuizType.FILL_IN_THE_BLANK: FILL_IN_THE_BLANK_QUIZ_SCHEMA,
+}
+
+DEFAULT_SCHEMA = TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA
+
+
 def get_quiz_schema(instance):
     quiz_type = instance.type
 
-    if quiz_type == QuizType.FILL_IN_THE_BLANK:
-        return FILL_IN_THE_BLANK_QUIZ_SCHEMA
-    if quiz_type == QuizType.DRAG_AND_DROP:
-        return DRAG_AND_DROP_QUIZ_SCHEMA
-    if quiz_type == QuizType.MATCHING:
-        return MATCHING_QUIZ_SCHEMA
+    return SCHEMA_BY_TYPE.get(quiz_type, DEFAULT_SCHEMA)
 
-    return TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA
