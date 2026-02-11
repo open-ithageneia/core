@@ -1,11 +1,15 @@
+import re
+
 from django.contrib import admin
 from django.utils.html import format_html, format_html_join
+from django.utils.safestring import mark_safe
 from import_export.admin import ImportExportModelAdmin
 
 from open_ithageneia.utils import get_admin_image_thumb_preview
-from .models import ExamSession, QuizAsset, Quiz
-from .schemas import get_quiz_schema, SCHEMA_BY_TYPE, DEFAULT_SCHEMA
+
 from .constants import QuizType
+from .models import ExamSession, Quiz, QuizAsset
+from .schemas import DEFAULT_SCHEMA, SCHEMA_BY_TYPE, get_quiz_schema
 
 
 @admin.register(ExamSession)
@@ -298,6 +302,64 @@ class QuizAdmin(ImportExportModelAdmin):
                 left_html,
                 right_html,
                 result_list_html,
+            )
+
+        if instance.type == QuizType.FILL_IN_THE_BLANK:
+            # prompt_asset_id = instance.content.get("prompt_asset_id", None)
+            # show_answers_as_choices = instance.content.get(
+            #     "show_answers_as_choices", False
+            # )
+            texts = instance.content.get("texts", None)
+
+            TAG_RE = re.compile(r"<([^>]+)>")
+
+            def extract_marked(text: str) -> list[str]:
+                """Return the list of strings inside <...>."""
+
+                return TAG_RE.findall(text)
+
+            def render_underlined_html(text: str) -> str:
+                """
+                Return safe HTML where <inside> becomes <u>inside</u>,
+                and the rest of the text is escaped properly.
+                """
+
+                parts = TAG_RE.split(
+                    text
+                )  # [outside, inside, outside, inside, outside...]
+                if len(parts) == 1:
+                    return format_html("{}", text)
+
+                out = []
+
+                for i, chunk in enumerate(parts):
+                    if i % 2 == 0:
+                        # outside <...> => escape
+                        out.append(format_html("{}", chunk))
+                    else:
+                        # inside <...> => underline, escape inside too
+                        out.append(format_html("<u>{}</u>", chunk))
+
+                return mark_safe("".join(str(x) for x in out))
+
+            all_marked = [m for t in texts for m in extract_marked(t)]
+            rendered_html_list = [render_underlined_html(t) for t in texts]
+
+            rendered_html_list = format_html_join(
+                "", "<p>{}</p>", ((html,) for html in rendered_html_list)
+            )
+
+            return format_html(
+                """
+                    <div>
+                        <p><em>{}</em></p>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        {}
+                    </div>
+                    """,
+                ", ".join(str(marked) for marked in all_marked),
+                rendered_html_list,
             )
 
         return None

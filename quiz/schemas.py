@@ -144,7 +144,7 @@ MATCHING_QUIZ_SCHEMA = {
 
 FILL_IN_THE_BLANK_QUIZ_SCHEMA = {
     "type": "object",
-    "required": ["show_answers_as_choices", "content"],
+    "required": ["show_answers_as_choices", "texts"],
     "properties": {
         "prompt_asset_id": {"type": "integer", "title": "Prompt asset id"},
         "show_answers_as_choices": {
@@ -152,83 +152,103 @@ FILL_IN_THE_BLANK_QUIZ_SCHEMA = {
             "title": "Show answers as choices",
             "default": False,
         },
-        "content": {
-            "oneOf": [
-                # texts + separate answers list
-                {
-                    "type": "object",
-                    "properties": {
-                        "texts": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "id": {"type": "integer"},
-                                    "text": {"type": "string"},  # use placeholder "__"
-                                },
-                                "required": ["id", "text"],
-                            },
-                        },
-                        "answers": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "matched_id": {
-                                        "oneOf": [
-                                            {"type": "integer"},
-                                            {"type": "null"},
-                                        ]
-                                    },
-                                    "text": {"type": "string"},
-                                },
-                                "required": ["matched_id", "text"],
-                            },
-                        },
-                    },
-                    "required": ["texts", "answers"],
-                    "additionalProperties": False,
-                },
-                # answers nested under each text item
-                {
-                    "type": "object",
-                    "properties": {
-                        "texts": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "id": {"type": "integer"},
-                                    "text": {"type": "string"},  # use placeholder "__"
-                                    "answers": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "object",
-                                            "properties": {
-                                                "matched_id": {
-                                                    "oneOf": [
-                                                        {"type": "integer"},
-                                                        {"type": "null"},
-                                                    ]
-                                                },
-                                                "text": {"type": "string"},
-                                            },
-                                            "required": ["matched_id", "text"],
-                                        },
-                                    },
-                                },
-                                "required": ["id", "text"],
-                            },
-                        }
-                    },
-                    "required": ["texts"],
-                    "additionalProperties": False,
-                },
-            ]
-        },
+        "texts": {
+            "type": "array",
+            "items": {
+                "type": "string",
+            }
+        }
     },
     "additionalProperties": False,
 }
+
+# FILL_IN_THE_BLANK_QUIZ_SCHEMA = {
+#     "type": "object",
+#     "required": ["show_answers_as_choices", "content"],
+#     "properties": {
+#         "prompt_asset_id": {"type": "integer", "title": "Prompt asset id"},
+#         "show_answers_as_choices": {
+#             "type": "boolean",
+#             "title": "Show answers as choices",
+#             "default": False,
+#         },
+#         "content": {
+#             "oneOf": [
+#                 # texts + separate answers list
+#                 {
+#                     "type": "object",
+#                     "properties": {
+#                         "texts": {
+#                             "type": "array",
+#                             "items": {
+#                                 "type": "object",
+#                                 "properties": {
+#                                     "id": {"type": "integer"},
+#                                     "text": {"type": "string"},  # use placeholder "__"
+#                                 },
+#                                 "required": ["id", "text"],
+#                             },
+#                         },
+#                         "answers": {
+#                             "type": "array",
+#                             "items": {
+#                                 "type": "object",
+#                                 "properties": {
+#                                     "matched_id": {
+#                                         "oneOf": [
+#                                             {"type": "integer"},
+#                                             {"type": "null"},
+#                                         ]
+#                                     },
+#                                     "text": {"type": "string"},
+#                                 },
+#                                 "required": ["matched_id", "text"],
+#                             },
+#                         },
+#                     },
+#                     "required": ["texts", "answers"],
+#                     "additionalProperties": False,
+#                 },
+#                 # answers nested under each text item
+#                 {
+#                     "type": "object",
+#                     "properties": {
+#                         "texts": {
+#                             "type": "array",
+#                             "items": {
+#                                 "type": "object",
+#                                 "properties": {
+#                                     "id": {"type": "integer"},
+#                                     "text": {"type": "string"},  # use placeholder "__"
+#                                     "answers": {
+#                                         "type": "array",
+#                                         "items": {
+#                                             "type": "object",
+#                                             "properties": {
+#                                                 "matched_id": {
+#                                                     "oneOf": [
+#                                                         {"type": "integer"},
+#                                                         {"type": "null"},
+#                                                     ]
+#                                                 },
+#                                                 "text": {"type": "string"},
+#                                             },
+#                                             "required": ["matched_id", "text"],
+#                                         },
+#                                     },
+#                                 },
+#                                 "required": ["id", "text"],
+#                             },
+#                         }
+#                     },
+#                     "required": ["texts"],
+#                     "additionalProperties": False,
+#                 },
+#             ]
+#         },
+#     },
+#     "additionalProperties": False,
+# }
 
 
 SCHEMA_BY_TYPE = {
