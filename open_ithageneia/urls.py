@@ -24,4 +24,7 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),
+    # TODO made by alkis remove
+    path("language-test-example/", views.language_test_example, name="language-test-example"),
+
 ]
