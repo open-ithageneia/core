@@ -26,5 +26,5 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     # TODO made by alkis remove
     path("language-test-example/", views.language_test_example, name="language-test-example"),
-
+    path("full-test-example/", views.full_test_example,name="full-test-example"),
 ]

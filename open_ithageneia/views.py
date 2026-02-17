@@ -7,4 +7,5 @@ def home(request):
 #  TODO made by alkis, remove
 def language_test_example(request):
     return render(request, "LanguageTestExample")
-
+def full_test_example(request):
+    return render(request, "FullTestExample")

@@ -1,0 +1,110 @@
+{
+	"task": "Εξαγωγή ερωτήσεων γεωγραφίας από ακατέργαστο κείμενο",
+	"instructions": [
+		"Διάβασε το κείμενο που θα δοθεί.",
+		"Εντόπισε κάθε ενότητα που ξεκινά με 'ΘΕΜΑ' ή 'Θέμα'.",
+		"Αγνόησε πληροφορίες όπως σελίδες, τίτλους, ημερομηνίες, 'ΤΡΑΠΕΖΑ ΘΕΜΑΤΩΝ' κτλ.",
+		"Αναγνώρισε τον τύπο της ερώτησης (multipleChoice, shortText, matching, listInput, trueFalseGroup).",
+		"Η απάντηση πρέπει να είναι μόνο JSON array.",
+		"Μην προσθέτεις καμία εξήγηση."
+	],
+	"schema": {
+		"multipleChoice": {
+			"id": "GEO_<number>",
+			"category": "γεωγραφία",
+			"type": "multipleChoice",
+			"question": "string",
+			"options": {
+				"A": "string",
+				"B": "string",
+				"C": "string",
+				"D": "string"
+			},
+			"correctAnswer": "A|B|C|D"
+		},
+		"shortTextMultipleBlanks": {
+			"id": "GEO_<number>",
+			"category": "γεωγραφία",
+			"type": "shortText",
+			"multipleBlanks": true,
+			"prompt": "string",
+			"question": "string with __ placeholders",
+			"correctAnswer": ["string"]
+		},
+		"matching": {
+			"id": "GEO_<number>",
+			"category": "γεωγραφία",
+			"type": "matching",
+			"question": "string",
+			"columnAHeader": "string",
+			"columnBHeader": "string",
+			"columnA": [{ "key": "string", "label": "string" }],
+			"columnB": [{ "key": "string", "label": "string" }],
+			"correctAnswer": {
+				"columnA_key": "columnB_key"
+			}
+		},
+		"listInput": {
+			"id": "GEO_<number>",
+			"category": "γεωγραφία",
+			"type": "listInput",
+			"question": "string",
+			"minItems": "number",
+			"maxItems": "number",
+			"correctAnswer": ["string"]
+		},
+		"trueFalseGroup": {
+			"id": "GEO_<number>",
+			"category": "γεωγραφία",
+			"type": "trueFalseGroup",
+			"question": "string",
+			"statements": [
+				{
+					"key": "string",
+					"text": "string"
+				}
+			],
+			"correctAnswer": {
+				"statement_key": "T|F"
+			}
+		}
+	},
+	"rules": [
+		"Το id να ακολουθεί αρίθμηση με βάση τον αριθμό του ΘΕΜΑΤΟΣ (πχ ΘΕΜΑ 5 → GEO_5).",
+		"Αφαίρεσε την οδηγία 'Γράψτε στο τετράδιό σας...' από το question.",
+
+		"Στις shortText ερωτήσεις εξήγαγε τη φράση 'επιλέγοντας από τις παρακάτω: ...' και τοποθέτησέ την στο πεδίο prompt.",
+		"Στις shortText ερωτήσεις αντικατέστησε όλα τα κενά (...... ή ………………) με ακριβώς δύο underscores: __.",
+		"Ο αριθμός των __ πρέπει να αντιστοιχεί ακριβώς στο μήκος του correctAnswer array.",
+		"Διατήρησε τη σωστή σειρά των απαντήσεων στα multiple blanks.",
+		"Μην προσθέτεις wordBank.",
+
+		"Στις multipleChoice διατήρησε ακριβώς το κείμενο των επιλογών.",
+		"Το correctAnswer για multipleChoice να είναι μόνο το γράμμα.",
+
+		"Στις matching ερωτήσεις:",
+		"• Αναγνώρισε τους τίτλους των στηλών και τοποθέτησέ τους στα πεδία columnAHeader και columnBHeader.",
+		"• Τοποθέτησε τα στοιχεία της πρώτης στήλης στο columnA.",
+		"• Τοποθέτησε τα στοιχεία της δεύτερης στήλης στο columnB.",
+		"• Διατήρησε ακριβώς τα keys όπως εμφανίζονται (πχ 1, 2, Α, Β, α), i), ii) κτλ).",
+		"• Το correctAnswer πρέπει να είναι object μορφής { '1': 'Γ', '2': 'Δ' }.",
+
+		"Στις listInput ερωτήσεις:",
+		"• Αν η εκφώνηση ζητά 'γράψτε Χ από τις Υ', τότε type = 'listInput'.",
+		"• Το minItems και maxItems ισούνται με τον αριθμό Χ που ζητείται.",
+		"• Το correctAnswer περιλαμβάνει ΟΛΕΣ τις δυνατές σωστές απαντήσεις (όχι μόνο Χ).",
+		"• Δεν δημιουργούνται options.",
+		"• Δεν μετατρέπεται σε multipleChoice.",
+
+		"Στις trueFalseGroup ερωτήσεις:",
+		"• Αν υπάρχουν αριθμημένες προτάσεις που απαιτούν Σ/Λ (Σωστό/Λάθος), τότε type = 'trueFalseGroup'.",
+		"• Το question να περιέχει μόνο τη γενική οδηγία.",
+		"• Κάθε αριθμημένη πρόταση να μετατραπεί σε αντικείμενο μέσα στο statements με key ίσο με τον αριθμό της.",
+		"• Το correctAnswer να είναι object μορφής { '1': 'T', '2': 'F' }.",
+		"• Το 'Σ' μετατρέπεται σε 'T' και το 'Λ' σε 'F'.",
+		"• Δεν χρησιμοποιείται NA.",
+		"• Διατήρησε ακριβώς το κείμενο κάθε πρότασης χωρίς αλλαγές.",
+
+		"Επιστροφή αποτελέσματος ως JSON array."
+	]
+}

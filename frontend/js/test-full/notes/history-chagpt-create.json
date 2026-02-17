@@ -1,0 +1,146 @@
+{
+	"task": "Εξαγωγή ερωτήσεων ιστορίας από ακατέργαστο κείμενο",
+	"instructions": [
+		"Διάβασε το κείμενο που θα δοθεί.",
+		"Εντόπισε κάθε ενότητα που ξεκινά με 'ΘΕΜΑ' ή 'Θέμα'.",
+		"Αγνόησε πληροφορίες όπως σελίδες, τίτλους, ημερομηνίες, 'ΤΡΑΠΕΖΑ ΘΕΜΑΤΩΝ' κτλ.",
+		"Αναγνώρισε τον τύπο της ερώτησης (multipleChoice, shortText, matching, listInput, trueFalseGroup, categorization, wordMatching, mapPoints).",
+		"Αν η ερώτηση αναφέρεται σε εικόνα ή φωτογραφία, δημιούργησε πεδίο media.",
+		"Η απάντηση πρέπει να είναι μόνο JSON array.",
+		"Μην προσθέτεις καμία εξήγηση."
+	],
+	"schema": {
+		"base": {
+			"id": "HIST_<number>",
+			"category": "ιστορία",
+			"active": true,
+			"media": [
+				{
+					"id": "string",
+					"type": "image",
+					"src": "string",
+					"alt": "string"
+				}
+			]
+		},
+
+		"multipleChoice": {
+			"type": "multipleChoice",
+			"question": "string",
+			"options": {
+				"A": "string",
+				"B": "string",
+				"C": "string",
+				"D": "string"
+			},
+			"correctAnswer": "A|B|C|D"
+		},
+
+		"shortText": {
+			"type": "shortText",
+			"multipleBlanks": "boolean",
+			"prompt": "string (αν υπάρχει επιλογή λέξεων)",
+			"question": "string με __ placeholders",
+			"correctAnswer": ["string"]
+		},
+
+		"matching": {
+			"type": "matching",
+			"question": "string",
+			"columnAHeader": "string",
+			"columnBHeader": "string",
+			"columnA": [{ "key": "string", "label": "string" }],
+			"columnB": [{ "key": "string", "label": "string" }],
+			"correctAnswer": {
+				"columnA_key": "columnB_key"
+			}
+		},
+
+		"listInput": {
+			"type": "listInput",
+			"question": "string",
+			"minItems": "number",
+			"maxItems": "number",
+			"correctAnswer": ["string"]
+		},
+
+		"trueFalseGroup": {
+			"type": "trueFalseGroup",
+			"question": "string",
+			"statements": [
+				{
+					"key": "string",
+					"text": "string"
+				}
+			],
+			"correctAnswer": {
+				"statement_key": "T|F"
+			}
+		},
+
+		"categorization": {
+			"type": "categorization",
+			"question": "string",
+			"categories": [{ "key": "string", "label": "string" }],
+			"items": ["string"],
+			"correctAnswer": {
+				"category_key": ["string"]
+			}
+		},
+
+		"wordMatching": {
+			"type": "wordMatching",
+			"question": "string",
+			"wordBank": {
+				"A": "string"
+			},
+			"textTemplate": "string με μορφή 1. __ 2. __",
+			"correctAnswer": {
+				"1": "A"
+			},
+			"hasExtraOption": "boolean"
+		}
+	},
+	"rules": [
+		"Το id να ακολουθεί αρίθμηση με βάση τον αριθμό του ΘΕΜΑΤΟΣ (πχ ΘΕΜΑ 5 → HIST_5).",
+		"Η category να είναι πάντα 'ιστορία'.",
+		"Το active να είναι πάντα true.",
+		"Αφαίρεσε την οδηγία 'Γράψτε στο τετράδιό σας...' από το question.",
+
+		"MEDIA RULES:",
+		"• Αν η ερώτηση αναφέρεται σε εικόνα, δημιούργησε πεδίο media.",
+		"• Το media πρέπει να είναι array.",
+		"• Το src να ακολουθεί convention: test-full/media/history/<number><letter>.jpg",
+		"• Το <number> να είναι ο αριθμός του ΘΕΜΑΤΟΣ.",
+		"• Αν υπάρχει μία εικόνα, χρησιμοποίησε γράμμα 'a'.",
+		"• Το alt να είναι: 'Εικόνα ερώτησης HIST_<number>'.",
+
+		"Στις shortText:",
+		"• Αντικατέστησε όλα τα κενά με __.",
+		"• Ο αριθμός των __ να αντιστοιχεί ακριβώς στο correctAnswer array.",
+		"• Διατήρησε τη σωστή σειρά απαντήσεων.",
+
+		"Στις multipleChoice:",
+		"• Διατήρησε ακριβώς το κείμενο των επιλογών.",
+		"• Το correctAnswer να είναι μόνο το γράμμα.",
+
+		"Στις matching:",
+		"• Διατήρησε ακριβώς τα keys όπως εμφανίζονται.",
+		"• Το correctAnswer να είναι object μορφής { '1': 'Γ' }.",
+
+		"Στις listInput:",
+		"• Αν ζητά 'γράψτε Χ από τις Υ', τότε type = 'listInput'.",
+		"• minItems και maxItems = Χ.",
+		"• correctAnswer περιλαμβάνει όλες τις σωστές απαντήσεις.",
+
+		"Στις trueFalseGroup:",
+		"• Μετέτρεψε Σ → T και Λ → F.",
+
+		"Στις wordMatching:",
+		"• Χρησιμοποίησε textTemplate με μορφή '1. __ 2. __'.",
+		"• Το correctAnswer να είναι object με keys τους αριθμούς των κενών.",
+		"• Αν μία επιλογή περισσεύει, hasExtraOption = true.",
+
+		"Επιστροφή αποτελέσματος ως JSON array."
+	]
+}
