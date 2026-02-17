@@ -1,6 +1,3 @@
-from .constants import QuizType
-
-
 TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA = {
     "type": "object",
     "properties": {
@@ -45,27 +42,6 @@ DRAG_AND_DROP_QUIZ_SCHEMA = {
         "additionalProperties": False,
     },
 }
-
-# DRAG_AND_DROP_QUIZ_SCHEMA = {
-#     "type": "object",
-#     "required": ["pairs"],
-#     "properties": {
-#         "pairs": {
-#             "type": "array",
-#             "minItems": 2,
-#             "maxItems": 2,
-#             "items": {
-#                 "type": "object",
-#                 "required": ["title", "values"],
-#                 "properties": {
-#                     "title": {"type": "string", "title": "Title"},
-#                     "values": {"type": "array", "title": "Values", "items": {"type": "string"}},
-#                 },
-#                 "additionalProperties": False,
-#             },
-#         }
-#     }
-# }
 
 MATCHING_QUIZ_SCHEMA = {
     "type": "array",
@@ -156,8 +132,8 @@ FILL_IN_THE_BLANK_QUIZ_SCHEMA = {
             "type": "array",
             "items": {
                 "type": "string",
-            }
-        }
+            },
+        },
     },
     "additionalProperties": False,
 }
@@ -249,20 +225,3 @@ FILL_IN_THE_BLANK_QUIZ_SCHEMA = {
 #     },
 #     "additionalProperties": False,
 # }
-
-
-SCHEMA_BY_TYPE = {
-    QuizType.TRUE_FALSE: TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA,
-    QuizType.MULTIPLE_CHOICE: TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA,
-    QuizType.DRAG_AND_DROP: DRAG_AND_DROP_QUIZ_SCHEMA,
-    QuizType.MATCHING: MATCHING_QUIZ_SCHEMA,
-    QuizType.FILL_IN_THE_BLANK: FILL_IN_THE_BLANK_QUIZ_SCHEMA,
-}
-
-DEFAULT_SCHEMA = TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA
-
-
-def get_quiz_schema(instance):
-    quiz_type = instance.type
-
-    return SCHEMA_BY_TYPE.get(quiz_type, DEFAULT_SCHEMA)

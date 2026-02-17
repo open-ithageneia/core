@@ -24,7 +24,7 @@ fix-python:
 	uv run ruff format .
 
 fixtures-all:
-	uv run python manage.py loaddata fixtures/*
+	uv run python manage.py loaddata fixtures/*.json fixtures/**/*.json
 
 lint-js:
 	npm run lint && npm run typecheck

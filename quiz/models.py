@@ -1,13 +1,19 @@
-import uuid
 import os
-from django.core.validators import MinValueValidator, MaxValueValidator
+import uuid
+
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django_jsonform.models.fields import JSONField
 
-from open_ithageneia.models import TimeStampedModel, ActivatableModel
-from .constants import QuizType, QuizCategory
-from .schemas import get_quiz_schema
+from open_ithageneia.models import ActivatableModel, TimeStampedModel
+
+from .schemas import (
+    DRAG_AND_DROP_QUIZ_SCHEMA,
+    FILL_IN_THE_BLANK_QUIZ_SCHEMA,
+    MATCHING_QUIZ_SCHEMA,
+    TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA,
+)
 
 
 class ExamSession(TimeStampedModel):
@@ -63,29 +69,51 @@ class QuizAsset(TimeStampedModel):
         verbose_name_plural = "Quiz Assets"
 
 
-class Quiz(TimeStampedModel, ActivatableModel):
-    type = models.CharField(
-        max_length=17,
-        choices=QuizType,
-        default=QuizType.TRUE_FALSE,
-    )
+class AbstractQuiz(TimeStampedModel, ActivatableModel):
+    class QuizCategory(models.TextChoices):
+        GEOGRAPHY = "GEOGRAPHY", "Geography"
+        CIVICS = "CIVICS", "Civics"
+        HISTORY = "HISTORY", "History"
+        CULTURE = "CULTURE", "Culture"
+
     category = models.CharField(
-        max_length=10,
+        max_length=9,
         choices=QuizCategory,
-        default=QuizCategory.GEORGRAPHY,
+        default=QuizCategory.GEOGRAPHY,
     )
     exam_sessions = models.ManyToManyField(
         ExamSession,
         blank=True,
-        related_name="quizzes",
+        related_name="%(class)s_quizzes",
     )
-    content = JSONField(blank=True, default=dict, schema=get_quiz_schema)
 
     @property
     def exam_sessions_preview(self):
         return ", ".join(
             [str(exam_session) for exam_session in self.exam_sessions.all()]
         )
+
+    def __str__(self):
+        return f"id: {self.id} - {self.category}"
+
+    class Meta:
+        abstract = True
+
+
+class Question(AbstractQuiz):
+    class QuizType(models.TextChoices):
+        TRUE_FALSE = "TRUE_FALSE", "True/False"
+        MULTIPLE_CHOICE = "MULTIPLE_CHOICE", "Mutliple Choice"
+
+    type = models.CharField(
+        max_length=15,
+        choices=QuizType,
+        default=QuizType.TRUE_FALSE,
+    )
+
+    content = JSONField(
+        blank=True, default=dict, schema=TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA
+    )
 
     def get_asset_image(self, asset_id):
         if not asset_id:
@@ -116,4 +144,25 @@ class Quiz(TimeStampedModel, ActivatableModel):
         return f"id: {self.id}, {self.type} - {self.category}"
 
     class Meta:
-        verbose_name_plural = "Quizzes"
+        verbose_name_plural = "Questions (True/False or Multiple choice)"
+
+
+class DragAndDrop(AbstractQuiz):
+    content = JSONField(blank=True, default=list, schema=DRAG_AND_DROP_QUIZ_SCHEMA)
+
+    class Meta:
+        verbose_name_plural = "Drag And Drop"
+
+
+class Matching(AbstractQuiz):
+    content = JSONField(blank=True, default=list, schema=MATCHING_QUIZ_SCHEMA)
+
+    class Meta:
+        verbose_name_plural = "Matching"
+
+
+class FillInTheBlank(AbstractQuiz):
+    content = JSONField(blank=True, default=dict, schema=FILL_IN_THE_BLANK_QUIZ_SCHEMA)
+
+    class Meta:
+        verbose_name_plural = "Fill in the blank"
