@@ -1,6 +1,11 @@
 // frontend\src\test-full\types\Full.types.ts
 
-export type QuestionCategory = "γεωγραφία" | "πολιτισμός" | "θεσμοί" | "γλώσσα"
+export type QuestionCategory =
+	| "γεωγραφία"
+	| "πολιτισμός"
+	| "θεσμοί"
+	| "γλώσσα"
+	| "ακουστικό"
 
 export type QuestionMediaItem = {
 	id: string // πχ "1", "2", "A"
@@ -14,6 +19,7 @@ export type FullQuestionBase = {
 	id: string
 	category: QuestionCategory
 	media?: QuestionMediaItem[]
+	audioUrl?: string
 }
 
 export type FullMultipleChoiceQuestion = FullQuestionBase & {
@@ -134,12 +140,7 @@ export type FullQuestion =
 	| FullWordMatchingQuestion
 	| FullOpenTextQuestion
 
-export type FullAnswer =
-	| string
-	| string[]
-	| Record<string, string>
-	| MapPoint[]
-	| MapPoint[]
+export type FullAnswer = string | string[] | Record<string, string> | MapPoint[]
 
 export type GradedPoint = MapPoint & {
 	correct: boolean

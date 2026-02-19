@@ -911,7 +911,7 @@
 		"rules": {
 			"map": true,
 			"maxPoints": 4,
-			"tolerancePct": 2.5
+			"tolerancePct": 4
 		},
 		"canonicalAnswer": {
 			"type": "points",
@@ -933,7 +933,7 @@
 		"rules": {
 			"map": true,
 			"maxPoints": 4,
-			"tolerancePct": 2.5
+			"tolerancePct": 4
 		},
 		"canonicalAnswer": {
 			"type": "points",
@@ -955,7 +955,7 @@
 		"rules": {
 			"map": true,
 			"maxPoints": 4,
-			"tolerancePct": 2.5
+			"tolerancePct": 4
 		},
 		"canonicalAnswer": {
 			"type": "points",
@@ -977,7 +977,7 @@
 		"rules": {
 			"map": true,
 			"maxPoints": 4,
-			"tolerancePct": 2.5
+			"tolerancePct": 4
 		},
 		"canonicalAnswer": {
 			"type": "points",
@@ -999,7 +999,7 @@
 		"rules": {
 			"map": true,
 			"maxPoints": 4,
-			"tolerancePct": 2.5
+			"tolerancePct": 4
 		},
 		"canonicalAnswer": {
 			"type": "points",
@@ -1021,7 +1021,7 @@
 		"rules": {
 			"map": true,
 			"maxPoints": 4,
-			"tolerancePct": 2.5
+			"tolerancePct": 4
 		},
 		"canonicalAnswer": {
 			"type": "points",
@@ -1043,7 +1043,7 @@
 		"rules": {
 			"map": true,
 			"maxPoints": 4,
-			"tolerancePct": 2.5
+			"tolerancePct": 4
 		},
 		"canonicalAnswer": {
 			"type": "points",
@@ -1065,7 +1065,7 @@
 		"rules": {
 			"map": true,
 			"maxPoints": 4,
-			"tolerancePct": 2.5
+			"tolerancePct": 4
 		},
 		"canonicalAnswer": {
 			"type": "points",
@@ -1087,7 +1087,7 @@
 		"rules": {
 			"map": true,
 			"maxPoints": 4,
-			"tolerancePct": 2.5
+			"tolerancePct": 4
 		},
 		"canonicalAnswer": {
 			"type": "points",
@@ -1109,7 +1109,7 @@
 		"rules": {
 			"map": true,
 			"maxPoints": 4,
-			"tolerancePct": 2.5
+			"tolerancePct": 4
 		},
 		"canonicalAnswer": {
 			"type": "points",
@@ -1202,7 +1202,7 @@
 			"expectsSubset": true,
 			"minItems": 4,
 			"maxItems": 4,
-			"tolerancePct": 2.5
+			"tolerancePct": 4
 		},
 		"canonicalAnswer": {
 			"type": "points",
@@ -1230,7 +1230,7 @@
 		"rules": {
 			"map": true,
 			"maxPoints": 4,
-			"tolerancePct": 2.5
+			"tolerancePct": 4
 		},
 		"canonicalAnswer": {
 			"type": "points",
@@ -1252,7 +1252,7 @@
 		"rules": {
 			"map": true,
 			"maxPoints": 4,
-			"tolerancePct": 2.5
+			"tolerancePct": 4
 		},
 		"canonicalAnswer": {
 			"type": "points",
@@ -1274,7 +1274,7 @@
 		"rules": {
 			"map": true,
 			"maxPoints": 4,
-			"tolerancePct": 2.5
+			"tolerancePct": 4
 		},
 		"canonicalAnswer": {
 			"type": "points",
@@ -1298,7 +1298,7 @@
 			"expectsSubset": true,
 			"minItems": 2,
 			"maxItems": 2,
-			"tolerancePct": 2.5
+			"tolerancePct": 4
 		},
 		"canonicalAnswer": {
 			"type": "points",
@@ -1320,7 +1320,7 @@
 		"rules": {
 			"map": true,
 			"maxPoints": 4,
-			"tolerancePct": 2.5
+			"tolerancePct": 4
 		},
 		"canonicalAnswer": {
 			"type": "points",
@@ -1342,7 +1342,7 @@
 		"rules": {
 			"map": true,
 			"maxPoints": 4,
-			"tolerancePct": 2.5
+			"tolerancePct": 4
 		},
 		"canonicalAnswer": {
 			"type": "points",

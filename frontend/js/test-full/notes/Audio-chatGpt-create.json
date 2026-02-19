@@ -1,0 +1,69 @@
+{
+	"task": "Μετατροπή ακουστικού τεστ ΠΕΓΠ σε σταθερή JSON δομή",
+	"instructions": [
+		"Διάβασε το κείμενο του τεστ που θα δοθεί.",
+		"Εντόπισε ΘΕΜΑ, ΜΕΡΟΣ Α και ΜΕΡΟΣ Β.",
+		"Μετέτρεψε ΟΛΕΣ τις ερωτήσεις σε type 'multipleChoice'.",
+		"Για κανονικές ερωτήσεις χρησιμοποίησε options A, B, C.",
+		"Για Σωστό/Λάθος χρησιμοποίησε options A='Σωστό', B='Λάθος'.",
+		"Το correctAnswer να είναι ΠΑΝΤΑ A, B ή C (ποτέ T/F και ποτέ ελληνικό Α).",
+		"Η category να είναι πάντα 'ακουστικό'.",
+		"Το active να είναι πάντα true.",
+		"Η απάντηση πρέπει να είναι ΜΟΝΟ JSON object.",
+		"Μην προσθέτεις καμία εξήγηση."
+	],
+	"schema": {
+		"id": "AUDIO_<number>",
+		"title": "ΘΕΜΑ <number>",
+		"audioUrl": "string",
+		"parts": [
+			{
+				"id": "A",
+				"title": "ΜΕΡΟΣ Α",
+				"description": "string",
+				"questions": [
+					{
+						"id": "AUDIO_<number>_A_<index>",
+						"category": "ακουστικό",
+						"active": true,
+						"type": "multipleChoice",
+						"question": "string",
+						"options": {
+							"A": "string",
+							"B": "string",
+							"C": "string"
+						},
+						"correctAnswer": "A|B|C"
+					}
+				]
+			},
+			{
+				"id": "B",
+				"title": "ΜΕΡΟΣ Β",
+				"description": "string",
+				"questions": [
+					{
+						"id": "AUDIO_<number>_B_<index>",
+						"category": "ακουστικό",
+						"active": true,
+						"type": "multipleChoice",
+						"question": "string",
+						"options": {
+							"A": "Σωστό",
+							"B": "Λάθος"
+						},
+						"correctAnswer": "A|B"
+					}
+				]
+			}
+		]
+	},
+	"rules": [
+		"Το id ακολουθεί pattern AUDIO_<ΘΕΜΑ>.",
+		"Τα question ids ακολουθούν pattern AUDIO_<ΘΕΜΑ>_<PART>_<INDEX>.",
+		"Δεν δημιουργείς flat entries εκτός parts.",
+		"Δεν χρησιμοποιείς ποτέ T/F.",
+		"Δεν χρησιμοποιείς ελληνικά γράμματα ως option keys.",
+		"Επιστρέφεις μόνο έγκυρο JSON."
+	]
+}

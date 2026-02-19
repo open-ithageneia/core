@@ -2,6 +2,7 @@
 
 import CategorizationQuestionComponent from "../components/CategorizationQuestionComponent"
 import ListInputQuestion from "../components/ListInputQuestion"
+import MapPointsGradingBlock from "../components/MapPointsGradingBlock"
 import MapPointsQuestion from "../components/MapPointsQuestion"
 import MatchingQuestionComponent from "../components/MatchingQuestion"
 import MultipleChoiceQuestion from "../components/MultipleChoiceQuestion"
@@ -10,17 +11,68 @@ import OpenTextQuestion from "../components/OpenTextQuestion"
 import ShortTextQuestion from "../components/ShortTextQuestion"
 import TrueFalseGroupQuestion from "../components/TrueFalseGroupQuestion"
 import WordMatchingQuestion from "../components/WordMatchingQuestion"
-import type { FullAnswer, FullQuestion, MapPoint } from "../types/Full.types"
+import type {
+	FullAnswer,
+	FullGradedAnswer,
+	FullQuestion,
+	MapPoint,
+} from "../types/Full.types"
 
 type Props = {
 	question: FullQuestion
 	value?: FullAnswer
 	onChange: (id: string, value: FullAnswer) => void
+	gradedAnswer?: FullGradedAnswer
+	showGrading?: boolean
 }
 
-const GeographyFullQuestion = ({ question, value, onChange }: Props) => {
+const formatCorrectAnswer = (answer: unknown): string => {
+	if (!answer) return ""
+
+	if (Array.isArray(answer)) {
+		return answer.join(", ")
+	}
+
+	if (typeof answer === "object") {
+		return Object.entries(answer)
+			.map(([key, value]) =>
+				Array.isArray(value)
+					? `${key}: ${value.join(", ")}`
+					: `${key}: ${String(value)}`,
+			)
+			.join(" | ")
+	}
+
+	return String(answer)
+}
+
+const GeographyFullQuestion = ({
+	question,
+	value,
+	onChange,
+	gradedAnswer,
+	showGrading,
+}: Props) => {
+	const gradedClass =
+		showGrading && gradedAnswer
+			? gradedAnswer.correct
+				? "bg-green-50 border border-green-400"
+				: "bg-red-50 border border-red-400"
+			: ""
+
+	const correctAnswerBlock =
+		showGrading &&
+		gradedAnswer &&
+		!gradedAnswer.correct &&
+		question.type !== "mapPoints" ? (
+			<div className="mt-3 p-3 bg-muted rounded text-sm">
+				<p className="font-semibold">Σωστή απάντηση:</p>
+				<p>{formatCorrectAnswer(gradedAnswer.correctAnswer)}</p>
+			</div>
+		) : null
+
 	return (
-		<div className="space-y-4 border p-4 rounded">
+		<div className={`space-y-4 border p-4 rounded ${gradedClass}`}>
 			{question.type === "multipleChoice" && (
 				<MultipleChoiceQuestion
 					question={question}
@@ -98,15 +150,29 @@ const GeographyFullQuestion = ({ question, value, onChange }: Props) => {
 			)}
 
 			{question.type === "mapPoints" && (
-				<MapPointsQuestion
-					question={question}
-					value={
-						question.type === "mapPoints"
-							? (value as MapPoint[] | undefined)
-							: undefined
-					}
-					onChange={(val) => onChange(question.id, val)}
-				/>
+				<>
+					<MapPointsQuestion
+						question={question}
+						value={
+							question.type === "mapPoints"
+								? (value as MapPoint[] | undefined)
+								: undefined
+						}
+						onChange={(val) => onChange(question.id, val)}
+					/>
+
+					{showGrading &&
+						gradedAnswer &&
+						gradedAnswer.mapReviewPoints &&
+						gradedAnswer.mapGradedPoints && (
+							<div className="mt-4">
+								<MapPointsGradingBlock
+									reviewPoints={gradedAnswer.mapReviewPoints}
+									gradedPoints={gradedAnswer.mapGradedPoints}
+								/>
+							</div>
+						)}
+				</>
 			)}
 
 			{question.type === "wordMatching" && (
@@ -128,6 +194,8 @@ const GeographyFullQuestion = ({ question, value, onChange }: Props) => {
 					onChange={(val) => onChange(question.id, val)}
 				/>
 			)}
+
+			{correctAnswerBlock}
 		</div>
 	)
 }

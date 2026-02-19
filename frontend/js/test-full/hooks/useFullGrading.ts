@@ -1,5 +1,5 @@
 import axios from "axios"
-import { url } from "../constants/constants"
+import { urlOpenText } from "../constants/constants"
 import type {
 	FullAnswer,
 	FullCategorizationQuestion,
@@ -394,22 +394,67 @@ export const useFullGrading = () => {
 			}
 		}
 
-		const response = await axios.post(`${url}/api/grade/open-text-simple`, {
-			question: q.question,
-			correctAnswer: q.correctAnswer,
-			studentText: text,
-			maxWords: q.maxWords,
-		})
+		// υπολογισμός λέξεων
+		const wordCount = text ? text.split(/\s+/).filter(Boolean).length : 0
 
-		const data = response.data
+		// αν ξεπερνά τις 200 λέξεις → fail χωρίς API call
+		if (wordCount > 200) {
+			return {
+				id: q.id,
+				userAnswer,
+				correctAnswer: q.correctAnswer,
+				correct: false,
+				type: q.type,
+				openTextScores: {
+					content: 0,
+					coverage: 0,
+					language: 0,
+					wordLimit: 0,
+					total: 0,
+				},
+			}
+		}
 
-		return {
-			id: q.id,
-			userAnswer,
-			correctAnswer: q.correctAnswer,
-			correct: data.pass,
-			type: q.type,
-			openTextScores: data.scores,
+		// console.log(" test if url not used here load. url:", url);
+		// console.log("url in: url /api/grade/open-text-simple", urlOpenText);
+		try {
+			const response = await axios.post(
+				`${urlOpenText}/api/grade/open-text-simple`,
+				{
+					question: q.question,
+					correctAnswer: q.correctAnswer,
+					studentText: text,
+					maxWords: q.maxWords,
+				},
+			)
+
+			const data = response.data
+
+			return {
+				id: q.id,
+				userAnswer,
+				correctAnswer: q.correctAnswer,
+				correct: data.pass,
+				type: q.type,
+				openTextScores: data.scores,
+			}
+		} catch (error) {
+			console.error("OpenText grading failed:", error)
+
+			return {
+				id: q.id,
+				userAnswer,
+				correctAnswer: q.correctAnswer,
+				correct: false,
+				type: q.type,
+				openTextScores: {
+					content: 0,
+					coverage: 0,
+					language: 0,
+					wordLimit: 0,
+					total: 0,
+				},
+			}
 		}
 	}
 

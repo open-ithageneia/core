@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-// import MapClickQuiz from "../components/MapClickQuiz";
 import type { FullAnswer, FullGradedAnswer } from "../types/Full.types"
 import MapPointsGradingBlock from "./MapPointsGradingBlock"
 
@@ -8,21 +7,17 @@ type Props = {
 	gradedAnswers: FullGradedAnswer[]
 }
 
-// βοηθητική μορφοποίηση για τα απλά question types
 const formatAnswer = (answer: FullAnswer | undefined): string => {
 	if (!answer) return "—"
 
-	if (Array.isArray(answer)) {
-		return answer.join(" / ")
-	}
+	if (Array.isArray(answer)) return answer.join(", ")
 
-	if (typeof answer === "object") {
+	if (typeof answer === "object")
 		return Object.entries(answer)
-			.map(([key, value]) => `${key}-${value}`)
-			.join(", ")
-	}
+			.map(([k, v]) => `${k}: ${v}`)
+			.join(" | ")
 
-	return answer
+	return String(answer)
 }
 
 const GeographyFullGradingSummary = ({ gradedAnswers }: Props) => {
@@ -30,74 +25,56 @@ const GeographyFullGradingSummary = ({ gradedAnswers }: Props) => {
 	const correctCount = gradedAnswers.filter((a) => a.correct).length
 
 	return (
-		<Card className="mt-4">
-			<CardContent>
-				<h3 className="mb-2 text-lg font-semibold">Αξιολόγηση</h3>
-
-				{/* συνολικό σκορ */}
-				<div className="mb-3">
-					<Badge className="bg-primary text-primary-foreground">
-						Σωστά: {correctCount} / {total}
-					</Badge>
+		<Card className="mt-8">
+			<CardContent className="space-y-6">
+				{/* 🔹 Τελικό αποτέλεσμα */}
+				<div className="text-center">
+					<p className="text-sm text-muted-foreground">Τελικό αποτέλεσμα</p>
+					<p className="text-3xl font-bold">
+						{correctCount} / {total}
+					</p>
 				</div>
 
-				<ul className="space-y-4">
+				{/* 🔹 Αναλυτικά */}
+				<div className="grid md:grid-cols-2 gap-3">
 					{gradedAnswers.map((a, i) => (
-						<li key={a.id} className="rounded-md border p-3 space-y-2">
-							<p className="text-sm font-medium">{i + 1}.</p>
+						<div
+							key={a.id}
+							className="rounded-md border p-3 space-y-1 bg-muted/20"
+						>
+							<div className="flex justify-between items-center">
+								<span className="text-xs font-medium">Ερ. {i + 1}</span>
 
-							{/* ΑΠΛΕΣ ΕΡΩΤΗΣΕΙΣ (όχι map) */}
-							{a.type !== "mapPoints" && (
-								<>
-									<p className="text-sm">
-										{formatAnswer(a.userAnswer)} →{" "}
-										{formatAnswer(a.correctAnswer as FullAnswer)}
-									</p>
+								<Badge
+									className={
+										a.correct
+											? "bg-primary text-primary-foreground"
+											: "bg-red-500 text-white"
+									}
+								>
+									{a.correct ? "✔" : "λάθος"}
+								</Badge>
+							</div>
 
-									<Badge
-										className={
-											a.correct
-												? "bg-primary text-primary-foreground"
-												: "bg-destructive text-white"
-										}
-									>
-										{a.correct
-											? a.hasSpellingErrors
-												? "σωστό (ορθογραφικό)"
-												: "σωστό"
-											: "λάθος"}
-									</Badge>
-								</>
+							{a.type !== "mapPoints" && !a.correct && (
+								<div className="text-xs text-muted-foreground">
+									{formatAnswer(a.correctAnswer as FullAnswer)}
+								</div>
 							)}
 
-							{/* MAP POINTS ΕΡΩΤΗΣΗ */}
 							{a.type === "mapPoints" &&
 								a.mapReviewPoints &&
 								a.mapGradedPoints && (
-									<>
-										{/* Χάρτης με όλα τα σημεία (user + canonical) */}
-										{/* <MapClickQuiz
-                      points={a.mapReviewPoints}
-                      setPoints={() => {}} // δεν επιτρέπουμε αλλαγές στο summary
-                      maxPoints={a.mapReviewPoints.length}
-                    /> */}
-
-										{/* Αναλυτικό grading ανά σημείο */}
-										<div className="space-y-1 text-sm">
-											{a.type === "mapPoints" &&
-												a.mapReviewPoints &&
-												a.mapGradedPoints && (
-													<MapPointsGradingBlock
-														reviewPoints={a.mapReviewPoints}
-														gradedPoints={a.mapGradedPoints}
-													/>
-												)}
-										</div>
-									</>
+									<div className="pt-1">
+										<MapPointsGradingBlock
+											reviewPoints={a.mapReviewPoints}
+											gradedPoints={a.mapGradedPoints}
+										/>
+									</div>
 								)}
-						</li>
+						</div>
 					))}
-				</ul>
+				</div>
 			</CardContent>
 		</Card>
 	)

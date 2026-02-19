@@ -1,4 +1,4 @@
-// core\frontend\js\test-full\pages\TestFullPagePicker.tsx
+// frontend\src\test-full\pages\TestFullPagePicker.tsx
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import FullGradingSummary from "../components/FullGradingSummary"
@@ -134,6 +134,8 @@ const GeographyFullPagePicker = ({
 	const totalScore = geoScore + cultScore + histScore + instScore
 	const totalQuestions = geoTotal + cultTotal + histTotal + instTotal
 
+	let questionIndex = 1
+
 	return (
 		<div className="max-w-4xl mx-auto py-10 space-y-8">
 			<Button onClick={pickRandomQuestions}>Τυχαίες Ερωτήσεις</Button>
@@ -149,12 +151,17 @@ const GeographyFullPagePicker = ({
 					<h2 className="text-xl font-bold">Ερωτήσεις Γεωγραφίας</h2>
 
 					{selectedQuestions.geography.map((q) => (
-						<TestFullQuestion
-							key={q.id}
-							question={q}
-							value={answers[q.id]}
-							onChange={handleChange}
-						/>
+						<div key={q.id} className="flex items-start gap-2">
+							<span className="font-semibold">{questionIndex++}.</span>
+							<TestFullQuestion
+								key={q.id}
+								question={q}
+								value={answers[q.id]}
+								onChange={handleChange}
+								gradedAnswer={gradedAnswers.find((a) => a.id === q.id)}
+								showGrading={gradedAnswers.length > 0}
+							/>
+						</div>
 					))}
 				</>
 			)}
@@ -164,12 +171,17 @@ const GeographyFullPagePicker = ({
 					<h2 className="text-xl font-bold mt-8">Ερωτήσεις Πολιτισμού</h2>
 
 					{selectedQuestions.culture.map((q) => (
-						<TestFullQuestion
-							key={q.id}
-							question={q}
-							value={answers[q.id]}
-							onChange={handleChange}
-						/>
+						<div key={q.id} className="flex items-start gap-2">
+							<span className="font-semibold">{questionIndex++}.</span>
+							<TestFullQuestion
+								key={q.id}
+								question={q}
+								value={answers[q.id]}
+								onChange={handleChange}
+								gradedAnswer={gradedAnswers.find((a) => a.id === q.id)}
+								showGrading={gradedAnswers.length > 0}
+							/>
+						</div>
 					))}
 				</>
 			)}
@@ -179,12 +191,17 @@ const GeographyFullPagePicker = ({
 					<h2 className="text-xl font-bold mt-8">Ερωτήσεις Ιστορίας</h2>
 
 					{selectedQuestions.history.map((q) => (
-						<TestFullQuestion
-							key={q.id}
-							question={q}
-							value={answers[q.id]}
-							onChange={handleChange}
-						/>
+						<div key={q.id} className="flex items-start gap-2">
+							<span className="font-semibold">{questionIndex++}.</span>
+							<TestFullQuestion
+								key={q.id}
+								question={q}
+								value={answers[q.id]}
+								onChange={handleChange}
+								gradedAnswer={gradedAnswers.find((a) => a.id === q.id)}
+								showGrading={gradedAnswers.length > 0}
+							/>
+						</div>
 					))}
 				</>
 			)}
@@ -194,12 +211,17 @@ const GeographyFullPagePicker = ({
 					<h2 className="text-xl font-bold mt-8">Ερωτήσεις Θεσμών</h2>
 
 					{selectedQuestions.institutions.map((q) => (
-						<TestFullQuestion
-							key={q.id}
-							question={q}
-							value={answers[q.id]}
-							onChange={handleChange}
-						/>
+						<div key={q.id} className="flex items-start gap-2">
+							<span className="font-semibold">{questionIndex++}.</span>
+							<TestFullQuestion
+								key={q.id}
+								question={q}
+								value={answers[q.id]}
+								onChange={handleChange}
+								gradedAnswer={gradedAnswers.find((a) => a.id === q.id)}
+								showGrading={gradedAnswers.length > 0}
+							/>
+						</div>
 					))}
 				</>
 			)}
