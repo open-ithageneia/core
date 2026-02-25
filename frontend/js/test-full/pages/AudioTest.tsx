@@ -33,6 +33,7 @@ type AudioTopic = {
 	id: string
 	title: string
 	audioUrl: string
+	transcript?: string
 	parts: AudioPart[]
 }
 
@@ -42,6 +43,7 @@ const AudioTest = () => {
 	const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null)
 	const [answers, setAnswers] = useState<Record<string, FullAnswer>>({})
 	const [gradedAnswers, setGradedAnswers] = useState<FullGradedAnswer[]>([])
+	const [showTranscript, setShowTranscript] = useState(false)
 
 	const { gradeAll } = useFullGrading()
 
@@ -54,6 +56,7 @@ const AudioTest = () => {
 		setSelectedTopicId(audioTopics[randomIndex].id)
 		setAnswers({})
 		setGradedAnswers([])
+		setShowTranscript(false)
 	}
 
 	const handleChange = (id: string, value: FullAnswer) => {
@@ -134,7 +137,25 @@ const AudioTest = () => {
 						</div>
 					))}
 
-					<Button onClick={handleGradeAll}>Αξιολόγηση</Button>
+					{showTranscript && selectedTopic?.transcript && (
+						<div className="mt-6 p-4 bg-muted rounded-lg whitespace-pre-line">
+							<p>⚠️ auto created ⚠️</p>
+							{selectedTopic.transcript}
+						</div>
+					)}
+
+					<div className="flex gap-4">
+						<Button onClick={handleGradeAll}>Αξιολόγηση</Button>
+
+						{selectedTopic?.transcript && (
+							<Button
+								variant="secondary"
+								onClick={() => setShowTranscript((prev) => !prev)}
+							>
+								{showTranscript ? "Απόκρυψη κειμένου" : "Εμφάνιση κειμένου"}
+							</Button>
+						)}
+					</div>
 				</>
 			)}
 		</div>

@@ -1,7 +1,16 @@
 // frontend\src\test-full\pages\TestFullPagePicker.tsx
+
+/*
+1. καλεί το hook της αξιολογησης
+2. φέρνει data απο JSON
+3. κάνει shuffle τους πινακες και παίρνει τις Ν πρώτες ερωτήσεις απο το καθένα
+4. κάνει render τις ερωτήσεις στην σωστή σειρά καλωντας το TestFullQuestion για κάθε μια ερώτηση
+5. με την handleChange αποθηκεύει στο state την απάντηση, φτιάχνει έναν ενιαίο πίνακα απαντήσεων και τον στέλνει για βαθμολόγηση στην useFullGrading
+6. αν έχουμε αποτελέσματα τα προβάλει με την FullGradingSummary
+*/
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import FullGradingSummary from "../components/FullGradingSummary"
+import FullGradingSummary from "../components/grading-components/FullGradingSummary"
 import cultureData from "../data/cultureData.json"
 import geoData from "../data/geoData.json"
 import historyData from "../data/historyData.json"
@@ -22,10 +31,11 @@ type QuestionGroups = {
 }
 
 type Props = {
+	// πόσες ερωτήσεις θα εμφανιστούν
 	geoCount?: number
 	cultCount?: number
 	histCount?: number
-	instCount?: number // πόσες ερωτήσεις θα εμφανιστούν
+	instCount?: number
 }
 
 const GeographyFullPagePicker = ({
@@ -45,10 +55,15 @@ const GeographyFullPagePicker = ({
 	const [_score, setScore] = useState<number | null>(null)
 	const [enableOpenText, setEnableOpenText] = useState(true)
 
+	// φέρνουμε τα data απο τα json
 	const geoQuestions = geoData as FullQuestion[]
 	const cultureQuestions = cultureData as FullQuestion[]
 	const historyQuestions = historyData as FullQuestion[]
 	const instQuestions = instiData as FullQuestion[]
+
+	// φέρνουμε τις εξισωσης αξιολογησης απο το hook
+	const { gradeAll } = useFullGrading()
+
 	// για επιλογή χωρίς ερωτήσεις open text
 	const availableInst = enableOpenText
 		? instQuestions
@@ -56,6 +71,8 @@ const GeographyFullPagePicker = ({
 
 	// επιλογή τυχαίων ερωτήσεων
 	const pickRandomQuestions = () => {
+		//αντίγραφο του array (ώστε να μην αλλάξεις το original JSON)
+		// τυχαίο ανακάτεμα: η sort συγκρίνει ζευγάρια στοιχείων και επειδή επιστρέφουμε τυχαία θετικό/αρνητικό αριθμό, η σειρά προκύπτει τυχαία
 		const shuffledGeo = [...geoQuestions].sort(() => 0.5 - Math.random())
 
 		const shuffledCulture = [...cultureQuestions].sort(
@@ -79,7 +96,6 @@ const GeographyFullPagePicker = ({
 		setGradedAnswers([])
 		setScore(null)
 	}
-	const { gradeAll } = useFullGrading()
 
 	const handleChange = (id: string, value: FullAnswer) => {
 		setAnswers((prev) => ({
@@ -88,7 +104,7 @@ const GeographyFullPagePicker = ({
 		}))
 	}
 
-	// κάνουμε flaten τις ερωτήσεις για να  μπορούν να βαθμολογηθούν ενιαία
+	// κάνουμε flatten και βάζουμε σε ένα ενιαίο array όλες τις ερωτήσεις για να  μπορούν να βαθμολογηθούν ενιαία
 	const allQuestions = [
 		...selectedQuestions.geography,
 		...selectedQuestions.culture,
@@ -102,6 +118,16 @@ const GeographyFullPagePicker = ({
 		selectedQuestions.history.length > 0 ||
 		selectedQuestions.institutions.length > 0
 
+	// η gradeAll απο το hook παίρνει όλες τις ερωτήσεις και τις απαντήσεις του μαθητή και επιστρέφει results και score
+	// η results είναι ένα [] απο {} ανα ερώτηση που στείλαμε. πχ:
+	//   {
+	//   id: "geo_1",
+	//   userAnswer: "A",
+	//   correctAnswer: "B",
+	//   correct: false,
+	//   type: "multipleChoice"
+	// }
+	//  και score απλώς το πλήθος των ερωτήσεων που έχουν correct: true
 	const handleGradeAll = async () => {
 		const { results, score } = await gradeAll(allQuestions, answers)
 		setGradedAnswers(results)
@@ -114,6 +140,7 @@ const GeographyFullPagePicker = ({
 	const histTotal = selectedQuestions.history.length
 	const instTotal = selectedQuestions.institutions.length
 
+	//  για την κάθε θεματική ελέγχει πρώτα αν η κάθε απάντηση είναι μέρος της θεματικής και αν έχει απαντηθεί σωστα. μου επιστρέφει πόσες έχουν απαντηθεί σωστά
 	const geoScore = gradedAnswers.filter(
 		(a) => selectedQuestions.geography.some((q) => q.id === a.id) && a.correct,
 	).length
@@ -134,11 +161,14 @@ const GeographyFullPagePicker = ({
 	const totalScore = geoScore + cultScore + histScore + instScore
 	const totalQuestions = geoTotal + cultTotal + histTotal + instTotal
 
+	// Αυτό είναι μετρητής αρίθμησης ερωτήσεων για το UI.
 	let questionIndex = 1
 
 	return (
 		<div className="max-w-4xl mx-auto py-10 space-y-8">
 			<Button onClick={pickRandomQuestions}>Τυχαίες Ερωτήσεις</Button>
+
+			{/* έχουμε προσθέσει την επιλογή να μην εμφανίζονται ερωτήσεις τύπου open text που κάνουν call στο openAI api κυρίως για dev λόγους αλλα ας μείνει προς το παρόν */}
 			<Button
 				variant={enableOpenText ? "default" : "secondary"}
 				onClick={() => setEnableOpenText((prev) => !prev)}
@@ -146,20 +176,23 @@ const GeographyFullPagePicker = ({
 				{enableOpenText ? "Open Text ON" : "Open Text OFF"}
 			</Button>
 
+			{/* ακολουθούν renderer για τον κάθε θεματική ερωτήσεων όπου παίρνουν την κάθε ερώτηση της θεματικής και την στέλνουν στο TestFullQuestion question component που είναι υπεύθυνο για να κάνει render μια μια τις ερωτήσεις ανάλογα με τον τύπο της */}
 			{selectedQuestions.geography.length > 0 && (
 				<>
 					<h2 className="text-xl font-bold">Ερωτήσεις Γεωγραφίας</h2>
 
 					{selectedQuestions.geography.map((q) => (
 						<div key={q.id} className="flex items-start gap-2">
+							{/* η αριθμηση της ερωτησης. είναι εξωτερικά γιατί θέλουμε να συνεχιζει στην αλλαγή θεματικής */}
 							<span className="font-semibold">{questionIndex++}.</span>
 							<TestFullQuestion
 								key={q.id}
-								question={q}
-								value={answers[q.id]}
+								question={q} // Ολόκληρο το αντικείμενο της ερώτησης (τύπος, prompt, options, σωστές απαντήσεις κλπ)
+								value={answers[q.id]} // Η απάντηση του χρήστη για αυτή την ερώτηση (από το state answers)
 								onChange={handleChange}
-								gradedAnswer={gradedAnswers.find((a) => a.id === q.id)}
-								showGrading={gradedAnswers.length > 0}
+								// ο λόγος που τα στέλνει αυτα είναι γιατί κάθε ερώτηση μετα την αξιολογηση φαίνεται πράσινη/κόκκινη και δείχνει την προτεινόμενη απάντηση
+								gradedAnswer={gradedAnswers.find((a) => a.id === q.id)} // Το αποτέλεσμα βαθμολόγησης για τη συγκεκριμένη ερώτηση (αν υπάρχει).
+								showGrading={gradedAnswers.length > 0} // Boolean: αν έχει γίνει αξιολόγηση, εμφάνισε feedback.
 							/>
 						</div>
 					))}

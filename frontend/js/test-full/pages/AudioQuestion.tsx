@@ -1,5 +1,5 @@
-import MultipleChoiceQuestion from "../components/MultipleChoiceQuestion"
-import TrueFalseGroupQuestion from "../components/TrueFalseGroupQuestion"
+import MultipleChoiceQuestion from "../components/question-components/MultipleChoiceQuestion"
+import TrueFalseGroupQuestion from "../components/question-components/TrueFalseGroupQuestion"
 import type {
 	FullAnswer,
 	FullGradedAnswer,

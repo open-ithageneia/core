@@ -73,6 +73,12 @@ export type FullTrueFalseGroupQuestion = FullQuestionBase & {
 	correctAnswer: Record<string, "T" | "F">
 }
 
+export type FullTrueFalseNAQuestion = FullQuestionBase & {
+	type: "trueFalseNA"
+	question: string
+	correctAnswer: "T" | "F" | "NA"
+}
+
 export type FullCategorizationQuestion = FullQuestionBase & {
 	type: "categorization"
 	question: string
@@ -135,6 +141,7 @@ export type FullQuestion =
 	| FullMultiSelectQuestion
 	| FullListInputQuestion
 	| FullTrueFalseGroupQuestion
+	| FullTrueFalseNAQuestion
 	| FullCategorizationQuestion
 	| GeoMapPointsQuestion
 	| FullWordMatchingQuestion

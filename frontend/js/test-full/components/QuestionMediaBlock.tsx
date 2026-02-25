@@ -1,5 +1,4 @@
-// frontend/src/test-full/components/QuestionMediaBlock.tsx
-
+// core\frontend\js\test-full\components\QuestionMediaBlock.tsx
 import type { QuestionMediaItem } from "../types/Full.types"
 
 type Props = {
@@ -17,6 +16,7 @@ const extractLetter = (src: string): string => {
 }
 
 const QuestionMediaBlock = ({ media }: Props) => {
+	// Guard: αν δεν υπάρχει media → δεν γίνεται render τίποτα
 	if (!media || media.length === 0) return null
 
 	return (

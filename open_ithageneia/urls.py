@@ -16,7 +16,7 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
 
 from . import views
 
@@ -26,5 +26,5 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     # TODO made by alkis remove
     path("language-test-example/", views.language_test_example, name="language-test-example"),
-    path("full-test-example/", views.full_test_example,name="full-test-example"),
+    re_path(r"^full-test-example/.*$", views.full_test_example, name="full-test-example"),
 ]

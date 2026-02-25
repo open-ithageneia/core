@@ -1,3 +1,19 @@
+// frontend\src\test-full\hooks\useFullGrading.ts
+/*
+όλα τα grading functions επιστρέφουν τουλάχιστον:
+{
+  id: q.id,
+  userAnswer,
+  correctAnswer: ...,
+  correct: boolean,
+  type: q.type
+}
+και μερικά προσθέτουν extra:
+hasSpellingErrors (shortText, listInput)
+mapGradedPoints, mapReviewPoints (mapPoints)
+openTextScores (openText)
+*/
+
 import axios from "axios"
 import { urlOpenText } from "../constants/constants"
 import type {
@@ -12,6 +28,7 @@ import type {
 	FullQuestion,
 	FullShortTextQuestion,
 	FullTrueFalseGroupQuestion,
+	FullTrueFalseNAQuestion,
 	FullWordMatchingQuestion,
 	GeoMapPointsQuestion,
 	MapPoint,
@@ -25,13 +42,14 @@ type GradeAllResult = {
 }
 
 export const useFullGrading = () => {
-	// =========================================================
-	// multipleChoice grading
-	// =========================================================
+	// 🖖 multipleChoice grading
+	//  -------------------------
+	// value schema: "A"  όπου value = το key της επιλογής (πχ "A", "B", "C", "D")
 	const gradeMultipleChoice = (
 		q: FullMultipleChoiceQuestion,
 		userAnswer: FullAnswer | undefined,
 	): FullGradedAnswer => {
+		// συγκρίνει τα δύο string
 		const isCorrect = userAnswer === q.correctAnswer
 
 		return {
@@ -43,52 +61,56 @@ export const useFullGrading = () => {
 		}
 	}
 
-	// =========================================================
-	// shortText grading
-	// =========================================================
+	// 🎉shortText grading
+	// -------------------
+	// value schema: Αν multipleBlanks = false: "Καποδίστριας" Αν multipleBlanks = true: ["Φίλιππος Β΄", "Κωνσταντίνος ΙΑ΄ Παλαιολόγος", ...]
 	const gradeShortText = (
 		q: FullShortTextQuestion,
 		userAnswer: FullAnswer | undefined,
 	): FullGradedAnswer => {
-		// θέλουμε μόνο string[] εδώ (όχι MapPoint[])
+		// η απάντηση μπορεί να είναι string ή string[]. To κάνουμε string[] πάντα
+		const correctParts = Array.isArray(q.correctAnswer)
+			? q.correctAnswer
+			: [q.correctAnswer]
+
+		// το ίδιο για την απάντηση του μαθητή
 		const userParts: string[] =
 			Array.isArray(userAnswer) &&
 			userAnswer.every((item) => typeof item === "string")
 				? userAnswer
-				: []
-
-		const correctParts = q.correctAnswer
+				: typeof userAnswer === "string"
+					? [userAnswer]
+					: []
 
 		let allCorrect = true
 		let hasSpellingErrors = false
 
+		// για κάθε κενο __
 		correctParts.forEach((correctPart, index) => {
 			const userPart = userParts[index]
 
-			// αν δεν υπάρχει απάντηση σε κάποιο blank
+			// Αν δεν έβαλε τίποτα
 			if (!userPart) {
 				allCorrect = false
 				return
 			}
 
-			// expandOptionalParts:
-			// πχ "Ήπειρος (Ηπείρου)" → δημιουργεί όλα τα αποδεκτά variants
+			// Θέλουμε: ασφαλή (μετα)κίνηση → να θεωρείται ίδιο με ασφαλή μετακίνηση αλλα και με ασφαλή κίνηση. Και θα (του) αποσπάσεις → ίδιο με θα του αποσπάσεις αλλα και θα αποσπάσεις
 			const expanded = expandOptionalParts(correctPart)
 
 			let partMatched = false
 
 			for (const variant of expanded) {
+				// κάνουμε δύο ελέγχους simplifiedMatch και exactMatch αν και τα δύο τοτε σωστό, αν μόνο το simplified τότε σωστό με ορθογραφικά.
 				const exactMatch = userPart.trim() === variant.trim()
-
+				// simplifyLang: "Καλημέρα"→"kalimera"
 				const simplifiedMatch = simplifyLang(userPart) === simplifyLang(variant)
 
-				// ακριβές match
 				if (exactMatch) {
 					partMatched = true
 					break
 				}
 
-				// match με ορθογραφική απόκλιση
 				if (!exactMatch && simplifiedMatch) {
 					partMatched = true
 					hasSpellingErrors = true
@@ -111,13 +133,14 @@ export const useFullGrading = () => {
 		}
 	}
 
-	// =========================================================
-	// matching grading
-	// =========================================================
+	// 💥 matching grading
+	//  -------------------
+	// value schema: { "1": "C", "2": "A" } όπου key = columnA.key και value = columnB.key
 	const gradeMatching = (
 		q: FullMatchingQuestion,
 		userAnswer: FullAnswer | undefined,
 	): FullGradedAnswer => {
+		// Type narrowing. Επειδή FullAnswer είναι union (string | string[] | object | MapPoint[] κλπ), πρέπει να βεβαιωθούμε ότι εδώ είναι object.
 		const userMap =
 			userAnswer && typeof userAnswer === "object" && !Array.isArray(userAnswer)
 				? userAnswer
@@ -125,6 +148,8 @@ export const useFullGrading = () => {
 
 		const correctMap = q.correctAnswer
 
+		// Για κάθε σωστό key: ελέγχει αν ο user έβαλε το ίδιο value.
+		// χρειαζόμαστε Object γιατί δεν είναι απλό Arr
 		const allCorrect = Object.keys(correctMap).every(
 			(key) => userMap[key] === correctMap[key],
 		)
@@ -138,14 +163,14 @@ export const useFullGrading = () => {
 		}
 	}
 
-	// =========================================================
-	// multiSelect grading
-	// =========================================================
+	// 💣 multiSelect grading
+	// ----------------------
+	// value schema: ["B", "C"] όπου κάθε στοιχείο του array είναι option key.
 	const gradeMultiSelect = (
 		q: FullMultiSelectQuestion,
 		userAnswer: FullAnswer | undefined,
 	): FullGradedAnswer => {
-		// multiSelect περιμένει string[]
+		// Type narrowing, multiSelect περιμένει string[]
 		const userSelections: string[] =
 			Array.isArray(userAnswer) &&
 			userAnswer.every((item) => typeof item === "string")
@@ -154,10 +179,12 @@ export const useFullGrading = () => {
 
 		const correctOptions = q.correctAnswer
 
+		// Μετρά πόσα από αυτά που διάλεξε ο χρήστης υπάρχουν μέσα στις σωστές επιλογές.
 		const correctCount = userSelections.filter((opt) =>
 			correctOptions.includes(opt),
 		).length
 
+		// Ο χρήστης πρέπει να διαλέξει ακριβώς maxSelections Και όλα αυτά να είναι σωστά
 		const allCorrect =
 			userSelections.length === q.maxSelections &&
 			correctCount === userSelections.length
@@ -171,14 +198,15 @@ export const useFullGrading = () => {
 		}
 	}
 
-	// =========================================================
-	// listInput grading
-	// =========================================================
+	// 🐥 listInput grading
+	//  --------------------
+	// value schema: ["Αττικής", "Κρήτης", "", ""] Array σταθερού μήκους (maxItems) Κάθε index αντιστοιχεί σε μία αριθμημένη γραμμή απάντησης.
+	// Πάντα array μήκους maxItems, Κάποια indexes μπορεί να είναι "", Η θέση δεν παίζει ρόλο στο grading
 	const gradeListInput = (
 		q: FullListInputQuestion,
 		userAnswer: FullAnswer | undefined,
 	): FullGradedAnswer => {
-		// listInput επίσης περιμένει string[]
+		// Type narrowing. listInput επίσης περιμένει string[]
 		const userParts: string[] =
 			Array.isArray(userAnswer) &&
 			userAnswer.every((item) => typeof item === "string")
@@ -231,9 +259,9 @@ export const useFullGrading = () => {
 		}
 	}
 
-	// =========================================================
-	// trueFalseGroup grading
-	// =========================================================
+	// ✅ trueFalseGroup grading
+	//  ------------------------
+	// value schema: { "1": "T", "2": "F", "3": "T" } όπου key = statement.key
 	const gradeTrueFalseGroup = (
 		q: FullTrueFalseGroupQuestion,
 		userAnswer: FullAnswer | undefined,
@@ -258,9 +286,27 @@ export const useFullGrading = () => {
 		}
 	}
 
-	// =========================================================
-	// categorization grading
-	// =========================================================
+	// 😶trueFalseNA grading
+	// ---------------------
+	// value schema: "T" | "F" | "NA" Απλό string union. Δεν είναι object όπως στο trueFalseGroup.
+	const gradeTrueFalseNA = (
+		q: FullTrueFalseNAQuestion,
+		userAnswer: FullAnswer | undefined,
+	): FullGradedAnswer => {
+		const isCorrect = userAnswer === q.correctAnswer
+
+		return {
+			id: q.id,
+			userAnswer,
+			correctAnswer: q.correctAnswer,
+			correct: isCorrect,
+			type: q.type,
+		}
+	}
+
+	// 😺 categorization grading
+	// -------------------------
+	// value schema: { "Κερκίνη": "II", "Αλιάκμονας": "I" }
 	const gradeCategorization = (
 		q: FullCategorizationQuestion,
 		userAnswer: FullAnswer | undefined,
@@ -286,9 +332,7 @@ export const useFullGrading = () => {
 		}
 	}
 
-	// =========================================================
 	// helper: ελέγχει αν είναι MapPoint[]
-	// =========================================================
 	const isMapPointArray = (value: unknown): value is MapPoint[] => {
 		return (
 			Array.isArray(value) &&
@@ -303,9 +347,8 @@ export const useFullGrading = () => {
 		)
 	}
 
-	// =========================================================
-	// mapPoints grading
-	// =========================================================
+	// 🌏 mapPoints grading
+	// ---------------------
 	const gradeMapPoints = (
 		q: GeoMapPointsQuestion,
 		userAnswer: FullAnswer | undefined,
@@ -340,9 +383,9 @@ export const useFullGrading = () => {
 		}
 	}
 
-	// =========================================================
-	// wordMatching grading
-	// =========================================================
+	// 📕 wordMatching grading
+	// -------------------------
+	// value schema: { "1": "του Δία", "2": "του Απόλλωνα" } key = blankKey (αριθμός κενού μέσα στο textTemplate), value = wordBank key (πχ "1A", "2B")
 	const gradeWordMatching = (
 		q: FullWordMatchingQuestion,
 		userAnswer: FullAnswer | undefined,
@@ -367,9 +410,9 @@ export const useFullGrading = () => {
 		}
 	}
 
-	// =========================================================
-	// open text
-	// =========================================================
+	// 💬 open text
+	//  -----------
+	// value schema: "Το εκλογικό σύστημα είναι..." Απλό string. Το grading (AI) λαμβάνει αυτό το string αυτούσιο.
 	const gradeOpenTextAsync = async (
 		q: FullOpenTextQuestion,
 		userAnswer: FullAnswer | undefined,
@@ -458,9 +501,7 @@ export const useFullGrading = () => {
 		}
 	}
 
-	// =========================================================
 	// MAIN gradeAll
-	// =========================================================
 	const gradeAll = async (
 		questions: FullQuestion[],
 		answers: Record<string, FullAnswer>,
@@ -512,6 +553,10 @@ export const useFullGrading = () => {
 
 				case "openText":
 					result = await gradeOpenTextAsync(q, userAnswer)
+					break
+
+				case "trueFalseNA":
+					result = gradeTrueFalseNA(q, userAnswer)
 					break
 			}
 

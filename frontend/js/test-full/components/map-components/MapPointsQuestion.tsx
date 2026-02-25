@@ -1,5 +1,5 @@
 import { useState } from "react"
-import type { GeoMapPointsQuestion, MapPoint } from "../types/Full.types"
+import type { GeoMapPointsQuestion, MapPoint } from "../../types/Full.types"
 
 type MapPointsQuestionProps = {
 	question: GeoMapPointsQuestion

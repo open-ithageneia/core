@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import type { FullAnswer, FullGradedAnswer } from "../types/Full.types"
-import MapPointsGradingBlock from "./MapPointsGradingBlock"
+import type { FullAnswer, FullGradedAnswer } from "../../types/Full.types"
+import MapPointsGradingBlock from "../map-components/MapPointsGradingBlock"
 
 type Props = {
 	gradedAnswers: FullGradedAnswer[]

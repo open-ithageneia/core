@@ -1,8 +1,8 @@
 // frontend/src/geography-full/components/MapPointsGradingBlock.tsx
 
 import { Badge } from "@/components/ui/badge"
-import type { GradedPoint, MapPoint } from "../types/Full.types"
-import MapClickQuiz from "./MapClickQuiz"
+import type { GradedPoint, MapPoint } from "../../types/Full.types"
+import MapClickQuiz from "../map-components/MapClickQuiz"
 
 type Props = {
 	reviewPoints: MapPoint[]
