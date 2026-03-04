@@ -4,12 +4,13 @@
 
 help:
 	@echo "Targets:"
-	@echo "  make lint        Run Python (Ruff) + JS/TS (Biome) checks"
-	@echo "  make fix         Auto-fix Python (Ruff) + JS/TS (Biome)"
-	@echo "  make lint-python Run Ruff checks only"
-	@echo "  make lint-js     Run Biome lint only"
-	@echo "  make fix-python  Auto-fix Ruff + format"
-	@echo "  make fix-js      Auto-fix Biome (check --write)"
+	@echo "  make lint        	Run Python (Ruff) + JS/TS (Biome) checks"
+	@echo "  make fix         	Auto-fix Python (Ruff) + JS/TS (Biome)"
+	@echo "  make lint-python 	Run Ruff checks only"
+	@echo "  make fixtures-all	Load all fixtures"
+	@echo "  make lint-js     	Run Biome lint only"
+	@echo "  make fix-python  	Auto-fix Ruff + format"
+	@echo "  make fix-js      	Auto-fix Biome (check --write)"
 
 lint: lint-python lint-js
 
@@ -21,6 +22,9 @@ lint-python:
 fix-python:
 	uv run ruff check --fix .
 	uv run ruff format .
+
+fixtures-all:
+	uv run python manage.py loaddata fixtures/*.json fixtures/**/*.json
 
 lint-js:
 	npm run lint && npm run typecheck
