@@ -16,7 +16,6 @@ dependencies = [
     "gunicorn~=23.0.0",
     "pillow~=12.1.0",
     "djangorestframework>=3.16.1",
-    "jsonschema>=4.26.0",
     "django-filter>=25.2",
 ]
 

@@ -1,6 +1,3 @@
-import jsonschema
-from jsonschema import ValidationError
-
 TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA = {
     "type": "object",
     "properties": {
