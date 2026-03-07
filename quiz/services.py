@@ -28,11 +28,6 @@ class QuizService:
 		return ExamSessionSerializer(qs, many=True).data
 
 	@staticmethod
-	def exam_session_detail(pk):
-		session = ExamSession.objects.get(pk=pk)
-		return ExamSessionSerializer(session).data
-
-	@staticmethod
 	def _list(model, filterset_class, serializer_class, params=None):
 		qs = filterset_class(params, queryset=model.objects.all()).qs
 		return serializer_class(qs, many=True).data
