@@ -221,3 +221,18 @@ def immutable_file_test(path, url):
 
 
 WHITENOISE_IMMUTABLE_FILE_TEST = immutable_file_test
+
+
+ADMIN_STRUCTURE = [
+    (
+        "quiz",
+        [
+            "Question",
+            "FillInTheBlank",
+            "DragAndDrop",
+            "Matching",
+            "QuizAsset",
+            "ExamSession",
+        ],
+    ),
+]
