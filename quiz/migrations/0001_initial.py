@@ -8,100 +8,100 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    initial = True
+	initial = True
 
-    dependencies = [
-    ]
+	dependencies = [
+	]
 
-    operations = [
-        migrations.CreateModel(
-            name='QuizAsset',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('title', models.CharField(blank=True, default='', max_length=255)),
-                ('image', models.ImageField(upload_to=quiz.models.get_quiz_asset_upload_to)),
-            ],
-            options={
-                'verbose_name_plural': 'Quiz Assets',
-            },
-        ),
-        migrations.CreateModel(
-            name='ExamSession',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('year', models.PositiveSmallIntegerField(validators=[django.core.validators.MinValueValidator(2000), django.core.validators.MaxValueValidator(2100)])),
-                ('month', models.PositiveSmallIntegerField(choices=[(1, 'January'), (2, 'February'), (3, 'March'), (4, 'April'), (5, 'May'), (6, 'June'), (7, 'July'), (8, 'August'), (9, 'September'), (10, 'October'), (11, 'November'), (12, 'December')])),
-            ],
-            options={
-                'verbose_name_plural': 'Exam Sessions',
-                'ordering': ['-year', '-month'],
-                'indexes': [models.Index(fields=['year', 'month'], name='quiz_examse_year_d8e3a8_idx')],
-                'constraints': [models.UniqueConstraint(fields=('year', 'month'), name='uniq_exam_session'), models.CheckConstraint(condition=models.Q(('month__gte', 1), ('month__lte', 12)), name='month_between_1_and_12')],
-            },
-        ),
-        migrations.CreateModel(
-            name='DragAndDrop',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('is_active', models.BooleanField(default=True)),
-                ('category', models.CharField(choices=[('GEOGRAPHY', 'Geography'), ('CIVICS', 'Civics'), ('HISTORY', 'History'), ('CULTURE', 'Culture')], default='GEOGRAPHY', max_length=9)),
-                ('content', django_jsonform.models.fields.JSONField(blank=True, default=list)),
-                ('exam_sessions', models.ManyToManyField(blank=True, related_name='%(class)s_quizzes', to='quiz.examsession')),
-            ],
-            options={
-                'verbose_name_plural': 'Drag And Drop',
-            },
-        ),
-        migrations.CreateModel(
-            name='FillInTheBlank',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('is_active', models.BooleanField(default=True)),
-                ('category', models.CharField(choices=[('GEOGRAPHY', 'Geography'), ('CIVICS', 'Civics'), ('HISTORY', 'History'), ('CULTURE', 'Culture')], default='GEOGRAPHY', max_length=9)),
-                ('content', django_jsonform.models.fields.JSONField(blank=True, default=dict)),
-                ('exam_sessions', models.ManyToManyField(blank=True, related_name='%(class)s_quizzes', to='quiz.examsession')),
-            ],
-            options={
-                'verbose_name_plural': 'Fill in the blank',
-            },
-        ),
-        migrations.CreateModel(
-            name='Matching',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('is_active', models.BooleanField(default=True)),
-                ('category', models.CharField(choices=[('GEOGRAPHY', 'Geography'), ('CIVICS', 'Civics'), ('HISTORY', 'History'), ('CULTURE', 'Culture')], default='GEOGRAPHY', max_length=9)),
-                ('content', django_jsonform.models.fields.JSONField(blank=True, default=list)),
-                ('exam_sessions', models.ManyToManyField(blank=True, related_name='%(class)s_quizzes', to='quiz.examsession')),
-            ],
-            options={
-                'verbose_name_plural': 'Matching',
-            },
-        ),
-        migrations.CreateModel(
-            name='Statement',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('is_active', models.BooleanField(default=True)),
-                ('category', models.CharField(choices=[('GEOGRAPHY', 'Geography'), ('CIVICS', 'Civics'), ('HISTORY', 'History'), ('CULTURE', 'Culture')], default='GEOGRAPHY', max_length=9)),
-                ('type', models.CharField(choices=[('TRUE_FALSE', 'True/False'), ('MULTIPLE_CHOICE', 'Multiple Choice')], default='TRUE_FALSE', max_length=15)),
-                ('content', django_jsonform.models.fields.JSONField(blank=True, default=dict)),
-                ('exam_sessions', models.ManyToManyField(blank=True, related_name='%(class)s_quizzes', to='quiz.examsession')),
-            ],
-            options={
-                'verbose_name_plural': 'Statements (True/False or Multiple choice)',
-            },
-        ),
-    ]
+	operations = [
+		migrations.CreateModel(
+			name='QuizAsset',
+			fields=[
+				('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+				('created_at', models.DateTimeField(auto_now_add=True)),
+				('updated_at', models.DateTimeField(auto_now=True)),
+				('title', models.CharField(blank=True, default='', max_length=255)),
+				('image', models.ImageField(upload_to=quiz.models.get_quiz_asset_upload_to)),
+			],
+			options={
+				'verbose_name_plural': 'Quiz Assets',
+			},
+		),
+		migrations.CreateModel(
+			name='ExamSession',
+			fields=[
+				('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+				('created_at', models.DateTimeField(auto_now_add=True)),
+				('updated_at', models.DateTimeField(auto_now=True)),
+				('year', models.PositiveSmallIntegerField(validators=[django.core.validators.MinValueValidator(2000), django.core.validators.MaxValueValidator(2100)])),
+				('month', models.PositiveSmallIntegerField(choices=[(1, 'January'), (2, 'February'), (3, 'March'), (4, 'April'), (5, 'May'), (6, 'June'), (7, 'July'), (8, 'August'), (9, 'September'), (10, 'October'), (11, 'November'), (12, 'December')])),
+			],
+			options={
+				'verbose_name_plural': 'Exam Sessions',
+				'ordering': ['-year', '-month'],
+				'indexes': [models.Index(fields=['year', 'month'], name='quiz_examse_year_d8e3a8_idx')],
+				'constraints': [models.UniqueConstraint(fields=('year', 'month'), name='uniq_exam_session'), models.CheckConstraint(condition=models.Q(('month__gte', 1), ('month__lte', 12)), name='month_between_1_and_12')],
+			},
+		),
+		migrations.CreateModel(
+			name='DragAndDrop',
+			fields=[
+				('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+				('created_at', models.DateTimeField(auto_now_add=True)),
+				('updated_at', models.DateTimeField(auto_now=True)),
+				('is_active', models.BooleanField(default=True)),
+				('category', models.CharField(choices=[('GEOGRAPHY', 'Geography'), ('CIVICS', 'Civics'), ('HISTORY', 'History'), ('CULTURE', 'Culture')], default='GEOGRAPHY', max_length=9)),
+				('content', django_jsonform.models.fields.JSONField(blank=True, default=list)),
+				('exam_sessions', models.ManyToManyField(blank=True, related_name='%(class)s_quizzes', to='quiz.examsession')),
+			],
+			options={
+				'verbose_name_plural': 'Drag And Drop',
+			},
+		),
+		migrations.CreateModel(
+			name='FillInTheBlank',
+			fields=[
+				('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+				('created_at', models.DateTimeField(auto_now_add=True)),
+				('updated_at', models.DateTimeField(auto_now=True)),
+				('is_active', models.BooleanField(default=True)),
+				('category', models.CharField(choices=[('GEOGRAPHY', 'Geography'), ('CIVICS', 'Civics'), ('HISTORY', 'History'), ('CULTURE', 'Culture')], default='GEOGRAPHY', max_length=9)),
+				('content', django_jsonform.models.fields.JSONField(blank=True, default=dict)),
+				('exam_sessions', models.ManyToManyField(blank=True, related_name='%(class)s_quizzes', to='quiz.examsession')),
+			],
+			options={
+				'verbose_name_plural': 'Fill in the blank',
+			},
+		),
+		migrations.CreateModel(
+			name='Matching',
+			fields=[
+				('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+				('created_at', models.DateTimeField(auto_now_add=True)),
+				('updated_at', models.DateTimeField(auto_now=True)),
+				('is_active', models.BooleanField(default=True)),
+				('category', models.CharField(choices=[('GEOGRAPHY', 'Geography'), ('CIVICS', 'Civics'), ('HISTORY', 'History'), ('CULTURE', 'Culture')], default='GEOGRAPHY', max_length=9)),
+				('content', django_jsonform.models.fields.JSONField(blank=True, default=list)),
+				('exam_sessions', models.ManyToManyField(blank=True, related_name='%(class)s_quizzes', to='quiz.examsession')),
+			],
+			options={
+				'verbose_name_plural': 'Matching',
+			},
+		),
+		migrations.CreateModel(
+			name='Statement',
+			fields=[
+				('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+				('created_at', models.DateTimeField(auto_now_add=True)),
+				('updated_at', models.DateTimeField(auto_now=True)),
+				('is_active', models.BooleanField(default=True)),
+				('category', models.CharField(choices=[('GEOGRAPHY', 'Geography'), ('CIVICS', 'Civics'), ('HISTORY', 'History'), ('CULTURE', 'Culture')], default='GEOGRAPHY', max_length=9)),
+				('type', models.CharField(choices=[('TRUE_FALSE', 'True/False'), ('MULTIPLE_CHOICE', 'Multiple Choice')], default='TRUE_FALSE', max_length=15)),
+				('content', django_jsonform.models.fields.JSONField(blank=True, default=dict)),
+				('exam_sessions', models.ManyToManyField(blank=True, related_name='%(class)s_quizzes', to='quiz.examsession')),
+			],
+			options={
+				'verbose_name_plural': 'Statements (True/False or Multiple choice)',
+			},
+		),
+	]
