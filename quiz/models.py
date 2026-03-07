@@ -13,7 +13,7 @@ from .schemas import (
     DRAG_AND_DROP_QUIZ_SCHEMA,
     FILL_IN_THE_BLANK_QUIZ_SCHEMA,
     MATCHING_QUIZ_SCHEMA,
-    TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA, validate_against_schema,
+    TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA
 )
 
 
@@ -119,8 +119,7 @@ class Statement(AbstractQuiz):
     content = JSONField(
         blank=True,
         default=dict,
-        schema=TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA,
-        # validators=[validate_against_schema(TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA)]
+        schema=TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA
     )
 
     def get_asset_image(self, asset_id):
