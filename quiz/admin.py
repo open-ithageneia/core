@@ -12,7 +12,7 @@ from .models import (
     ExamSession,
     FillInTheBlank,
     Matching,
-    Question,
+    Statement,
     QuizAsset,
 )
 
@@ -118,8 +118,8 @@ class AbstractQuizAdmin(admin.ModelAdmin):
         return obj.exam_sessions_preview
 
 
-@admin.register(Question)
-class QuestionAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
+@admin.register(Statement)
+class StatementAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
     list_display = [
         "id",
         "type",

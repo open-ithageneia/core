@@ -26,6 +26,7 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),
+    path("quiz/", include("quiz.urls")),
 ]
 
 if settings.DEBUG:

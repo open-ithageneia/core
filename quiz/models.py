@@ -7,12 +7,13 @@ from django.db.models import Q
 from django_jsonform.models.fields import JSONField
 
 from open_ithageneia.models import ActivatableModel, TimeStampedModel
+from .managers import ExamSessionManager, StatementManager, AbstractQuizManager
 
 from .schemas import (
     DRAG_AND_DROP_QUIZ_SCHEMA,
     FILL_IN_THE_BLANK_QUIZ_SCHEMA,
     MATCHING_QUIZ_SCHEMA,
-    TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA,
+    TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA, validate_against_schema,
 )
 
 
@@ -50,6 +51,8 @@ class ExamSession(TimeStampedModel):
 
     def __str__(self):
         return f"{self.get_month_display()} - {self.year}"
+
+    objects = ExamSessionManager()
 
 
 def get_quiz_asset_upload_to(instance, filename):
@@ -99,11 +102,13 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel):
     class Meta:
         abstract = True
 
+    objects = AbstractQuizManager()
 
-class Question(AbstractQuiz):
+
+class Statement(AbstractQuiz):
     class QuizType(models.TextChoices):
         TRUE_FALSE = "TRUE_FALSE", "True/False"
-        MULTIPLE_CHOICE = "MULTIPLE_CHOICE", "Mutliple Choice"
+        MULTIPLE_CHOICE = "MULTIPLE_CHOICE", "Multiple Choice"
 
     type = models.CharField(
         max_length=15,
@@ -112,7 +117,10 @@ class Question(AbstractQuiz):
     )
 
     content = JSONField(
-        blank=True, default=dict, schema=TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA
+        blank=True,
+        default=dict,
+        schema=TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA,
+        # validators=[validate_against_schema(TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA)]
     )
 
     def get_asset_image(self, asset_id):
@@ -144,7 +152,9 @@ class Question(AbstractQuiz):
         return f"id: {self.id}, {self.type} - {self.category}"
 
     class Meta:
-        verbose_name_plural = "Questions (True/False or Multiple choice)"
+        verbose_name_plural = "Statements (True/False or Multiple choice)"
+
+    objects = StatementManager()
 
 
 class DragAndDrop(AbstractQuiz):

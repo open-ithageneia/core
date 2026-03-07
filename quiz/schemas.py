@@ -1,3 +1,6 @@
+import jsonschema
+from jsonschema import ValidationError
+
 TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA = {
     "type": "object",
     "properties": {
@@ -225,3 +228,12 @@ FILL_IN_THE_BLANK_QUIZ_SCHEMA = {
 #     },
 #     "additionalProperties": False,
 # }
+
+
+def validate_against_schema(schema):
+    def validator(value):
+        try:
+            jsonschema.validate(instance=value, schema=schema)
+        except jsonschema.ValidationError as e:
+            raise ValidationError(f"Invalid JSON structure: {e.message}")
+    return validator
