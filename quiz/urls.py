@@ -5,5 +5,5 @@ from . import views
 router = DefaultRouter()
 
 urlpatterns = [
-	path("", views.random_quiz_view, name="random-quiz"),
+    path("", views.random_quiz_view, name="random-quiz"),
 ]

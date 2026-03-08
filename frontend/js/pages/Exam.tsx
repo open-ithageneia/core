@@ -1,10 +1,10 @@
 ﻿import { Head } from "@inertiajs/react"
-import {
-	Exam,
-	Statement,
-	FillInTheBlank,
+import type {
 	DragAndDrop,
-	Matching
+	Exam,
+	FillInTheBlank,
+	Matching,
+	Statement,
 } from "@/types/models"
 
 interface Props {
@@ -20,14 +20,18 @@ export default function ExamSimulation({ exam }: Props) {
 
 				{exam.true_false.map((q: Statement) => (
 					<div key={q.id} className="border rounded-lg p-4 space-y-2">
-						<span className="text-xs text-gray-400 uppercase">True / False</span>
+						<span className="text-xs text-gray-400 uppercase">
+							True / False
+						</span>
 						<p>{q.content.prompt_text}</p>
 					</div>
 				))}
 
 				{exam.multiple_choice.map((q: Statement) => (
 					<div key={q.id} className="border rounded-lg p-4 space-y-2">
-						<span className="text-xs text-gray-400 uppercase">Multiple Choice</span>
+						<span className="text-xs text-gray-400 uppercase">
+							Multiple Choice
+						</span>
 						<p>{q.content.prompt_text}</p>
 						<ul className="list-disc list-inside text-gray-600">
 							{q.content.choices.map((c, i) => (
@@ -39,7 +43,9 @@ export default function ExamSimulation({ exam }: Props) {
 
 				{exam.fill_in_the_blank.map((q: FillInTheBlank) => (
 					<div key={q.id} className="border rounded-lg p-4 space-y-2">
-						<span className="text-xs text-gray-400 uppercase">Fill in the Blank</span>
+						<span className="text-xs text-gray-400 uppercase">
+							Fill in the Blank
+						</span>
 						{q.content.texts.map((text, i) => (
 							<p key={i}>{text}</p>
 						))}
@@ -50,7 +56,9 @@ export default function ExamSimulation({ exam }: Props) {
 					const [left, right] = q.content
 					return (
 						<div key={q.id} className="border rounded-lg p-4 space-y-2">
-							<span className="text-xs text-gray-400 uppercase">Drag and Drop</span>
+							<span className="text-xs text-gray-400 uppercase">
+								Drag and Drop
+							</span>
 							<div className="grid grid-cols-2 gap-2 text-gray-600">
 								<span className="font-medium">{left.title}</span>
 								<span className="font-medium">{right.title}</span>
