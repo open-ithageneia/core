@@ -1,11 +1,11 @@
-﻿import { Fragment } from "react"
-import { Head } from "@inertiajs/react"
-import {
-	Exam,
-	Statement,
-	FillInTheBlank,
+﻿import { Head } from "@inertiajs/react"
+import { Fragment } from "react"
+import type {
 	DragAndDrop,
+	Exam,
+	FillInTheBlank,
 	Matching,
+	Statement,
 } from "@/types/models"
 
 interface Props {
@@ -72,9 +72,7 @@ export default function ExamSimulation({ exam }: Props) {
 					const [left, right] = q.content
 					return (
 						<div key={q.id} className="border rounded-lg p-4 space-y-2">
-							<span className="text-xs text-gray-400 uppercase">
-								Matching
-							</span>
+							<span className="text-xs text-gray-400 uppercase">Matching</span>
 							<div className="grid grid-cols-2 gap-2 text-gray-600">
 								<span className="font-medium">{left.title}</span>
 								<span className="font-medium">{right.title}</span>
