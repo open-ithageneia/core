@@ -7,8 +7,8 @@ from django.db.models import Q
 from django_jsonform.models.fields import JSONField
 
 from open_ithageneia.models import ActivatableModel, TimeStampedModel
-from .managers import ExamSessionManager, StatementManager, AbstractQuizManager
 
+from .managers import AbstractQuizManager, ExamSessionManager, StatementManager
 from .schemas import (
     DRAG_AND_DROP_QUIZ_SCHEMA,
     FILL_IN_THE_BLANK_QUIZ_SCHEMA,

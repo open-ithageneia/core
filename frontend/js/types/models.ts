@@ -54,10 +54,12 @@ interface DragAndDropColumn {
 	values: string[]
 }
 
+export type DragAndDropContent = [DragAndDropColumn, DragAndDropColumn]
+
 export interface DragAndDrop extends TimeStamped, Activatable {
 	id: number
 	category: QuizCategory
-	content: [DragAndDropColumn, DragAndDropColumn]
+	content: DragAndDropContent
 	exam_sessions: ExamSession[]
 	exam_sessions_preview: string
 }
@@ -73,10 +75,12 @@ interface MatchingColumn {
 	items: MatchingItem[]
 }
 
+export type MatchingContent = [MatchingColumn, MatchingColumn]
+
 export interface Matching extends TimeStamped, Activatable {
 	id: number
 	category: QuizCategory
-	content: [MatchingColumn, MatchingColumn]
+	content: MatchingContent
 	exam_sessions: ExamSession[]
 	exam_sessions_preview: string
 }
@@ -102,3 +106,15 @@ export interface Exam {
 	drag_and_drop: [DragAndDrop]
 	matching: [Matching]
 }
+
+export type TrainingData = {
+	id: number
+	category: QuizCategory
+	content:
+		| FillInTheBlankContent
+		| TrueFalseContent
+		| MultipleChoiceContent
+		| MatchingContent
+		| DragAndDropContent
+	quiz_type: string
+}[]

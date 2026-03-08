@@ -1,24 +1,35 @@
+import random
+
+from django.db.models import CharField, Value
+
+from .filters import (
+    DragAndDropFilter,
+    FillInTheBlankFilter,
+    MatchingFilter,
+    StatementFilter,
+)
 from .models import (
-    ExamSession,
-    Statement,
-    FillInTheBlank,
-    DragAndDrop,
-    Matching,
     AbstractQuiz,
+    DragAndDrop,
+    ExamSession,
+    FillInTheBlank,
+    Matching,
+    Statement,
 )
 from .serializers import (
-    ExamSessionSerializer,
-    StatementSerializer,
-    FillInTheBlankSerializer,
     DragAndDropSerializer,
+    ExamSessionSerializer,
+    FillInTheBlankSerializer,
     MatchingSerializer,
+    StatementSerializer,
 )
-from .filters import (
-    StatementFilter,
-    FillInTheBlankFilter,
-    DragAndDropFilter,
-    MatchingFilter,
-)
+
+QUIZ_MODELS = [
+    Statement,
+    Matching,
+    DragAndDrop,
+    FillInTheBlank,
+]
 
 
 class QuizService:
@@ -98,3 +109,28 @@ class QuizService:
             ),
             "matching": sample(Matching, MatchingFilter, MatchingSerializer),
         }
+
+    @staticmethod
+    def get_by_category(category: str, amount: int):
+        items = []
+
+        for model in QUIZ_MODELS:
+            # This increases the probability that each model contributes at least one item,
+            # compared to queryset = model.objects.filter(category=category), but did it for performance reasons
+            queryset = (
+                model.objects.filter(
+                    category=category,
+                    exam_sessions=ExamSession.objects.first(),  # no need to add latest() in managers.py since we have ordering = ["-year", "-month"] in model Meta
+                )
+                .annotate(quiz_type=Value(model.__name__, output_field=CharField()))
+                .values("id", "category", "content", "quiz_type")
+                .distinct()
+                .order_by("?")[:amount]
+            )
+
+            for instance in queryset:
+                items.append(instance)
+
+        random.shuffle(items)
+
+        return items[:amount]
