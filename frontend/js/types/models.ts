@@ -1,4 +1,4 @@
-﻿import {QuizCategory, StatementType} from "@/types/enums";
+﻿import {QuizCategory, StatementType} from "@/types/enums"
 
 interface TimeStamped {
 	created: string
