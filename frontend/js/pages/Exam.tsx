@@ -1,5 +1,11 @@
 ﻿import { Head } from "@inertiajs/react"
-import { Exam, Statement, FillInTheBlank, DragAndDrop, Matching } from "@/types/models"
+import {
+	Exam,
+	Statement,
+	FillInTheBlank,
+	DragAndDrop,
+	Matching
+} from "@/types/models"
 
 interface Props {
 	exam: Exam
