@@ -7,6 +7,7 @@ from django.db.models import Q
 from django_jsonform.models.fields import JSONField
 
 from open_ithageneia.models import ActivatableModel, TimeStampedModel
+from .managers import ExamSessionManager, StatementManager, AbstractQuizManager
 
 from .schemas import (
     DRAG_AND_DROP_QUIZ_SCHEMA,
@@ -50,6 +51,8 @@ class ExamSession(TimeStampedModel):
 
     def __str__(self):
         return f"{self.get_month_display()} - {self.year}"
+
+    objects = ExamSessionManager()
 
 
 def get_quiz_asset_upload_to(instance, filename):
@@ -99,11 +102,13 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel):
     class Meta:
         abstract = True
 
+    objects = AbstractQuizManager()
 
-class Question(AbstractQuiz):
+
+class Statement(AbstractQuiz):
     class QuizType(models.TextChoices):
         TRUE_FALSE = "TRUE_FALSE", "True/False"
-        MULTIPLE_CHOICE = "MULTIPLE_CHOICE", "Mutliple Choice"
+        MULTIPLE_CHOICE = "MULTIPLE_CHOICE", "Multiple Choice"
 
     type = models.CharField(
         max_length=15,
@@ -144,7 +149,9 @@ class Question(AbstractQuiz):
         return f"id: {self.id}, {self.type} - {self.category}"
 
     class Meta:
-        verbose_name_plural = "Questions (True/False or Multiple choice)"
+        verbose_name_plural = "Statements (True/False or Multiple choice)"
+
+    objects = StatementManager()
 
 
 class DragAndDrop(AbstractQuiz):

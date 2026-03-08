@@ -12,7 +12,7 @@ from .models import (
     ExamSession,
     FillInTheBlank,
     Matching,
-    Question,
+    Statement,
     QuizAsset,
 )
 
@@ -118,8 +118,8 @@ class AbstractQuizAdmin(admin.ModelAdmin):
         return obj.exam_sessions_preview
 
 
-@admin.register(Question)
-class QuestionAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
+@admin.register(Statement)
+class StatementAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
     list_display = [
         "id",
         "type",
@@ -214,16 +214,16 @@ class DragAndDropAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
 
             return format_html(
                 """
-                <div style="
-                    flex: 1;
-                    padding: 12px;
-                    border: 1px solid #e6e6fa;
-                    border-radius: 8px;
-                ">
-                    <div style="font-weight: 600; margin-bottom: 8px;">{}</div>
-                    <ul style="margin: 0; padding-left: 18px;">{}</ul>
-                </div>
-                """,
+				<div style="
+					flex: 1;
+					padding: 12px;
+					border: 1px solid #e6e6fa;
+					border-radius: 8px;
+				">
+					<div style="font-weight: 600; margin-bottom: 8px;">{}</div>
+					<ul style="margin: 0; padding-left: 18px;">{}</ul>
+				</div>
+				""",
                 title,
                 items_html,
             )
@@ -233,10 +233,10 @@ class DragAndDropAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
 
         return format_html(
             """
-            <div style="display:flex; gap: 12px; align-items: flex-start; max-width: 900px;">
-                {} {}
-            </div>
-            """,
+			<div style="display:flex; gap: 12px; align-items: flex-start; max-width: 900px;">
+				{} {}
+			</div>
+			""",
             left_html,
             right_html,
         )
@@ -266,16 +266,16 @@ class MatchingAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
             return [
                 format_html(
                     """
-                    <div style="
-                        flex: 1;
-                        padding: 12px;
-                        border: 1px solid #e6e6fa;
-                        border-radius: 8px;
-                    ">
-                        <div style="font-weight: 600; margin-bottom: 8px;">{}</div>
-                        <ol type="{}" style="margin: 0; padding-left: 18px;">{}</ol>
-                    </div>
-                    """,
+					<div style="
+						flex: 1;
+						padding: 12px;
+						border: 1px solid #e6e6fa;
+						border-radius: 8px;
+					">
+						<div style="font-weight: 600; margin-bottom: 8px;">{}</div>
+						<ol type="{}" style="margin: 0; padding-left: 18px;">{}</ol>
+					</div>
+					""",
                     title,
                     list_type,
                     items_html,
@@ -304,13 +304,13 @@ class MatchingAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
 
         return format_html(
             """
-            <div style="display:flex; gap: 12px; align-items: flex-start; max-width: 900px;">
-                {} {}
-            </div>
-            <div style="margin-top: 10px;">
-                {}
-            </div>
-            """,
+			<div style="display:flex; gap: 12px; align-items: flex-start; max-width: 900px;">
+				{} {}
+			</div>
+			<div style="margin-top: 10px;">
+				{}
+			</div>
+			""",
             left_html,
             right_html,
             result_list_html,
@@ -365,13 +365,13 @@ class FillInTheBlankAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
 
         return format_html(
             """
-                <div>
-                    <p><em>{}</em></p>
-                </div>
-                <div style="margin-top: 10px;">
-                    {}
-                </div>
-                """,
+				<div>
+					<p><em>{}</em></p>
+				</div>
+				<div style="margin-top: 10px;">
+					{}
+				</div>
+				""",
             ", ".join(str(marked) for marked in all_marked),
             rendered_html_list,
         )

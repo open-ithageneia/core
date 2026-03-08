@@ -14,7 +14,9 @@ dependencies = [
     "django-import-export~=4.4.0",
     "whitenoise~=6.11.0",
     "gunicorn~=23.0.0",
-    "pillow~=12.1.0"
+    "pillow~=12.1.0",
+    "djangorestframework>=3.16.1",
+    "django-filter>=25.2",
 ]
 
 [dependency-groups]

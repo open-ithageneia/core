@@ -1,6 +1,6 @@
 [
 	{
-		"model": "quiz.question",
+		"model": "quiz.statement",
 		"pk": 1,
 		"fields": {
 			"type": "TRUE_FALSE",
@@ -32,7 +32,7 @@
 		}
 	},
 	{
-		"model": "quiz.question",
+		"model": "quiz.statement",
 		"pk": 2,
 		"fields": {
 			"type": "TRUE_FALSE",
@@ -54,7 +54,7 @@
 		}
 	},
 	{
-		"model": "quiz.question",
+		"model": "quiz.statement",
 		"pk": 3,
 		"fields": {
 			"type": "TRUE_FALSE",
@@ -86,7 +86,7 @@
 		}
 	},
 	{
-		"model": "quiz.question",
+		"model": "quiz.statement",
 		"pk": 4,
 		"fields": {
 			"type": "TRUE_FALSE",
@@ -117,7 +117,7 @@
 		}
 	},
 	{
-		"model": "quiz.question",
+		"model": "quiz.statement",
 		"pk": 5,
 		"fields": {
 			"type": "MULTIPLE_CHOICE",
@@ -149,7 +149,7 @@
 		}
 	},
 	{
-		"model": "quiz.question",
+		"model": "quiz.statement",
 		"pk": 6,
 		"fields": {
 			"type": "MULTIPLE_CHOICE",
@@ -181,7 +181,7 @@
 		}
 	},
 	{
-		"model": "quiz.question",
+		"model": "quiz.statement",
 		"pk": 7,
 		"fields": {
 			"type": "MULTIPLE_CHOICE",
@@ -213,7 +213,7 @@
 		}
 	},
 	{
-		"model": "quiz.question",
+		"model": "quiz.statement",
 		"pk": 8,
 		"fields": {
 			"type": "MULTIPLE_CHOICE",

@@ -1,3 +1,9 @@
-# from django.shortcuts import render
+from inertia import render
 
-# Create your views here.
+from quiz.services import QuizService
+
+
+def random_quiz_view(request):
+    return render(
+        request, "Exam", props={"exam": QuizService.random_quiz(request.GET.dict())}
+    )
