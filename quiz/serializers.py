@@ -1,11 +1,13 @@
 from rest_framework import serializers
+
 from .models import (
+    AbstractQuiz,
+    DragAndDrop,
     ExamSession,
+    FillInTheBlank,
+    Matching,
     QuizAsset,
     Statement,
-    DragAndDrop,
-    Matching,
-    FillInTheBlank,
 )
 
 
@@ -114,3 +116,10 @@ class FillInTheBlankSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+class ExerciseQuerySerializer(serializers.Serializer):
+    category = serializers.ChoiceField(
+        default="", choices=AbstractQuiz.QuizCategory.choices
+    )
+    amount = serializers.ChoiceField(default=10, choices=[5, 10, 20])
