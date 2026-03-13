@@ -1,5 +1,3 @@
-from import_export import resources
-import json
 import re
 from django.contrib import admin
 from django.utils.html import format_html, format_html_join
@@ -16,6 +14,7 @@ from .models import (
 	Statement,
 	QuizAsset,
 )
+from .resources import FillInTheBlankResource, StatementResource, DragAndDropResource, MatchingResource
 
 
 @admin.register(ExamSession)
@@ -121,6 +120,7 @@ class AbstractQuizAdmin(admin.ModelAdmin):
 
 @admin.register(Statement)
 class StatementAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
+	resource_classes = [StatementResource]
 	list_display = [
 		"id",
 		"type",
@@ -194,6 +194,8 @@ class StatementAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
 
 @admin.register(DragAndDrop)
 class DragAndDropAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
+	resource_classes = [DragAndDropResource]
+
 	@admin.display(description="Answer")
 	def answer_preview(self, instance):
 		content = getattr(instance, "content", [])
@@ -245,6 +247,8 @@ class DragAndDropAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
 
 @admin.register(Matching)
 class MatchingAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
+	resource_classes = [MatchingResource]
+
 	@admin.display(description="Answer")
 	def answer_preview(self, instance):
 		content = getattr(instance, "content", [])
@@ -315,34 +319,6 @@ class MatchingAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
 			left_html,
 			right_html,
 			result_list_html,
-		)
-
-
-class FillInTheBlankResource(resources.ModelResource):
-	class Meta:
-		model = FillInTheBlank
-		fields = ("id", "category", "content")
-		import_id_fields = ("id",)
-
-	def before_import_row(self, row, row_number=None, **kwargs):
-		"""Assemble content JSON from flat xlsx columns."""
-		texts = []
-		i = 1
-		while f"text_{i}" in row and row[f"text_{i}"]:
-			texts.append({"text": row[f"text_{i}"]})
-			i += 1
-
-		row["content"] = json.dumps(
-			{
-				"show_answers_as_choices": str(
-					row.get("show_answers_as_choices", "false")
-				).lower()
-				== "true",
-				"prompt_asset_id": int(row["prompt_asset_id"])
-				if row.get("prompt_asset_id")
-				else None,
-				"texts": texts,
-			}
 		)
 
 
