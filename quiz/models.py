@@ -133,7 +133,6 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
 
 
 class Statement(AbstractQuiz):
-
 	class QuizType(models.TextChoices):
 		TRUE_FALSE = "TRUE_FALSE", "True/False"
 		MULTIPLE_CHOICE = "MULTIPLE_CHOICE", "Multiple Choice"
@@ -195,7 +194,6 @@ class Statement(AbstractQuiz):
 
 
 class DragAndDrop(AbstractQuiz):
-
 	content = JSONField(
 		blank=True, default=list, schema=DragAndDropContent.DRAG_AND_DROP_CONTENT_SCHEMA
 	)
@@ -212,7 +210,6 @@ class DragAndDrop(AbstractQuiz):
 
 
 class Matching(AbstractQuiz):
-
 	content = JSONField(
 		blank=True, default=list, schema=MatchingContent.MATCHING_CONTENT_SCHEMA
 	)
