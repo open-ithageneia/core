@@ -40,56 +40,56 @@ SITE_ID = 1
 
 # Application definition
 INSTALLED_APPS = [
-    # Django built-in apps
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "django.contrib.sites",
-    # Installed apps
-    "django_jsonform",
-    "django_vite",
-    "import_export",
-    "inertia",
-    "allauth",
-    "allauth.account",
-    # Our apps
-    "open_ithageneia.apps.OpenIthageneiaConfig",
-    "quiz",
+	# Django built-in apps
+	"django.contrib.admin",
+	"django.contrib.auth",
+	"django.contrib.contenttypes",
+	"django.contrib.sessions",
+	"django.contrib.messages",
+	"django.contrib.staticfiles",
+	"django.contrib.sites",
+	# Installed apps
+	"django_jsonform",
+	"django_vite",
+	"import_export",
+	"inertia",
+	"allauth",
+	"allauth.account",
+	# Our apps
+	"open_ithageneia.apps.OpenIthageneiaConfig",
+	"quiz",
 ]
 
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "allauth.account.middleware.AccountMiddleware",
-    "inertia.middleware.InertiaMiddleware",
-    "open_ithageneia.middleware.DataShareMiddleware",
+	"django.middleware.security.SecurityMiddleware",
+	"whitenoise.middleware.WhiteNoiseMiddleware",
+	"django.contrib.sessions.middleware.SessionMiddleware",
+	"django.middleware.common.CommonMiddleware",
+	"django.middleware.csrf.CsrfViewMiddleware",
+	"django.contrib.auth.middleware.AuthenticationMiddleware",
+	"django.contrib.messages.middleware.MessageMiddleware",
+	"django.middleware.clickjacking.XFrameOptionsMiddleware",
+	"allauth.account.middleware.AccountMiddleware",
+	"inertia.middleware.InertiaMiddleware",
+	"open_ithageneia.middleware.DataShareMiddleware",
 ]
 
 ROOT_URLCONF = "open_ithageneia.urls"
 
 TEMPLATES = [
-    {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-            ],
-        },
-    },
+	{
+		"BACKEND": "django.template.backends.django.DjangoTemplates",
+		"DIRS": [BASE_DIR / "templates"],
+		"APP_DIRS": True,
+		"OPTIONS": {
+			"context_processors": [
+				"django.template.context_processors.debug",
+				"django.template.context_processors.request",
+				"django.contrib.auth.context_processors.auth",
+				"django.contrib.messages.context_processors.messages",
+			],
+		},
+	},
 ]
 
 WSGI_APPLICATION = "open_ithageneia.wsgi.application"
@@ -102,24 +102,24 @@ IS_PREVIEW_DEPLOYMENT = env.bool("IS_PREVIEW_DEPLOYMENT", default=False)
 
 SQLITE_PERSISTENT_DB_DIR = BASE_DIR / "db"
 SQLITE_DB_DIR = (
-    Path("/tmp/open_ithageneia_db")
-    if IS_PREVIEW_DEPLOYMENT
-    else SQLITE_PERSISTENT_DB_DIR
+	Path("/tmp/open_ithageneia_db")
+	if IS_PREVIEW_DEPLOYMENT
+	else SQLITE_PERSISTENT_DB_DIR
 )
 SQLITE_DB_DIR.mkdir(parents=True, exist_ok=True)
 
 SQLITE_DB_FILENAME = (
-    env.str("SQLITE_DB_FILENAME", default="db.sqlite3").strip() or "db.sqlite3"
+	env.str("SQLITE_DB_FILENAME", default="db.sqlite3").strip() or "db.sqlite3"
 )
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": SQLITE_DB_DIR / SQLITE_DB_FILENAME,
-        "OPTIONS": {
-            "transaction_mode": "IMMEDIATE",
-            "timeout": 5,  # seconds
-            "init_command": """
+	"default": {
+		"ENGINE": "django.db.backends.sqlite3",
+		"NAME": SQLITE_DB_DIR / SQLITE_DB_FILENAME,
+		"OPTIONS": {
+			"transaction_mode": "IMMEDIATE",
+			"timeout": 5,  # seconds
+			"init_command": """
                 PRAGMA foreign_keys = ON;
                 PRAGMA journal_mode = WAL;
                 PRAGMA synchronous = NORMAL;
@@ -128,8 +128,8 @@ DATABASES = {
                 PRAGMA journal_size_limit = 67108864;
                 PRAGMA cache_size = 2000;
             """,
-        },
-    }
+		},
+	}
 }
 
 
@@ -137,25 +137,25 @@ DATABASES = {
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+	{
+		"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+	},
+	{
+		"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+	},
+	{
+		"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+	},
+	{
+		"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+	},
 ]
 
 AUTHENTICATION_BACKENDS = [
-    # Needed to login by username in Django admin, regardless of `allauth`
-    "django.contrib.auth.backends.ModelBackend",
-    # `allauth` specific authentication methods, such as login by email
-    "allauth.account.auth_backends.AuthenticationBackend",
+	# Needed to login by username in Django admin, regardless of `allauth`
+	"django.contrib.auth.backends.ModelBackend",
+	# `allauth` specific authentication methods, such as login by email
+	"allauth.account.auth_backends.AuthenticationBackend",
 ]
 
 LOGIN_REDIRECT_URL = "/"
@@ -163,7 +163,7 @@ LOGIN_REDIRECT_URL = "/"
 ACCOUNT_EMAIL_VERIFICATION = "none"
 
 REST_FRAMEWORK = {
-    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
+	"DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
 }
 
 # Internationalization
@@ -190,11 +190,11 @@ MEDIA_URL = "/media/"
 
 # If use HMR or not.
 DJANGO_VITE = {
-    "default": {
-        "dev_mode": DEBUG,
-        "dev_server_host": env.str("DJANGO_VITE_DEV_SERVER_HOST", default="localhost"),
-        "dev_server_port": env.int("DJANGO_VITE_DEV_SERVER_PORT", default=5173),
-    }
+	"default": {
+		"dev_mode": DEBUG,
+		"dev_server_host": env.str("DJANGO_VITE_DEV_SERVER_HOST", default="localhost"),
+		"dev_server_port": env.int("DJANGO_VITE_DEV_SERVER_PORT", default=5173),
+	}
 }
 # Where ViteJS assets are built.
 DJANGO_VITE_ASSETS_PATH = BASE_DIR / "frontend" / "dist"
@@ -219,23 +219,23 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # http://whitenoise.evans.io/en/stable/django.html#WHITENOISE_IMMUTABLE_FILE_TEST
 def immutable_file_test(path, url):
-    # Match vite (rollup)-generated hashes, à la, `some_file-CSliV9zW.js`
-    return re.match(r"^.+[.-][0-9a-zA-Z_-]{8,12}\..+$", url)
+	# Match vite (rollup)-generated hashes, à la, `some_file-CSliV9zW.js`
+	return re.match(r"^.+[.-][0-9a-zA-Z_-]{8,12}\..+$", url)
 
 
 WHITENOISE_IMMUTABLE_FILE_TEST = immutable_file_test
 
 
 ADMIN_STRUCTURE = [
-    (
-        "quiz",
-        [
-            "Question",
-            "FillInTheBlank",
-            "DragAndDrop",
-            "Matching",
-            "QuizAsset",
-            "ExamSession",
-        ],
-    ),
+	(
+		"quiz",
+		[
+			"Question",
+			"FillInTheBlank",
+			"DragAndDrop",
+			"Matching",
+			"QuizAsset",
+			"ExamSession",
+		],
+	),
 ]

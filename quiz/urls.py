@@ -6,6 +6,6 @@ from . import views
 router = DefaultRouter()
 
 urlpatterns = [
-    path("", views.random_quiz_view, name="random-quiz"),
-    path("training", views.training, name="training"),
+	path("", views.random_quiz_view, name="random-quiz"),
+	path("training", views.training, name="training"),
 ]
