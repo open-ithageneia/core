@@ -1,5 +1,6 @@
+from import_export import resources
+import json
 import re
-
 from django.contrib import admin
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
@@ -317,61 +318,92 @@ class MatchingAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
         )
 
 
+class FillInTheBlankResource(resources.ModelResource):
+    class Meta:
+        model = FillInTheBlank
+        fields = ("id", "category", "content")
+        import_id_fields = ("id",)
+
+    def before_import_row(self, row, row_number=None, **kwargs):
+        """Assemble content JSON from flat xlsx columns."""
+        texts = []
+        i = 1
+        while f"text_{i}" in row and row[f"text_{i}"]:
+            texts.append({"text": row[f"text_{i}"]})
+            i += 1
+
+        row["content"] = json.dumps(
+            {
+                "show_answers_as_choices": str(
+                    row.get("show_answers_as_choices", "false")
+                ).lower()
+                == "true",
+                "prompt_asset_id": int(row["prompt_asset_id"])
+                if row.get("prompt_asset_id")
+                else None,
+                "texts": texts,
+            }
+        )
+
+
 @admin.register(FillInTheBlank)
 class FillInTheBlankAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
+    resource_classes = [FillInTheBlankResource]
+
     @admin.display(description="Answer")
     def answer_preview(self, instance):
-        # prompt_asset_id = instance.content.get("prompt_asset_id", None)
-        # show_answers_as_choices = instance.content.get(
-        #     "show_answers_as_choices", False
-        # )
-        texts = instance.content.get("texts", None)
+        texts = instance.content.get("texts", [])
 
-        TAG_RE = re.compile(r"<([^>]+)>")
+        blank_pattern = FillInTheBlank.BLANK_PATTERN
+        choice_pattern = FillInTheBlank.CHOICE_PATTERN
 
-        def extract_marked(text: str) -> list[str]:
-            """Return the list of strings inside <...>."""
+        def get_correct_answer(blank_content: str) -> str:
+            choices = choice_pattern.findall(blank_content)
+            correct = [text for text, marker in choices if marker == "*"]
+            return correct[0] if correct else "?"
 
-            return TAG_RE.findall(text)
+        def get_all_choices(blank_content: str) -> list[str]:
+            return [text for text, _ in choice_pattern.findall(blank_content)]
 
-        def render_underlined_html(text: str) -> str:
-            """
-            Return safe HTML where <inside> becomes <u>inside</u>,
-            and the rest of the text is escaped properly.
-            """
-
-            parts = TAG_RE.split(text)  # [outside, inside, outside, inside, outside...]
-            if len(parts) == 1:
-                return format_html("{}", text)
-
+        def render_text(text: str) -> str:
+            split_pattern = re.compile(r"<.+?>")
+            parts = split_pattern.split(text)
+            blanks = blank_pattern.findall(text)
             out = []
-
             for i, chunk in enumerate(parts):
-                if i % 2 == 0:
-                    # outside <...> => escape
-                    out.append(format_html("{}", chunk))
-                else:
-                    # inside <...> => underline, escape inside too
-                    out.append(format_html("<u>{}</u>", chunk))
-
+                out.append(format_html("{}", chunk))
+                if i < len(blanks):
+                    correct = get_correct_answer(blanks[i])
+                    all_choices = get_all_choices(blanks[i])
+                    out.append(
+                        format_html(
+                            "<u><strong>{}</strong></u> ({})",
+                            correct,
+                            ", ".join(all_choices),
+                        )
+                    )
             return mark_safe("".join(str(x) for x in out))
 
-        all_marked = [m for t in texts for m in extract_marked(t)]
-        rendered_html_list = [render_underlined_html(t) for t in texts]
+        all_correct = [
+            get_correct_answer(blank)
+            for t in texts
+            for blank in blank_pattern.findall(t.get("text", ""))
+        ]
 
+        rendered_texts = [render_text(t.get("text", "")) for t in texts]
         rendered_html_list = format_html_join(
-            "", "<p>{}</p>", ((html,) for html in rendered_html_list)
+            "", "<p>{}</p>", ((html,) for html in rendered_texts)
         )
 
         return format_html(
             """
-				<div>
-					<p><em>{}</em></p>
-				</div>
-				<div style="margin-top: 10px;">
-					{}
-				</div>
-				""",
-            ", ".join(str(marked) for marked in all_marked),
+			<div>
+				<p><em>{}</em></p>
+			</div>
+			<div style="margin-top: 10px;">
+				{}
+			</div>
+			""",
+            ", ".join(all_correct),
             rendered_html_list,
         )

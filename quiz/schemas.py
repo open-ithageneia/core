@@ -131,13 +131,21 @@ FILL_IN_THE_BLANK_QUIZ_SCHEMA = {
         "texts": {
             "type": "array",
             "items": {
-                "type": "string",
+                "type": "object",
+                "required": ["text"],
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "title": "Text",
+                        "description": 'Use <{{answer1}}, {{answer2}}> for blanks. E.g. "The <{{13th}}, {{Thirteenth}})> Amendment..."',
+                    },
+                },
+                "additionalProperties": False,
             },
         },
     },
     "additionalProperties": False,
 }
-
 # FILL_IN_THE_BLANK_QUIZ_SCHEMA = {
 #     "type": "object",
 #     "required": ["show_answers_as_choices", "content"],

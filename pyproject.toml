@@ -5,21 +5,22 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "django-environ~=0.12.0",
-    "django~=6.0.0",
-    "django-jsonform~=2.23.0",
-    "django-vite~=3.1.0",
-    "inertia-django~=1.2.0",
-    "django-allauth~=65.14.0",
-    "django-import-export~=4.4.0",
-    "whitenoise~=6.11.0",
-    "gunicorn~=23.0.0",
-    "pillow~=12.1.0",
-    "djangorestframework>=3.16.1",
-    "django-filter>=25.2",
+	"django-environ~=0.12.0",
+	"django~=6.0.0",
+	"django-jsonform~=2.23.0",
+	"django-vite~=3.1.0",
+	"inertia-django~=1.2.0",
+	"django-allauth~=65.14.0",
+	"django-import-export~=4.4.0",
+	"tablib[xlsx]~=3.8.0",
+	"whitenoise~=6.11.0",
+	"gunicorn~=23.0.0",
+	"pillow~=12.1.0",
+	"djangorestframework>=3.16.1",
+	"django-filter>=25.2",
 ]
 
 [dependency-groups]
 dev = [
-    "ruff>=0.14.14",
+	"ruff>=0.14.14",
 ]

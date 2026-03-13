@@ -1,9 +1,13 @@
 import os
+import re
 import uuid
+from abc import abstractmethod, ABCMeta
 
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
+from django.db.models.base import ModelBase
 from django_jsonform.models.fields import JSONField
 
 from open_ithageneia.models import ActivatableModel, TimeStampedModel
@@ -72,7 +76,11 @@ class QuizAsset(TimeStampedModel):
         verbose_name_plural = "Quiz Assets"
 
 
-class AbstractQuiz(TimeStampedModel, ActivatableModel):
+class ModelABCMeta(ModelBase, ABCMeta):
+    pass
+
+
+class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
     class QuizCategory(models.TextChoices):
         GEOGRAPHY = "GEOGRAPHY", "Geography"
         CIVICS = "CIVICS", "Civics"
@@ -95,6 +103,20 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel):
         return ", ".join(
             [str(exam_session) for exam_session in self.exam_sessions.all()]
         )
+
+    @abstractmethod
+    def validate_content(self):
+        pass
+
+    def clean(self):
+        print("clean called")
+
+        super().clean()
+        self.validate_content()
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"id: {self.id} - {self.category}"
@@ -120,7 +142,11 @@ class Statement(AbstractQuiz):
         blank=True, default=dict, schema=TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA
     )
 
-    def get_asset_image(self, asset_id):
+    def validate_content(self):
+        pass
+
+    @staticmethod
+    def get_asset_image(asset_id):
         if not asset_id:
             return None
 
@@ -157,6 +183,9 @@ class Statement(AbstractQuiz):
 class DragAndDrop(AbstractQuiz):
     content = JSONField(blank=True, default=list, schema=DRAG_AND_DROP_QUIZ_SCHEMA)
 
+    def validate_content(self):
+        pass
+
     class Meta:
         verbose_name_plural = "Drag And Drop"
 
@@ -164,12 +193,58 @@ class DragAndDrop(AbstractQuiz):
 class Matching(AbstractQuiz):
     content = JSONField(blank=True, default=list, schema=MATCHING_QUIZ_SCHEMA)
 
+    def validate_content(self):
+        pass
+
     class Meta:
         verbose_name_plural = "Matching"
 
 
 class FillInTheBlank(AbstractQuiz):
+    BLANK_PATTERN = re.compile(r"<(.+?)>")
+    CHOICE_PATTERN = re.compile(r"\{\{(.+?)\}\}(\*?)")
+
     content = JSONField(blank=True, default=dict, schema=FILL_IN_THE_BLANK_QUIZ_SCHEMA)
+
+    def validate_content(self):
+        texts = self.content.get("texts", [])
+
+        for i, item in enumerate(texts):
+            text = item.get("text", "")
+            raw_blanks = self.BLANK_PATTERN.findall(text)
+
+            if not raw_blanks:
+                raise ValidationError(
+                    f"Text #{i + 1}: no blanks found. Use <({{{{answer}}}}*)> syntax."
+                )
+
+            for blank in raw_blanks:
+                choices = self.CHOICE_PATTERN.findall(blank)
+
+                if not choices:
+                    raise ValidationError(
+                        f"Text #{i + 1}: invalid blank — must contain at least one {{{{choice}}}}."
+                    )
+
+                for choice_text, marker in choices:
+                    if not choice_text.strip():
+                        raise ValidationError(
+                            f"Text #{i + 1}: blank contains an empty choice."
+                        )
+
+                correct = [c for c, marker in choices if marker == "*"]
+
+                if len(correct) == 0:
+                    raise ValidationError(
+                        f"Text #{i + 1}: blank '<({blank})>' has no correct answer. "
+                        f"Mark exactly one with *."
+                    )
+
+                if len(correct) > 1:
+                    raise ValidationError(
+                        f"Text #{i + 1}: blank '<({blank})>' has {len(correct)} correct answers "
+                        f"({', '.join(correct)}). Mark exactly one with *."
+                    )
 
     class Meta:
         verbose_name_plural = "Fill in the blank"
