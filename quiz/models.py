@@ -183,7 +183,7 @@ class DragAndDrop(AbstractQuiz):
 	content = JSONField(blank=True, default=list, schema=DragAndDropContent.DRAG_AND_DROP_CONTENT_SCHEMA)
 
 	def validate_content(self):
-		data = DragAndDropContent.from_json(self.content)
+		DragAndDropContent.from_json(self.content)
 
 	class Meta:
 		verbose_name_plural = "Drag And Drop"
@@ -193,7 +193,7 @@ class Matching(AbstractQuiz):
 	content = JSONField(blank=True, default=list, schema=MatchingContent.MATCHING_CONTENT_SCHEMA)
 
 	def validate_content(self):
-		data = MatchingContent.from_json(self.content)
+		MatchingContent.from_json(self.content)
 
 	class Meta:
 		verbose_name_plural = "Matching"
@@ -206,7 +206,7 @@ class FillInTheBlank(AbstractQuiz):
 	content = JSONField(blank=True, default=dict, schema=FillInTheBlankContent.FILL_IN_THE_BLANK_CONTENT_SCHEMA)
 
 	def validate_content(self):
-		data = FillInTheBlankContent.from_json(self.content)
+		FillInTheBlankContent.from_json(self.content)
 
 		texts = self.content.get("texts", [])
 
