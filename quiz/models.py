@@ -108,6 +108,11 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
 	def validate_content(self):
 		pass
 
+	@abstractmethod
+	@property
+	def content_model(self):
+		pass
+
 	def clean(self):
 		print("clean called")
 
@@ -128,6 +133,7 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
 
 
 class Statement(AbstractQuiz):
+
 	class QuizType(models.TextChoices):
 		TRUE_FALSE = "TRUE_FALSE", "True/False"
 		MULTIPLE_CHOICE = "MULTIPLE_CHOICE", "Multiple Choice"
@@ -142,12 +148,13 @@ class Statement(AbstractQuiz):
 		blank=True, default=dict, schema=StatementChoiceContent.STATEMENT_CONTENT_SCHEMA
 	)
 
-	def validate_content(self):
-		data = StatementChoiceContent.from_json(self.content)
-		if self.type == self.QuizType.MULTIPLE_CHOICE:
-			for choice in data.choices:
-				if choice.is_correct:
-					return
+	def __str__(self):
+		return f"id: {self.id}, {self.type} - {self.category}"
+
+	class Meta:
+		verbose_name_plural = "Statements (True/False or Multiple choice)"
+
+	objects = StatementManager()
 
 	@staticmethod
 	def get_asset_image(asset_id):
@@ -175,28 +182,37 @@ class Statement(AbstractQuiz):
 
 		return choices
 
-	def __str__(self):
-		return f"id: {self.id}, {self.type} - {self.category}"
+	def validate_content(self):
+		data = StatementChoiceContent.from_json(self.content)
+		if self.type == self.QuizType.MULTIPLE_CHOICE:
+			for choice in data.choices:
+				if choice.is_correct:
+					return
 
-	class Meta:
-		verbose_name_plural = "Statements (True/False or Multiple choice)"
-
-	objects = StatementManager()
+	@property
+	def content_model(self):
+		return StatementChoiceContent.from_json(self.content)
 
 
 class DragAndDrop(AbstractQuiz):
+
 	content = JSONField(
 		blank=True, default=list, schema=DragAndDropContent.DRAG_AND_DROP_CONTENT_SCHEMA
 	)
 
-	def validate_content(self):
-		DragAndDropContent.from_json(self.content)
-
 	class Meta:
 		verbose_name_plural = "Drag And Drop"
 
+	def validate_content(self):
+		DragAndDropContent.from_json(self.content)
+
+	@property
+	def content_model(self) -> DragAndDropContent:
+		return DragAndDropContent.from_json(self.content)
+
 
 class Matching(AbstractQuiz):
+
 	content = JSONField(
 		blank=True, default=list, schema=MatchingContent.MATCHING_CONTENT_SCHEMA
 	)
@@ -206,6 +222,10 @@ class Matching(AbstractQuiz):
 
 	class Meta:
 		verbose_name_plural = "Matching"
+
+	@property
+	def content_model(self) -> MatchingContent:
+		return MatchingContent.from_json(self.content)
 
 
 class FillInTheBlank(AbstractQuiz):
@@ -217,6 +237,9 @@ class FillInTheBlank(AbstractQuiz):
 		default=dict,
 		schema=FillInTheBlankContent.FILL_IN_THE_BLANK_CONTENT_SCHEMA,
 	)
+
+	class Meta:
+		verbose_name_plural = "Fill in the blank"
 
 	def validate_content(self):
 		FillInTheBlankContent.from_json(self.content)
@@ -260,5 +283,6 @@ class FillInTheBlank(AbstractQuiz):
 						f"({', '.join(correct)}). Mark exactly one with *."
 					)
 
-	class Meta:
-		verbose_name_plural = "Fill in the blank"
+	@property
+	def content_model(self) -> FillInTheBlankContent:
+		return FillInTheBlankContent.from_json(self.content)
