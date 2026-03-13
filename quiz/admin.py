@@ -20,6 +20,7 @@ from .resources import (
 	DragAndDropResource,
 	MatchingResource,
 )
+from .schemas import FillInTheBlankContent, FillBlankText
 
 
 @admin.register(ExamSession)
@@ -335,8 +336,8 @@ class FillInTheBlankAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
 	def answer_preview(self, instance):
 		texts = instance.content.get("texts", [])
 
-		blank_pattern = FillInTheBlank.BLANK_PATTERN
-		choice_pattern = FillInTheBlank.CHOICE_PATTERN
+		blank_pattern = FillBlankText.BLANK_PATTERN
+		choice_pattern = FillBlankText.CHOICE_PATTERN
 
 		def get_correct_answer(blank_content: str) -> str:
 			choices = choice_pattern.findall(blank_content)

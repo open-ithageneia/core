@@ -1,9 +1,7 @@
 import os
-import re
 import uuid
 from abc import abstractmethod, ABCMeta
 
-from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
@@ -109,13 +107,10 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
 		pass
 
 	@abstractmethod
-	@property
 	def content_model(self):
 		pass
 
 	def clean(self):
-		print("clean called")
-
 		super().clean()
 		self.validate_content()
 
@@ -226,8 +221,6 @@ class Matching(AbstractQuiz):
 
 
 class FillInTheBlank(AbstractQuiz):
-	BLANK_PATTERN = re.compile(r"<(.+?)>")
-	CHOICE_PATTERN = re.compile(r"\{\{(.+?)\}\}(\*?)")
 
 	content = JSONField(
 		blank=True,
@@ -240,45 +233,6 @@ class FillInTheBlank(AbstractQuiz):
 
 	def validate_content(self):
 		FillInTheBlankContent.from_json(self.content)
-
-		texts = self.content.get("texts", [])
-
-		for i, item in enumerate(texts):
-			text = item.get("text", "")
-			raw_blanks = self.BLANK_PATTERN.findall(text)
-
-			if not raw_blanks:
-				raise ValidationError(
-					f"Text #{i + 1}: no blanks found. Use <({{{{answer}}}}*)> syntax."
-				)
-
-			for blank in raw_blanks:
-				choices = self.CHOICE_PATTERN.findall(blank)
-
-				if not choices:
-					raise ValidationError(
-						f"Text #{i + 1}: invalid blank — must contain at least one {{{{choice}}}}."
-					)
-
-				for choice_text, marker in choices:
-					if not choice_text.strip():
-						raise ValidationError(
-							f"Text #{i + 1}: blank contains an empty choice."
-						)
-
-				correct = [c for c, marker in choices if marker == "*"]
-
-				if len(correct) == 0:
-					raise ValidationError(
-						f"Text #{i + 1}: blank '<({blank})>' has no correct answer. "
-						f"Mark exactly one with *."
-					)
-
-				if len(correct) > 1:
-					raise ValidationError(
-						f"Text #{i + 1}: blank '<({blank})>' has {len(correct)} correct answers "
-						f"({', '.join(correct)}). Mark exactly one with *."
-					)
 
 	@property
 	def content_model(self) -> FillInTheBlankContent:

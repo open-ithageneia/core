@@ -1,3 +1,5 @@
+import re
+from django.core.exceptions import ValidationError
 from dataclasses import dataclass, field
 from typing import List, Optional
 
@@ -169,12 +171,68 @@ class MatchingContent:
 
 
 @dataclass
-class FillBlankText:
+class FillBlankTextPart:
 	text: str
+	is_blank: bool
+
+
+@dataclass
+class FillBlankText:
+	BLANK_PATTERN = re.compile(r"<(.+?)>")
+	CHOICE_PATTERN = re.compile(r"\{\{(.+?)\}\}(\*?)")
+
+	text_parts: List[FillBlankTextPart]
 
 	@classmethod
 	def from_json(cls, data: dict):
-		return cls(text=data["text"])
+		text = data["text"]
+		text_parts = []
+
+		raw_blanks = cls.BLANK_PATTERN.findall(text)
+
+		if not raw_blanks:
+			raise ValidationError(
+				f"{text}: no blanks found. Use <({{{{answer}}}}*)> syntax."
+			)
+
+		for blank in raw_blanks:
+			choices = cls.CHOICE_PATTERN.findall(blank)
+
+			if not choices:
+				raise ValidationError(
+					f"{blank}: invalid blank — must contain at least one {{{{choice}}}}."
+				)
+
+			for choice_text, marker in choices:
+				if not choice_text.strip():
+					raise ValidationError(
+						f"{choice_text}: blank contains an empty choice."
+					)
+
+			correct = [c for c, marker in choices if marker == "*"]
+
+			if len(correct) == 0:
+				raise ValidationError(
+					f"blank '<({blank})>' has no correct answer. Mark exactly one with *."
+				)
+
+			if len(correct) > 1:
+				raise ValidationError(
+					f"blank '<({blank})>' has {len(correct)} correct answers "
+					f"({', '.join(correct)}). Mark exactly one with *."
+				)
+
+		# build text_parts
+		parts = cls.BLANK_PATTERN.split(text)
+
+		for i, part in enumerate(parts):
+			if i % 2 == 0:
+				if part:
+					text_parts.append(FillBlankTextPart(text=part, is_blank=False))
+			else:
+				text_parts.append(FillBlankTextPart(text=part, is_blank=True))
+
+		return cls(text_parts=text_parts)
 
 
 @dataclass
