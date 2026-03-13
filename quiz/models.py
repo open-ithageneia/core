@@ -13,7 +13,7 @@ from django_jsonform.models.fields import JSONField
 from open_ithageneia.models import ActivatableModel, TimeStampedModel
 
 from .managers import AbstractQuizManager, ExamSessionManager, StatementManager
-from .schemas import *
+from .schemas import StatementChoiceContent, DragAndDropContent, MatchingContent, FillInTheBlankContent
 
 
 class ExamSession(TimeStampedModel):
