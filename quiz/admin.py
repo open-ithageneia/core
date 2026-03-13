@@ -20,7 +20,7 @@ from .resources import (
 	DragAndDropResource,
 	MatchingResource,
 )
-from .schemas import FillInTheBlankContent, FillBlankText
+from .schemas import FillBlankText
 
 
 @admin.register(ExamSession)

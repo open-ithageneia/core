@@ -221,7 +221,6 @@ class Matching(AbstractQuiz):
 
 
 class FillInTheBlank(AbstractQuiz):
-
 	content = JSONField(
 		blank=True,
 		default=dict,
