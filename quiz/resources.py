@@ -1,4 +1,4 @@
-﻿from quiz.models import FillInTheBlank, Statement, DragAndDrop, Matching
+from quiz.models import FillInTheBlank, Statement, DragAndDrop, Matching
 import json
 import re
 from import_export import resources
@@ -6,7 +6,6 @@ from import_export import fields
 
 
 class StatementResource(resources.ModelResource):
-
 	prompt_text = fields.Field(column_name="prompt_text")
 	prompt_asset_id = fields.Field(column_name="prompt_asset_id")
 
@@ -35,7 +34,6 @@ class StatementResource(resources.ModelResource):
 		choices = []
 
 		for i in self.get_choice_numbers(row):
-
 			text = row.get(f"choice{i}_text")
 			asset_id = row.get(f"choice{i}_asset_id")
 			is_correct = row.get(f"choice{i}_is_correct")
@@ -66,7 +64,6 @@ class StatementResource(resources.ModelResource):
 
 
 class DragAndDropResource(resources.ModelResource):
-
 	class Meta:
 		model = DragAndDrop
 		fields = ("id", "category")
@@ -88,13 +85,11 @@ class DragAndDropResource(resources.ModelResource):
 
 
 class MatchingResource(resources.ModelResource):
-
 	class Meta:
 		model = Matching
 		fields = ("id", "category")
 
 	def before_save_instance(self, instance, row, **kwargs):
-
 		left_items = [v.strip() for v in row["left_items"].split(",")]
 		right_items = [v.strip() for v in row["right_items"].split(",")]
 
@@ -149,11 +144,10 @@ class FillInTheBlankResource(resources.ModelResource):
 				"show_answers_as_choices": str(
 					row.get("show_answers_as_choices", "false")
 				).lower()
-										   == "true",
+				== "true",
 				"prompt_asset_id": int(row["prompt_asset_id"])
 				if row.get("prompt_asset_id")
 				else None,
 				"texts": texts,
 			}
 		)
-

@@ -88,7 +88,11 @@ class DragAndDropContent:
 			"required": ["title", "values"],
 			"properties": {
 				"title": {"type": "string", "title": "Title"},
-				"values": {"type": "array", "title": "Values", "items": {"type": "string"}},
+				"values": {
+					"type": "array",
+					"title": "Values",
+					"items": {"type": "string"},
+				},
 			},
 			"additionalProperties": False,
 		},
@@ -98,9 +102,7 @@ class DragAndDropContent:
 
 	@classmethod
 	def from_json(cls, data: list):
-		return cls(
-			columns=[DragDropColumn.from_json(col) for col in data]
-		)
+		return cls(columns=[DragDropColumn.from_json(col) for col in data])
 
 
 @dataclass
@@ -163,9 +165,7 @@ class MatchingContent:
 
 	@classmethod
 	def from_json(cls, data: list):
-		return cls(
-			columns=[MatchingColumn.from_json(col) for col in data]
-		)
+		return cls(columns=[MatchingColumn.from_json(col) for col in data])
 
 
 @dataclass

@@ -13,7 +13,12 @@ from django_jsonform.models.fields import JSONField
 from open_ithageneia.models import ActivatableModel, TimeStampedModel
 
 from .managers import AbstractQuizManager, ExamSessionManager, StatementManager
-from .schemas import StatementChoiceContent, DragAndDropContent, MatchingContent, FillInTheBlankContent
+from .schemas import (
+	StatementChoiceContent,
+	DragAndDropContent,
+	MatchingContent,
+	FillInTheBlankContent,
+)
 
 
 class ExamSession(TimeStampedModel):
@@ -180,7 +185,9 @@ class Statement(AbstractQuiz):
 
 
 class DragAndDrop(AbstractQuiz):
-	content = JSONField(blank=True, default=list, schema=DragAndDropContent.DRAG_AND_DROP_CONTENT_SCHEMA)
+	content = JSONField(
+		blank=True, default=list, schema=DragAndDropContent.DRAG_AND_DROP_CONTENT_SCHEMA
+	)
 
 	def validate_content(self):
 		DragAndDropContent.from_json(self.content)
@@ -190,7 +197,9 @@ class DragAndDrop(AbstractQuiz):
 
 
 class Matching(AbstractQuiz):
-	content = JSONField(blank=True, default=list, schema=MatchingContent.MATCHING_CONTENT_SCHEMA)
+	content = JSONField(
+		blank=True, default=list, schema=MatchingContent.MATCHING_CONTENT_SCHEMA
+	)
 
 	def validate_content(self):
 		MatchingContent.from_json(self.content)
@@ -203,7 +212,11 @@ class FillInTheBlank(AbstractQuiz):
 	BLANK_PATTERN = re.compile(r"<(.+?)>")
 	CHOICE_PATTERN = re.compile(r"\{\{(.+?)\}\}(\*?)")
 
-	content = JSONField(blank=True, default=dict, schema=FillInTheBlankContent.FILL_IN_THE_BLANK_CONTENT_SCHEMA)
+	content = JSONField(
+		blank=True,
+		default=dict,
+		schema=FillInTheBlankContent.FILL_IN_THE_BLANK_CONTENT_SCHEMA,
+	)
 
 	def validate_content(self):
 		FillInTheBlankContent.from_json(self.content)

@@ -14,7 +14,12 @@ from .models import (
 	Statement,
 	QuizAsset,
 )
-from .resources import FillInTheBlankResource, StatementResource, DragAndDropResource, MatchingResource
+from .resources import (
+	FillInTheBlankResource,
+	StatementResource,
+	DragAndDropResource,
+	MatchingResource,
+)
 
 
 @admin.register(ExamSession)
