@@ -24,3 +24,6 @@ dependencies = [
 dev = [
 	"ruff>=0.14.14",
 ]
+
+[tool.ruff.format]
+indent-style = "tab"
