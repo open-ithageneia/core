@@ -1,30 +1,14 @@
-﻿import json
-
-from quiz.models import FillInTheBlank, Statement, DragAndDrop, Matching
-from import_export import resources, fields
-from import_export.widgets import IntegerWidget, BooleanWidget
+﻿from quiz.models import FillInTheBlank, Statement, DragAndDrop, Matching
+import json
+import re
+from import_export import resources
+from import_export import fields
 
 
 class StatementResource(resources.ModelResource):
 
 	prompt_text = fields.Field(column_name="prompt_text")
-	prompt_asset_id = fields.Field(column_name="prompt_asset_id", widget=IntegerWidget())
-
-	choice1_text = fields.Field(column_name="choice1_text")
-	choice1_asset_id = fields.Field(column_name="choice1_asset_id", widget=IntegerWidget())
-	choice1_is_correct = fields.Field(column_name="choice1_is_correct", widget=BooleanWidget())
-
-	choice2_text = fields.Field(column_name="choice2_text")
-	choice2_asset_id = fields.Field(column_name="choice2_asset_id", widget=IntegerWidget())
-	choice2_is_correct = fields.Field(column_name="choice2_is_correct", widget=BooleanWidget())
-
-	choice3_text = fields.Field(column_name="choice3_text")
-	choice3_asset_id = fields.Field(column_name="choice3_asset_id", widget=IntegerWidget())
-	choice3_is_correct = fields.Field(column_name="choice3_is_correct", widget=BooleanWidget())
-
-	choice4_text = fields.Field(column_name="choice4_text")
-	choice4_asset_id = fields.Field(column_name="choice4_asset_id", widget=IntegerWidget())
-	choice4_is_correct = fields.Field(column_name="choice4_is_correct", widget=BooleanWidget())
+	prompt_asset_id = fields.Field(column_name="prompt_asset_id")
 
 	class Meta:
 		model = Statement
@@ -34,26 +18,48 @@ class StatementResource(resources.ModelResource):
 			"category",
 		)
 
-	def before_save_instance(self, instance, row, **kwargs):
+	choice_pattern = re.compile(r"choice(\d+)_text")
 
+	def get_choice_numbers(self, row):
+		"""Find all choice numbers present in the sheet."""
+		numbers = []
+
+		for key in row.keys():
+			match = self.choice_pattern.match(key)
+			if match:
+				numbers.append(int(match.group(1)))
+
+		return sorted(numbers)
+
+	def build_choices(self, row):
 		choices = []
 
-		for i in range(1, 5):
+		for i in self.get_choice_numbers(row):
+
 			text = row.get(f"choice{i}_text")
 			asset_id = row.get(f"choice{i}_asset_id")
 			is_correct = row.get(f"choice{i}_is_correct")
 
-			if text or asset_id:
-				choices.append(
-					{
-						"text": text or "",
-						"asset_id": asset_id,
-						"is_correct": bool(is_correct),
-					}
-				)
+			if not text and not asset_id:
+				continue
+
+			choice = {
+				"text": text or "",
+				"is_correct": bool(is_correct),
+			}
+
+			if asset_id:
+				choice["asset_id"] = asset_id
+
+			choices.append(choice)
+
+		return choices
+
+	def before_save_instance(self, instance, row, **kwargs):
+		choices = self.build_choices(row)
 
 		instance.content = {
-			"prompt_text": row.get("prompt_text", ""),
+			"prompt_text": row.get("prompt_text") or "",
 			"prompt_asset_id": row.get("prompt_asset_id"),
 			"choices": choices,
 		}
