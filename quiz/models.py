@@ -13,12 +13,7 @@ from django_jsonform.models.fields import JSONField
 from open_ithageneia.models import ActivatableModel, TimeStampedModel
 
 from .managers import AbstractQuizManager, ExamSessionManager, StatementManager
-from .schemas import (
-	DRAG_AND_DROP_QUIZ_SCHEMA,
-	FILL_IN_THE_BLANK_QUIZ_SCHEMA,
-	MATCHING_QUIZ_SCHEMA,
-	TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA,
-)
+from .schemas import *
 
 
 class ExamSession(TimeStampedModel):
@@ -139,11 +134,15 @@ class Statement(AbstractQuiz):
 	)
 
 	content = JSONField(
-		blank=True, default=dict, schema=TRUE_FALSE_MULTIPLE_CHOICE_QUIZ_SCHEMA
+		blank=True, default=dict, schema=StatementChoiceContent.STATEMENT_CONTENT_SCHEMA
 	)
 
 	def validate_content(self):
-		pass
+		data = StatementChoiceContent.from_json(self.content)
+		if self.type == self.QuizType.MULTIPLE_CHOICE:
+			for choice in data.choices:
+				if choice.is_correct:
+					return
 
 	@staticmethod
 	def get_asset_image(asset_id):
@@ -181,20 +180,20 @@ class Statement(AbstractQuiz):
 
 
 class DragAndDrop(AbstractQuiz):
-	content = JSONField(blank=True, default=list, schema=DRAG_AND_DROP_QUIZ_SCHEMA)
+	content = JSONField(blank=True, default=list, schema=DragAndDropContent.DRAG_AND_DROP_CONTENT_SCHEMA)
 
 	def validate_content(self):
-		pass
+		data = DragAndDropContent.from_json(self.content)
 
 	class Meta:
 		verbose_name_plural = "Drag And Drop"
 
 
 class Matching(AbstractQuiz):
-	content = JSONField(blank=True, default=list, schema=MATCHING_QUIZ_SCHEMA)
+	content = JSONField(blank=True, default=list, schema=MatchingContent.MATCHING_CONTENT_SCHEMA)
 
 	def validate_content(self):
-		pass
+		data = MatchingContent.from_json(self.content)
 
 	class Meta:
 		verbose_name_plural = "Matching"
@@ -204,9 +203,11 @@ class FillInTheBlank(AbstractQuiz):
 	BLANK_PATTERN = re.compile(r"<(.+?)>")
 	CHOICE_PATTERN = re.compile(r"\{\{(.+?)\}\}(\*?)")
 
-	content = JSONField(blank=True, default=dict, schema=FILL_IN_THE_BLANK_QUIZ_SCHEMA)
+	content = JSONField(blank=True, default=dict, schema=FillInTheBlankContent.FILL_IN_THE_BLANK_CONTENT_SCHEMA)
 
 	def validate_content(self):
+		data = FillInTheBlankContent.from_json(self.content)
+
 		texts = self.content.get("texts", [])
 
 		for i, item in enumerate(texts):
