@@ -108,9 +108,7 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
 	@abstractmethod
 	def _parse_content(self):
 		"""Parse and validate self.content into the typed dataclass.
-
-		Subclasses implement this. Must raise ValidationError on bad data.
-		"""
+		Subclasses implement this. Must raise ValidationError on bad data. """
 		pass
 
 	@property
@@ -121,7 +119,7 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
 
 	def clean(self):
 		super().clean()
-		# Reset cache and re-parse to validate against current content.
+		# Reset cache and reparse to validate against current content.
 		self._cached_content_model = None
 		self._cached_content_model = self._parse_content()
 		self._validate_content()
@@ -216,7 +214,6 @@ class DragAndDrop(AbstractQuiz):
 		return DragAndDropContent.from_json(self.content)
 
 
-
 class Matching(AbstractQuiz):
 	content = JSONField(
 		blank=True, default=list, schema=MatchingContent.MATCHING_CONTENT_SCHEMA
@@ -242,5 +239,4 @@ class FillInTheBlank(AbstractQuiz):
 
 	def _parse_content(self):
 		return FillInTheBlankContent.from_json(self.content)
-
 

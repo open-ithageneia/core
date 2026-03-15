@@ -1,11 +1,15 @@
 import re
+import zipfile
+
 from django.contrib import admin
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 from import_export.admin import ImportExportModelAdmin
 
 from open_ithageneia.utils import get_admin_image_thumb_preview
 
+from .forms import QuizImportForm
 from .models import (
 	DragAndDrop,
 	ExamSession,
@@ -19,8 +23,87 @@ from .resources import (
 	StatementResource,
 	DragAndDropResource,
 	MatchingResource,
+	clear_image_store,
+	load_images_from_zip,
 )
 from .schemas import FillBlankText
+
+
+class ExamSessionImportMixin:
+	"""Adds an **Exam Session** dropdown to the import form.
+
+	The selected session is forwarded to the Resource constructor via
+	``get_import_resource_kwargs`` so that every imported row is
+	automatically linked to it.
+	"""
+
+	import_form_class = QuizImportForm
+
+	def get_import_resource_kwargs(self, request, **kwargs):
+		rk = super().get_import_resource_kwargs(request, **kwargs)
+		form = kwargs.get("form")
+		if form and hasattr(form, "cleaned_data"):
+			rk["exam_session"] = form.cleaned_data.get("exam_session")
+		return rk
+
+
+class ZipImportMixin:
+	"""Requires a ``.zip`` upload for import.
+
+	The ZIP must contain:
+	- One spreadsheet file (``.xlsx``, ``.xls``, or ``.csv``)
+	- An optional ``images/`` folder with image files referenced by
+	  filename in the spreadsheet's image columns.
+
+	The mixin extracts images into a thread-local store (see
+	``resources.py``), swaps the uploaded file with the extracted
+	spreadsheet, and lets django-import-export process it as usual.
+
+	``skip_import_confirm`` is ``True`` so images only need to be
+	loaded once (no two-step confirmation).
+	"""
+
+	skip_import_confirm = True
+
+
+	def import_action(self, request, **kwargs):
+		if request.method == "POST" and request.FILES.get("import_file"):
+			import_file = request.FILES["import_file"]
+			if not import_file.name.lower().endswith(".zip"):
+				from django.contrib import messages
+
+				messages.error(
+					request,
+					"Only .zip files are accepted. The ZIP must contain a "
+					"spreadsheet (.xlsx) and an optional images/ folder.",
+				)
+				# Redirect back to the same import page.
+				from django.http import HttpResponseRedirect
+
+				return HttpResponseRedirect(request.path)
+
+			raw = b"".join(import_file.chunks())
+			try:
+				xlsx_bytes = load_images_from_zip(raw)
+			except (zipfile.BadZipFile, ValueError) as exc:
+				clear_image_store()
+				raise
+			# Replace the uploaded file with the extracted spreadsheet.
+			request.FILES["import_file"] = SimpleUploadedFile(
+				name="import.xlsx",
+				content=xlsx_bytes,
+				content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+			)
+		try:
+			return super().import_action(request, **kwargs)
+		finally:
+			clear_image_store()
+
+	def process_import(self, request, **kwargs):
+		try:
+			return super().process_import(request, **kwargs)
+		finally:
+			clear_image_store()
 
 
 @admin.register(ExamSession)
@@ -83,10 +166,7 @@ class QuizAssetAdmin(ImportExportModelAdmin):
 		return get_admin_image_thumb_preview(obj.image)
 
 
-class AbstractQuizAdmin(admin.ModelAdmin):
-	"""
-	Base admin for models inheriting AbstractQuiz.
-	"""
+class AbstractQuizAdmin(ExamSessionImportMixin, ZipImportMixin, ImportExportModelAdmin):
 
 	list_display = [
 		"id",
@@ -125,7 +205,7 @@ class AbstractQuizAdmin(admin.ModelAdmin):
 
 
 @admin.register(Statement)
-class StatementAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
+class StatementAdmin(AbstractQuizAdmin):
 	resource_classes = [StatementResource]
 	list_display = [
 		"id",
@@ -199,7 +279,7 @@ class StatementAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
 
 
 @admin.register(DragAndDrop)
-class DragAndDropAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
+class DragAndDropAdmin(AbstractQuizAdmin):
 	resource_classes = [DragAndDropResource]
 
 	@admin.display(description="Answer")
@@ -252,7 +332,7 @@ class DragAndDropAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
 
 
 @admin.register(Matching)
-class MatchingAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
+class MatchingAdmin(AbstractQuizAdmin):
 	resource_classes = [MatchingResource]
 
 	@admin.display(description="Answer")
@@ -329,7 +409,7 @@ class MatchingAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
 
 
 @admin.register(FillInTheBlank)
-class FillInTheBlankAdmin(AbstractQuizAdmin, ImportExportModelAdmin):
+class FillInTheBlankAdmin(AbstractQuizAdmin):
 	resource_classes = [FillInTheBlankResource]
 
 	@admin.display(description="Answer")
