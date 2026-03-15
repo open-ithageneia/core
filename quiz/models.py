@@ -97,6 +97,8 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
 		related_name="%(class)s_quizzes",
 	)
 
+	_cached_content_model = None
+
 	@property
 	def exam_sessions_preview(self):
 		return ", ".join(
@@ -104,16 +106,29 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
 		)
 
 	@abstractmethod
-	def validate_content(self):
+	def _parse_content(self):
+		"""Parse and validate self.content into the typed dataclass.
+
+		Subclasses implement this. Must raise ValidationError on bad data.
+		"""
 		pass
 
-	@abstractmethod
+	@property
 	def content_model(self):
-		pass
+		if self._cached_content_model is None:
+			self._cached_content_model = self._parse_content()
+		return self._cached_content_model
 
 	def clean(self):
 		super().clean()
-		self.validate_content()
+		# Reset cache and re-parse to validate against current content.
+		self._cached_content_model = None
+		self._cached_content_model = self._parse_content()
+		self._validate_content()
+
+	def _validate_content(self):
+		"""Override for extra business-rule checks beyond structural parsing."""
+		pass
 
 	def save(self, *args, **kwargs):
 		self.full_clean()
@@ -177,17 +192,16 @@ class Statement(AbstractQuiz):
 
 		return choices
 
-	def validate_content(self):
-		data = StatementChoiceContent.from_json(self.content)
+	def _parse_content(self):
+		return StatementChoiceContent.from_json(self.content)
+
+	def _validate_content(self):
+		data = self.content_model
 		if self.type == self.QuizType.MULTIPLE_CHOICE:
 			if not any(choice.is_correct for choice in data.choices):
 				raise ValidationError(
 					"Multiple-choice questions must have at least one correct choice."
 				)
-
-	@property
-	def content_model(self):
-		return StatementChoiceContent.from_json(self.content)
 
 
 class DragAndDrop(AbstractQuiz):
@@ -198,12 +212,9 @@ class DragAndDrop(AbstractQuiz):
 	class Meta:
 		verbose_name_plural = "Drag And Drop"
 
-	def validate_content(self):
-		DragAndDropContent.from_json(self.content)
-
-	@property
-	def content_model(self) -> DragAndDropContent:
+	def _parse_content(self):
 		return DragAndDropContent.from_json(self.content)
+
 
 
 class Matching(AbstractQuiz):
@@ -211,15 +222,12 @@ class Matching(AbstractQuiz):
 		blank=True, default=list, schema=MatchingContent.MATCHING_CONTENT_SCHEMA
 	)
 
-	def validate_content(self):
-		MatchingContent.from_json(self.content)
+	def _parse_content(self):
+		return MatchingContent.from_json(self.content)
+
 
 	class Meta:
 		verbose_name_plural = "Matching"
-
-	@property
-	def content_model(self) -> MatchingContent:
-		return MatchingContent.from_json(self.content)
 
 
 class FillInTheBlank(AbstractQuiz):
@@ -232,9 +240,7 @@ class FillInTheBlank(AbstractQuiz):
 	class Meta:
 		verbose_name_plural = "Fill in the blank"
 
-	def validate_content(self):
-		FillInTheBlankContent.from_json(self.content)
-
-	@property
-	def content_model(self) -> FillInTheBlankContent:
+	def _parse_content(self):
 		return FillInTheBlankContent.from_json(self.content)
+
+

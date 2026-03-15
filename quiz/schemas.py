@@ -3,6 +3,15 @@ from django.core.exceptions import ValidationError
 from dataclasses import dataclass, field
 
 
+def _require(data: dict, key: str, context: str = ""):
+	"""Return data[key] or raise ValidationError (not KeyError)."""
+	try:
+		return data[key]
+	except KeyError:
+		label = f" in {context}" if context else ""
+		raise ValidationError(f"Missing required field '{key}'{label}.")
+
+
 @dataclass
 class StatementChoice:
 	text: str | None = None
@@ -56,7 +65,8 @@ class StatementChoiceContent:
 
 	@classmethod
 	def from_json(cls, data: dict):
-		choices = [StatementChoice.from_json(c) for c in data.get("choices", [])]
+		raw_choices = _require(data, "choices", "StatementChoiceContent")
+		choices = [StatementChoice.from_json(c) for c in raw_choices]
 
 		return cls(
 			prompt_text=data.get("prompt_text"),
@@ -73,7 +83,7 @@ class DragDropColumn:
 	@classmethod
 	def from_json(cls, data: dict):
 		return cls(
-			title=data["title"],
+			title=_require(data, "title", "DragDropColumn"),
 			values=data.get("values", []),
 		)
 
@@ -103,6 +113,10 @@ class DragAndDropContent:
 
 	@classmethod
 	def from_json(cls, data: list):
+		if not isinstance(data, list) or len(data) != 2:
+			raise ValidationError(
+				"Drag-and-drop content must be a list of exactly 2 columns."
+			)
 		return cls(columns=[DragDropColumn.from_json(col) for col in data])
 
 
@@ -117,7 +131,7 @@ class MatchItem:
 		return cls(
 			id=data.get("id"),
 			matched_id=data.get("matched_id"),
-			text=data["text"],
+			text=_require(data, "text", "MatchItem"),
 		)
 
 
@@ -129,7 +143,7 @@ class MatchingColumn:
 	@classmethod
 	def from_json(cls, data: dict):
 		return cls(
-			title=data["title"],
+			title=_require(data, "title", "MatchingColumn"),
 			items=[MatchItem.from_json(i) for i in data.get("items", [])],
 		)
 
@@ -166,6 +180,10 @@ class MatchingContent:
 
 	@classmethod
 	def from_json(cls, data: list):
+		if not isinstance(data, list) or len(data) != 2:
+			raise ValidationError(
+				"Matching content must be a list of exactly 2 columns."
+			)
 		return cls(columns=[MatchingColumn.from_json(col) for col in data])
 
 
@@ -184,7 +202,7 @@ class FillBlankText:
 
 	@classmethod
 	def from_json(cls, data: dict):
-		text = data["text"]
+		text = _require(data, "text", "FillBlankText")
 		text_parts = []
 
 		raw_blanks = cls.BLANK_PATTERN.findall(text)
