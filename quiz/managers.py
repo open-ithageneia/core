@@ -9,15 +9,7 @@ class ExamSessionQuerySet(models.QuerySet):
 		return self.filter(month=month)
 
 
-class ExamSessionManager(models.Manager):
-	def get_queryset(self) -> ExamSessionQuerySet:
-		return ExamSessionQuerySet(self.model, using=self._db)
-
-	def for_year(self, year):
-		return self.get_queryset().for_year(year)
-
-	def for_month(self, month):
-		return self.get_queryset().for_month(month)
+ExamSessionManager = models.Manager.from_queryset(ExamSessionQuerySet)
 
 
 class AbstractQuizQuerySet(models.QuerySet):
@@ -58,45 +50,7 @@ class AbstractQuizQuerySet(models.QuerySet):
 		return self.prefetch_related("exam_sessions")
 
 
-class AbstractQuizManager(models.Manager):
-	def get_queryset(self) -> AbstractQuizQuerySet:
-		return AbstractQuizQuerySet(self.model, using=self._db)
-
-	def active(self):
-		return self.get_queryset().active()
-
-	def inactive(self):
-		return self.get_queryset().inactive()
-
-	def for_category(self, category):
-		return self.get_queryset().for_category(category)
-
-	def for_session(self, exam_session):
-		return self.get_queryset().for_session(exam_session)
-
-	def for_session_id(self, exam_session_id):
-		return self.get_queryset().for_session_id(exam_session_id)
-
-	def for_year(self, year):
-		return self.get_queryset().for_year(year)
-
-	def for_month(self, month):
-		return self.get_queryset().for_month(month)
-
-	def geography(self):
-		return self.get_queryset().geography()
-
-	def civics(self):
-		return self.get_queryset().civics()
-
-	def history(self):
-		return self.get_queryset().history()
-
-	def culture(self):
-		return self.get_queryset().culture()
-
-	def with_exam_sessions(self):
-		return self.get_queryset().with_exam_sessions()
+AbstractQuizManager = models.Manager.from_queryset(AbstractQuizQuerySet)
 
 
 class StatementQuerySet(AbstractQuizQuerySet):
@@ -110,12 +64,4 @@ class StatementQuerySet(AbstractQuizQuerySet):
 		return self.prefetch_related("exam_sessions")
 
 
-class StatementManager(AbstractQuizManager):
-	def get_queryset(self) -> StatementQuerySet:
-		return StatementQuerySet(self.model, using=self._db)
-
-	def true_false(self):
-		return self.get_queryset().true_false()
-
-	def multiple_choice(self):
-		return self.get_queryset().multiple_choice()
+StatementManager = models.Manager.from_queryset(StatementQuerySet)

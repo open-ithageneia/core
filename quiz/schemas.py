@@ -1,13 +1,12 @@
 import re
 from django.core.exceptions import ValidationError
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 
 @dataclass
 class StatementChoice:
-	text: Optional[str] = None
-	asset_id: Optional[int] = None
+	text: str | None = None
+	asset_id: int | None = None
 	is_correct: bool = False
 
 	@classmethod
@@ -51,9 +50,9 @@ class StatementChoiceContent:
 		"required": ["choices"],
 	}
 
-	choices: List[StatementChoice] = field(default_factory=list)
-	prompt_text: Optional[str] = None
-	prompt_asset_id: Optional[int] = None
+	choices: list[StatementChoice] = field(default_factory=list)
+	prompt_text: str | None = None
+	prompt_asset_id: int | None = None
 
 	@classmethod
 	def from_json(cls, data: dict):
@@ -69,7 +68,7 @@ class StatementChoiceContent:
 @dataclass
 class DragDropColumn:
 	title: str
-	values: List[str]
+	values: list[str]
 
 	@classmethod
 	def from_json(cls, data: dict):
@@ -100,7 +99,7 @@ class DragAndDropContent:
 		},
 	}
 
-	columns: List[DragDropColumn]
+	columns: list[DragDropColumn]
 
 	@classmethod
 	def from_json(cls, data: list):
@@ -110,8 +109,8 @@ class DragAndDropContent:
 @dataclass
 class MatchItem:
 	text: str
-	id: Optional[int] = None
-	matched_id: Optional[int] = None
+	id: int | None = None
+	matched_id: int | None = None
 
 	@classmethod
 	def from_json(cls, data: dict):
@@ -125,7 +124,7 @@ class MatchItem:
 @dataclass
 class MatchingColumn:
 	title: str
-	items: List[MatchItem]
+	items: list[MatchItem]
 
 	@classmethod
 	def from_json(cls, data: dict):
@@ -163,7 +162,7 @@ class MatchingContent:
 		},
 	}
 
-	columns: List[MatchingColumn]
+	columns: list[MatchingColumn]
 
 	@classmethod
 	def from_json(cls, data: list):
@@ -181,7 +180,7 @@ class FillBlankText:
 	BLANK_PATTERN = re.compile(r"<(.+?)>")
 	CHOICE_PATTERN = re.compile(r"\{\{(.+?)\}\}(\*?)")
 
-	text_parts: List[FillBlankTextPart]
+	text_parts: list[FillBlankTextPart]
 
 	@classmethod
 	def from_json(cls, data: dict):
@@ -267,8 +266,8 @@ class FillInTheBlankContent:
 	}
 
 	show_answers_as_choices: bool
-	texts: List[FillBlankText]
-	prompt_asset_id: Optional[int] = None
+	texts: list[FillBlankText]
+	prompt_asset_id: int | None = None
 
 	@classmethod
 	def from_json(cls, data: dict):

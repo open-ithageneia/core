@@ -2,6 +2,7 @@ import os
 import uuid
 from abc import abstractmethod, ABCMeta
 
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
@@ -166,22 +167,23 @@ class Statement(AbstractQuiz):
 		if not choices:
 			return None
 
-		asset_ids = [(choice.get("asset_id", None)) for choice in choices]
+		asset_ids = [choice.get("asset_id") for choice in choices if choice.get("asset_id")]
 		assets = QuizAsset.objects.in_bulk(asset_ids)
 
 		for choice in choices:
-			asset_id = choice.get("asset_id", None)
+			asset_id = choice.get("asset_id")
 			asset = assets.get(asset_id)
-			choice["image"] = self.get_asset_image(asset.id) if asset else None
+			choice["image"] = asset.image if asset else None
 
 		return choices
 
 	def validate_content(self):
 		data = StatementChoiceContent.from_json(self.content)
 		if self.type == self.QuizType.MULTIPLE_CHOICE:
-			for choice in data.choices:
-				if choice.is_correct:
-					return
+			if not any(choice.is_correct for choice in data.choices):
+				raise ValidationError(
+					"Multiple-choice questions must have at least one correct choice."
+				)
 
 	@property
 	def content_model(self):
