@@ -18,6 +18,14 @@ class StatementChoice:
 	asset_id: int | None = None
 	is_correct: bool = False
 
+	def to_dict(self):
+		d = {"is_correct": self.is_correct}
+		if self.text is not None:
+			d["text"] = self.text
+		if self.asset_id is not None:
+			d["asset_id"] = self.asset_id
+		return d
+
 	@classmethod
 	def from_json(cls, data: dict):
 		return cls(
@@ -63,6 +71,14 @@ class StatementChoiceContent:
 	prompt_text: str | None = None
 	prompt_asset_id: int | None = None
 
+	def to_dict(self):
+		d = {"choices": [c.to_dict() for c in self.choices]}
+		if self.prompt_text is not None:
+			d["prompt_text"] = self.prompt_text
+		if self.prompt_asset_id is not None:
+			d["prompt_asset_id"] = self.prompt_asset_id
+		return d
+
 	@classmethod
 	def from_json(cls, data: dict):
 		raw_choices = _require(data, "choices", "StatementChoiceContent")
@@ -79,6 +95,9 @@ class StatementChoiceContent:
 class DragDropColumn:
 	title: str
 	values: list[str]
+
+	def to_dict(self):
+		return {"title": self.title, "values": self.values}
 
 	@classmethod
 	def from_json(cls, data: dict):
@@ -111,6 +130,9 @@ class DragAndDropContent:
 
 	columns: list[DragDropColumn]
 
+	def to_dict(self):
+		return [c.to_dict() for c in self.columns]
+
 	@classmethod
 	def from_json(cls, data: list):
 		if not isinstance(data, list) or len(data) != 2:
@@ -126,6 +148,14 @@ class MatchItem:
 	id: int | None = None
 	matched_id: int | None = None
 
+	def to_dict(self):
+		d = {"text": self.text}
+		if self.id is not None:
+			d["id"] = self.id
+		if self.matched_id is not None:
+			d["matched_id"] = self.matched_id
+		return d
+
 	@classmethod
 	def from_json(cls, data: dict):
 		return cls(
@@ -139,6 +169,9 @@ class MatchItem:
 class MatchingColumn:
 	title: str
 	items: list[MatchItem]
+
+	def to_dict(self):
+		return {"title": self.title, "items": [i.to_dict() for i in self.items]}
 
 	@classmethod
 	def from_json(cls, data: dict):
@@ -178,6 +211,9 @@ class MatchingContent:
 
 	columns: list[MatchingColumn]
 
+	def to_dict(self):
+		return [c.to_dict() for c in self.columns]
+
 	@classmethod
 	def from_json(cls, data: list):
 		if not isinstance(data, list) or len(data) != 2:
@@ -188,9 +224,25 @@ class MatchingContent:
 
 
 @dataclass
+class FillBlankChoice:
+	text: str
+	is_correct: bool
+
+	def to_dict(self):
+		return {"text": self.text, "is_correct": self.is_correct}
+
+
+@dataclass
 class FillBlankTextPart:
 	text: str
 	is_blank: bool
+	choices: list[FillBlankChoice] = field(default_factory=list)
+
+	def to_dict(self):
+		d = {"text": self.text, "is_blank": self.is_blank}
+		if self.is_blank:
+			d["choices"] = [c.to_dict() for c in self.choices]
+		return d
 
 
 @dataclass
@@ -199,6 +251,9 @@ class FillBlankText:
 	CHOICE_PATTERN = re.compile(r"\{\{(.+?)\}\}(\*?)")
 
 	text_parts: list[FillBlankTextPart]
+
+	def to_dict(self):
+		return {"parts": [p.to_dict() for p in self.text_parts]}
 
 	@classmethod
 	def from_json(cls, data: dict):
@@ -247,7 +302,13 @@ class FillBlankText:
 				if part:
 					text_parts.append(FillBlankTextPart(text=part, is_blank=False))
 			else:
-				text_parts.append(FillBlankTextPart(text=part, is_blank=True))
+				parsed_choices = [
+					FillBlankChoice(text=c, is_correct=marker == "*")
+					for c, marker in cls.CHOICE_PATTERN.findall(part)
+				]
+				text_parts.append(
+					FillBlankTextPart(text=part, is_blank=True, choices=parsed_choices)
+				)
 
 		return cls(text_parts=text_parts)
 
@@ -286,6 +347,15 @@ class FillInTheBlankContent:
 	show_answers_as_choices: bool
 	texts: list[FillBlankText]
 	prompt_asset_id: int | None = None
+
+	def to_dict(self):
+		d = {
+			"show_answers_as_choices": self.show_answers_as_choices,
+			"texts": [t.to_dict() for t in self.texts],
+		}
+		if self.prompt_asset_id is not None:
+			d["prompt_asset_id"] = self.prompt_asset_id
+		return d
 
 	@classmethod
 	def from_json(cls, data: dict):
