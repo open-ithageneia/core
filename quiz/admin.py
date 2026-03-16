@@ -65,7 +65,6 @@ class ZipImportMixin:
 
 	skip_import_confirm = True
 
-
 	def import_action(self, request, **kwargs):
 		if request.method == "POST" and request.FILES.get("import_file"):
 			import_file = request.FILES["import_file"]
@@ -85,7 +84,7 @@ class ZipImportMixin:
 			raw = b"".join(import_file.chunks())
 			try:
 				xlsx_bytes = load_images_from_zip(raw)
-			except (zipfile.BadZipFile, ValueError) as exc:
+			except (zipfile.BadZipFile, ValueError):
 				clear_image_store()
 				raise
 			# Replace the uploaded file with the extracted spreadsheet.
@@ -167,7 +166,6 @@ class QuizAssetAdmin(ImportExportModelAdmin):
 
 
 class AbstractQuizAdmin(ExamSessionImportMixin, ZipImportMixin, ImportExportModelAdmin):
-
 	list_display = [
 		"id",
 		"category",

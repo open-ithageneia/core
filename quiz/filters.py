@@ -1,5 +1,12 @@
 import django_filters
-from .models import Statement, DragAndDrop, Matching, FillInTheBlank, ExamSession, AbstractQuiz
+from .models import (
+	Statement,
+	DragAndDrop,
+	Matching,
+	FillInTheBlank,
+	ExamSession,
+	AbstractQuiz,
+)
 
 
 class AbstractQuizFilter(django_filters.FilterSet):

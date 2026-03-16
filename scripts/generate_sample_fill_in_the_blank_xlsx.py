@@ -1,4 +1,4 @@
-﻿"""Generate a sample Fill-in-the-Blank import ZIP file.
+"""Generate a sample Fill-in-the-Blank import ZIP file.
 
 The output is a ``.zip`` archive (under ``fixtures/``) containing:
 
@@ -168,4 +168,3 @@ if __name__ == "__main__":
 		f"   Contains: fill_in_the_blank.xlsx ({len(ROWS)} sample rows)"
 		f" + {len(_IMAGE_FILES)} image(s) in images/"
 	)
-

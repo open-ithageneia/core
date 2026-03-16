@@ -205,8 +205,12 @@ class DragAndDropResource(AbstractQuizResource):
 		model = DragAndDrop
 
 	def before_save_instance(self, instance, row, **kwargs):
-		left_values = [v.strip() for v in row.get("left_values", "").split(",") if v.strip()]
-		right_values = [v.strip() for v in row.get("right_values", "").split(",") if v.strip()]
+		left_values = [
+			v.strip() for v in row.get("left_values", "").split(",") if v.strip()
+		]
+		right_values = [
+			v.strip() for v in row.get("right_values", "").split(",") if v.strip()
+		]
 
 		instance.content = [
 			{
@@ -225,8 +229,12 @@ class MatchingResource(AbstractQuizResource):
 		model = Matching
 
 	def before_save_instance(self, instance, row, **kwargs):
-		left_items = [v.strip() for v in row.get("left_items", "").split(",") if v.strip()]
-		right_items = [v.strip() for v in row.get("right_items", "").split(",") if v.strip()]
+		left_items = [
+			v.strip() for v in row.get("left_items", "").split(",") if v.strip()
+		]
+		right_items = [
+			v.strip() for v in row.get("right_items", "").split(",") if v.strip()
+		]
 
 		left_objects = []
 		right_objects = []

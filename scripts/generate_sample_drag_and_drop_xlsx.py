@@ -1,4 +1,4 @@
-﻿"""Generate a sample Drag-and-Drop import ZIP file.
+"""Generate a sample Drag-and-Drop import ZIP file.
 
 The output is a ``.zip`` archive (under ``fixtures/``) containing:
 
@@ -137,4 +137,3 @@ if __name__ == "__main__":
 
 	print(f"✅ Created {zip_path}")
 	print(f"   Contains: drag_and_drop.xlsx ({len(ROWS)} sample rows)")
-

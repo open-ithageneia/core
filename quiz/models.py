@@ -108,7 +108,7 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
 	@abstractmethod
 	def _parse_content(self):
 		"""Parse and validate self.content into the typed dataclass.
-		Subclasses implement this. Must raise ValidationError on bad data. """
+		Subclasses implement this. Must raise ValidationError on bad data."""
 		pass
 
 	@property
@@ -180,7 +180,9 @@ class Statement(AbstractQuiz):
 		if not choices:
 			return None
 
-		asset_ids = [choice.get("asset_id") for choice in choices if choice.get("asset_id")]
+		asset_ids = [
+			choice.get("asset_id") for choice in choices if choice.get("asset_id")
+		]
 		assets = QuizAsset.objects.in_bulk(asset_ids)
 
 		for choice in choices:
@@ -222,7 +224,6 @@ class Matching(AbstractQuiz):
 	def _parse_content(self):
 		return MatchingContent.from_json(self.content)
 
-
 	class Meta:
 		verbose_name_plural = "Matching"
 
@@ -239,4 +240,3 @@ class FillInTheBlank(AbstractQuiz):
 
 	def _parse_content(self):
 		return FillInTheBlankContent.from_json(self.content)
-

@@ -1,4 +1,4 @@
-﻿"""Generate a sample Statement import ZIP file.
+"""Generate a sample Statement import ZIP file.
 
 The output is a ``.zip`` archive (under ``fixtures/``) containing:
 

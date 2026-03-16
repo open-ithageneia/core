@@ -1,4 +1,4 @@
-﻿from django import forms
+from django import forms
 from import_export.forms import ImportForm
 
 from quiz.models import ExamSession
@@ -21,4 +21,3 @@ class QuizImportForm(ImportForm):
 	)
 
 	field_order = ["resource", "exam_session", "import_file", "format"]
-

@@ -1,4 +1,4 @@
-﻿"""Generate a sample Matching import ZIP file.
+"""Generate a sample Matching import ZIP file.
 
 The output is a ``.zip`` archive (under ``fixtures/``) containing:
 
@@ -138,4 +138,3 @@ if __name__ == "__main__":
 
 	print(f"✅ Created {zip_path}")
 	print(f"   Contains: matching.xlsx ({len(ROWS)} sample rows)")
-

@@ -107,4 +107,3 @@ export default function Playground({ quizzes }: PlaygroundProps) {
 		</div>
 	)
 }
-
