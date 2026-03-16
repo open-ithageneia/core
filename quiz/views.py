@@ -6,9 +6,11 @@ from quiz.services import QuizService
 from .serializers import ExerciseQuerySerializer
 
 
-def random_quiz_view(request):
+def playground(request):
 	return render(
-		request, "Exam", props={"exam": QuizService.random_quiz(request.GET.dict())}
+		request,
+		"Playground",
+		props={"quizzes": QuizService.playground_quiz()},
 	)
 
 

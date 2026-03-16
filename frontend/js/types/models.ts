@@ -103,6 +103,7 @@ interface FillBlankText {
 interface FillInTheBlankContent {
 	prompt_asset_id?: number
 	show_answers_as_choices: boolean
+	has_multiple_choices: boolean
 	texts: FillBlankText[]
 }
 

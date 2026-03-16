@@ -251,6 +251,7 @@ class FillBlankText:
 	CHOICE_PATTERN = re.compile(r"\{\{(.+?)\}\}(\*?)")
 
 	text_parts: list[FillBlankTextPart]
+	has_multiple_choices: bool
 
 	def to_dict(self):
 		return {"parts": [p.to_dict() for p in self.text_parts]}
@@ -267,6 +268,7 @@ class FillBlankText:
 				f"{text}: no blanks found. Use <({{{{answer}}}}*)> syntax."
 			)
 
+		has_multiple_choices = False
 		for blank in raw_blanks:
 			choices = cls.CHOICE_PATTERN.findall(blank)
 
@@ -274,6 +276,9 @@ class FillBlankText:
 				raise ValidationError(
 					f"{blank}: invalid blank — must contain at least one {{{{choice}}}}."
 				)
+
+			if len(choices) > 1:
+				has_multiple_choices = True
 
 			for choice_text, marker in choices:
 				if not choice_text.strip():
@@ -310,7 +315,7 @@ class FillBlankText:
 					FillBlankTextPart(text=part, is_blank=True, choices=parsed_choices)
 				)
 
-		return cls(text_parts=text_parts)
+		return cls(text_parts=text_parts, has_multiple_choices=has_multiple_choices)
 
 
 @dataclass
@@ -344,6 +349,7 @@ class FillInTheBlankContent:
 		"additionalProperties": False,
 	}
 
+	has_multiple_choices: bool
 	show_answers_as_choices: bool
 	texts: list[FillBlankText]
 	prompt_asset_id: int | None = None
@@ -351,6 +357,7 @@ class FillInTheBlankContent:
 	def to_dict(self):
 		d = {
 			"show_answers_as_choices": self.show_answers_as_choices,
+			"has_multiple_choices": self.has_multiple_choices,
 			"texts": [t.to_dict() for t in self.texts],
 		}
 		if self.prompt_asset_id is not None:
@@ -359,8 +366,11 @@ class FillInTheBlankContent:
 
 	@classmethod
 	def from_json(cls, data: dict):
+		texts = [FillBlankText.from_json(t) for t in data.get("texts", [])]
+		has_multiple_choices = any(t.has_multiple_choices for t in texts)
 		return cls(
 			show_answers_as_choices=data.get("show_answers_as_choices", False),
 			prompt_asset_id=data.get("prompt_asset_id"),
-			texts=[FillBlankText.from_json(t) for t in data.get("texts", [])],
+			texts=texts,
+			has_multiple_choices=has_multiple_choices,
 		)
