@@ -18,20 +18,17 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path, re_path
+from django.urls import include, path
 
 from . import views
 
 urlpatterns = [
-    path("", views.home, name="home"),
-    path("admin/", admin.site.urls),
-    path("accounts/", include("allauth.urls")),
-    # TODO made by alkis remove
-    path("language-test-example/", views.language_test_example, name="language-test-example"),
-    re_path(r"^full-test-example/.*$", views.full_test_example, name="full-test-example"),
-    path("quiz/", include("quiz.urls")),
+	path("", views.home, name="home"),
+	path("admin/", admin.site.urls),
+	path("accounts/", include("allauth.urls")),
+	path("quiz/", include("quiz.urls")),
 ]
 
 if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+	urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+	urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
