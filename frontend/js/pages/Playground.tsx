@@ -1,6 +1,4 @@
-﻿import type {
-	Exam
-} from "@/types/models"
+﻿import type { Exam } from "@/types/models"
 
 type PlaygroundProps = {
 	exam: Exam
