@@ -239,7 +239,7 @@ class FillBlankTextPart:
 	choices: list[FillBlankChoice] = field(default_factory=list)
 
 	def to_dict(self):
-		d = {"text": self.text, "is_blank": self.is_blank}
+		d = {"text": None if self.is_blank else self.text, "is_blank": self.is_blank}
 		if self.is_blank:
 			d["choices"] = [c.to_dict() for c in self.choices]
 		return d
