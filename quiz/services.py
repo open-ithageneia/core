@@ -196,38 +196,6 @@ class QuizService:
 		return QuizService._list(Matching, MatchingFilter, MatchingSerializer, params)
 
 	@staticmethod
-	def playground_quiz():
-		"""Return one random quiz of each type for the playground page."""
-
-		def pick_one(model, filterset_class, serializer_class, extra_params=None):
-			p = extra_params or {}
-			qs = filterset_class(p, queryset=model.objects.all().distinct()).qs
-			items = serializer_class(qs.order_by("?")[:1], many=True).data
-			return items[0] if items else None
-
-		return {
-			"true_false": pick_one(
-				Statement,
-				StatementFilter,
-				StatementSerializer,
-				{"type": Statement.QuizType.TRUE_FALSE},
-			),
-			"multiple_choice": pick_one(
-				Statement,
-				StatementFilter,
-				StatementSerializer,
-				{"type": Statement.QuizType.MULTIPLE_CHOICE},
-			),
-			"fill_in_the_blank": pick_one(
-				FillInTheBlank, FillInTheBlankFilter, FillInTheBlankSerializer
-			),
-			"drag_and_drop": pick_one(
-				DragAndDrop, DragAndDropFilter, DragAndDropSerializer
-			),
-			"matching": pick_one(Matching, MatchingFilter, MatchingSerializer),
-		}
-
-	@staticmethod
 	def random_quiz(params, n=20):
 		def sample(model, filterset_class, serializer_class, extra_params=None):
 			p = params.copy()

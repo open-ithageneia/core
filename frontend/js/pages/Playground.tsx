@@ -1,21 +1,12 @@
 ﻿import type {
-	DragAndDrop,
-	FillInTheBlank,
-	Matching,
-	Statement,
+	Exam
 } from "@/types/models"
 
 type PlaygroundProps = {
-	quizzes: {
-		true_false: Statement | null
-		multiple_choice: Statement | null
-		fill_in_the_blank: FillInTheBlank | null
-		drag_and_drop: DragAndDrop | null
-		matching: Matching | null
-	}
+	exam: Exam
 }
 
-export default function Playground({ quizzes }: PlaygroundProps) {
+export default function Playground({ exam }: PlaygroundProps) {
 	return (
 		<div className="mx-auto max-w-4xl space-y-12 p-8">
 			<h1 className="text-3xl font-bold">Quiz Playground</h1>
@@ -23,11 +14,11 @@ export default function Playground({ quizzes }: PlaygroundProps) {
 			{/* ── True / False Statement ── */}
 			<section className="space-y-2">
 				<h2 className="text-xl font-semibold">True / False</h2>
-				{quizzes.true_false ? (
+				{exam.true_false ? (
 					<div className="rounded-lg border p-4">
-						{/* TODO: Replace with <TrueFalseQuestion quiz={quizzes.true_false} /> */}
+						{/* TODO: Replace with <TrueFalseQuestion quiz={exam.true_false[0]} /> */}
 						<pre className="text-sm text-muted-foreground">
-							{JSON.stringify(quizzes.true_false, null, 2)}
+							{JSON.stringify(exam.true_false[0], null, 2)}
 						</pre>
 					</div>
 				) : (
@@ -40,11 +31,11 @@ export default function Playground({ quizzes }: PlaygroundProps) {
 			{/* ── Multiple Choice Statement ── */}
 			<section className="space-y-2">
 				<h2 className="text-xl font-semibold">Multiple Choice</h2>
-				{quizzes.multiple_choice ? (
+				{exam.multiple_choice ? (
 					<div className="rounded-lg border p-4">
-						{/* TODO: Replace with <MultipleChoiceQuestion quiz={quizzes.multiple_choice} /> */}
+						{/* TODO: Replace with <MultipleChoiceQuestion quiz={exam.multiple_choice[0]} /> */}
 						<pre className="text-sm text-muted-foreground">
-							{JSON.stringify(quizzes.multiple_choice, null, 2)}
+							{JSON.stringify(exam.multiple_choice[0], null, 2)}
 						</pre>
 					</div>
 				) : (
@@ -57,11 +48,11 @@ export default function Playground({ quizzes }: PlaygroundProps) {
 			{/* ── Drag and Drop ── */}
 			<section className="space-y-2">
 				<h2 className="text-xl font-semibold">Drag and Drop</h2>
-				{quizzes.drag_and_drop ? (
+				{exam.drag_and_drop ? (
 					<div className="rounded-lg border p-4">
-						{/* TODO: Replace with <DragAndDropQuestion quiz={quizzes.drag_and_drop} /> */}
+						{/* TODO: Replace with <DragAndDropQuestion quiz={exam.drag_and_drop} /> */}
 						<pre className="text-sm text-muted-foreground">
-							{JSON.stringify(quizzes.drag_and_drop, null, 2)}
+							{JSON.stringify(exam.drag_and_drop[0], null, 2)}
 						</pre>
 					</div>
 				) : (
@@ -74,11 +65,11 @@ export default function Playground({ quizzes }: PlaygroundProps) {
 			{/* ── Matching ── */}
 			<section className="space-y-2">
 				<h2 className="text-xl font-semibold">Matching</h2>
-				{quizzes.matching ? (
+				{exam.matching ? (
 					<div className="rounded-lg border p-4">
-						{/* TODO: Replace with <MatchingQuestion quiz={quizzes.matching} /> */}
+						{/* TODO: Replace with <MatchingQuestion quiz={exam.matching[0]} /> */}
 						<pre className="text-sm text-muted-foreground">
-							{JSON.stringify(quizzes.matching, null, 2)}
+							{JSON.stringify(exam.matching[0], null, 2)}
 						</pre>
 					</div>
 				) : (
@@ -91,11 +82,11 @@ export default function Playground({ quizzes }: PlaygroundProps) {
 			{/* ── Fill in the Blank ── */}
 			<section className="space-y-2">
 				<h2 className="text-xl font-semibold">Fill in the Blank</h2>
-				{quizzes.fill_in_the_blank ? (
+				{exam.fill_in_the_blank ? (
 					<div className="rounded-lg border p-4">
-						{/* TODO: Replace with <FillInTheBlankQuestion quiz={quizzes.fill_in_the_blank} /> */}
+						{/* TODO: Replace with <FillInTheBlankQuestion quiz={exam.fill_in_the_blank[0]} /> */}
 						<pre className="text-sm text-muted-foreground">
-							{JSON.stringify(quizzes.fill_in_the_blank, null, 2)}
+							{JSON.stringify(exam.fill_in_the_blank[0], null, 2)}
 						</pre>
 					</div>
 				) : (

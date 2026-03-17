@@ -10,7 +10,7 @@ def playground(request):
 	return render(
 		request,
 		"Playground",
-		props={"quizzes": QuizService.playground_quiz()},
+		props={"exam": QuizService.random_quiz(request.GET.dict())},
 	)
 
 
