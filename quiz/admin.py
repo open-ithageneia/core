@@ -48,51 +48,54 @@ class ExamSessionImportMixin:
 
 
 class ZipImportMixin:
-	"""Requires a ``.zip`` upload for import.
+	"""Accepts either a ``.zip`` or a direct spreadsheet for import.
 
-	The ZIP must contain:
-	- One spreadsheet file (``.xlsx``, ``.xls``, or ``.csv``)
-	- An optional ``images/`` folder with image files referenced by
-	  filename in the spreadsheet's image columns.
+	**ZIP upload** (existing behaviour):
+	The ZIP must contain one spreadsheet file (``.xlsx``, ``.xls``, or
+	``.csv``) and an optional ``images/`` folder with image files
+	referenced by filename in the spreadsheet's image columns.
 
-	The mixin extracts images into a thread-local store (see
-	``resources.py``), swaps the uploaded file with the extracted
-	spreadsheet, and lets django-import-export process it as usual.
+	**Direct spreadsheet upload** (``.xlsx`` / ``.xls`` / ``.csv``):
+	When no images are bundled, users can upload a spreadsheet directly.
+	Image columns should then contain existing ``QuizAsset`` IDs instead
+	of filenames.
 
 	``skip_import_confirm`` is ``True`` so images only need to be
 	loaded once (no two-step confirmation).
 	"""
+
+	_SPREADSHEET_EXTENSIONS = (".xlsx", ".xls", ".csv")
 
 	skip_import_confirm = True
 
 	def import_action(self, request, **kwargs):
 		if request.method == "POST" and request.FILES.get("import_file"):
 			import_file = request.FILES["import_file"]
-			if not import_file.name.lower().endswith(".zip"):
+			name_lower = import_file.name.lower()
+
+			if name_lower.endswith(".zip"):
+				raw = b"".join(import_file.chunks())
+				try:
+					xlsx_bytes = load_images_from_zip(raw)
+				except (zipfile.BadZipFile, ValueError):
+					clear_image_store()
+					raise
+				# Replace the uploaded file with the extracted spreadsheet.
+				request.FILES["import_file"] = SimpleUploadedFile(
+					name="import.xlsx",
+					content=xlsx_bytes,
+					content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+				)
+			elif not any(name_lower.endswith(ext) for ext in self._SPREADSHEET_EXTENSIONS):
 				from django.contrib import messages
+				from django.http import HttpResponseRedirect
 
 				messages.error(
 					request,
-					"Only .zip files are accepted. The ZIP must contain a "
-					"spreadsheet (.xlsx) and an optional images/ folder.",
+					"Only .zip, .xlsx, .xls, or .csv files are accepted. "
+					"Upload a ZIP (with images) or a spreadsheet (with asset IDs).",
 				)
-				# Redirect back to the same import page.
-				from django.http import HttpResponseRedirect
-
 				return HttpResponseRedirect(request.path)
-
-			raw = b"".join(import_file.chunks())
-			try:
-				xlsx_bytes = load_images_from_zip(raw)
-			except (zipfile.BadZipFile, ValueError):
-				clear_image_store()
-				raise
-			# Replace the uploaded file with the extracted spreadsheet.
-			request.FILES["import_file"] = SimpleUploadedFile(
-				name="import.xlsx",
-				content=xlsx_bytes,
-				content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-			)
 		try:
 			return super().import_action(request, **kwargs)
 		finally:

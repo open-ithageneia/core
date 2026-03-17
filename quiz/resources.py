@@ -92,17 +92,43 @@ def _create_asset_from_bytes(image_bytes: bytes, filename: str, title: str = "")
 	return asset.pk
 
 
-def _import_image_column(value, title: str = "") -> int | None:
-	"""Resolve an image **filename** from the cell value.
+def _is_asset_id(value) -> bool:
+	"""Return True when *value* looks like an integer asset ID."""
+	try:
+		int_val = int(value)
+		return int_val > 0
+	except (TypeError, ValueError):
+		return False
 
-	The filename is looked up in the thread-local image store (populated
-	from a ZIP upload).  Returns the new ``QuizAsset`` pk, or ``None``
-	when the cell is blank or the filename is not found in the store.
+
+def _import_image_column(value, title: str = "") -> int | None:
+	"""Resolve an image column value to a ``QuizAsset`` pk.
+
+	The value can be one of:
+
+	* **blank / None** → returns ``None``.
+	* **integer (asset ID)** → validated against ``QuizAsset`` and returned
+	  directly.  This path does *not* require a ZIP upload.
+	* **filename string** → looked up in the thread-local image store
+	  (populated from a ZIP upload) and persisted as a new ``QuizAsset``.
 	"""
 	if _is_blank(value):
 		return None
 
-	filename = str(value).strip()
+	raw = str(value).strip()
+
+	# --- path 1: existing asset ID (numeric) ---
+	if _is_asset_id(raw):
+		asset_pk = int(raw)
+		if not QuizAsset.objects.filter(pk=asset_pk).exists():
+			raise ValueError(
+				f"QuizAsset with ID {asset_pk} does not exist. "
+				f"Provide a valid asset ID or an image filename inside a ZIP."
+			)
+		return asset_pk
+
+	# --- path 2: filename from ZIP image store ---
+	filename = raw
 	image_bytes = _get_image_bytes(filename)
 
 	if image_bytes is None:
@@ -229,29 +255,30 @@ class MatchingResource(AbstractQuizResource):
 		model = Matching
 
 	def before_save_instance(self, instance, row, **kwargs):
-		left_items = [
-			v.strip() for v in row.get("left_items", "").split(",") if v.strip()
-		]
-		right_items = [
-			v.strip() for v in row.get("right_items", "").split(",") if v.strip()
-		]
+		raw_items = row.get("items", "")
+		pairs = [v.strip() for v in raw_items.split(",") if v.strip()]
 
 		left_objects = []
 		right_objects = []
 
-		for idx, text in enumerate(left_items, start=1):
+		for idx, pair in enumerate(pairs, start=1):
+			if "/" not in pair:
+				raise ValueError(
+					f"Item '{pair}' is not in the expected 'left/right' format."
+				)
+			left_text, right_text = pair.split("/", maxsplit=1)
+
 			left_objects.append(
 				{
 					"id": idx,
-					"text": text,
+					"text": left_text.strip(),
+					"matched_id": idx+len(pairs),
 				}
 			)
-
-		for idx, text in enumerate(right_items, start=1):
 			right_objects.append(
 				{
-					"id": idx,
-					"text": text,
+					"id": idx+len(pairs),
+					"text": right_text.strip(),
 					"matched_id": idx,
 				}
 			)

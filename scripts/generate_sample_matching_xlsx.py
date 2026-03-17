@@ -6,11 +6,11 @@ The output is a ``.zip`` archive (under ``fixtures/``) containing:
 
 The spreadsheet columns are:
 
-| id | category | left_title | right_title | left_items | right_items |
+| id | category | left_title | right_title | items |
 
-``left_items`` and ``right_items`` are **comma-separated** lists.
-Items are matched **by position**: the 1st left item pairs with the
-1st right item, the 2nd with the 2nd, etc.
+``items`` is a **comma-separated** list of pairs in ``left/right`` format.
+Items are matched **by position**: the 1st pair becomes left item 1 and
+right item 1, etc.
 
 Usage:
     uv run python scripts/generate_sample_matching_xlsx.py
@@ -34,8 +34,7 @@ HEADERS = [
 	"category",
 	"left_title",
 	"right_title",
-	"left_items",
-	"right_items",
+	"items",
 ]
 
 # -- sample rows ---------------------------------------------------------------
@@ -47,8 +46,7 @@ ROWS = [
 		"category": "GEOGRAPHY",
 		"left_title": "Γεωγραφικά διαμερίσματα",
 		"right_title": "Περιφερειακές ενότητες",
-		"left_items": "Στερεά Ελλάδα - Εύβοια, Πελοπόννησος, Kρήτη, Νησιά Αιγαίου",
-		"right_items": "Βοιωτίας, Αρκαδίας, Λασιθίου, Λέσβου",
+		"items": "Στερεά Ελλάδα - Εύβοια/Βοιωτίας, Πελοπόννησος/Αρκαδίας, Kρήτη/Λασιθίου, Νησιά Αιγαίου/Λέσβου",
 	},
 	# Row 2: Civics — institutions → roles
 	{
@@ -56,8 +54,7 @@ ROWS = [
 		"category": "CIVICS",
 		"left_title": "Institution",
 		"right_title": "Role",
-		"left_items": "Parliament, Supreme Court, President",
-		"right_items": "Legislates, Interprets law, Head of state",
+		"items": "Parliament/Legislates, Supreme Court/Interprets law, President/Head of state",
 	},
 	# Row 3: History — dates → events
 	{
@@ -65,8 +62,7 @@ ROWS = [
 		"category": "HISTORY",
 		"left_title": "Date",
 		"right_title": "Event",
-		"left_items": "1821, 1940, 1974",
-		"right_items": "Greek War of Independence, OXI Day, Restoration of Democracy",
+		"items": "1821/Greek War of Independence, 1940/OXI Day, 1974/Restoration of Democracy",
 	},
 	# Row 4: Culture — landmarks → cities
 	{
@@ -74,8 +70,7 @@ ROWS = [
 		"category": "CULTURE",
 		"left_title": "Landmark",
 		"right_title": "City",
-		"left_items": "Parthenon, White Tower, Palace of Knossos",
-		"right_items": "Athens, Thessaloniki, Heraklion",
+		"items": "Parthenon/Athens, White Tower/Thessaloniki, Palace of Knossos/Heraklion",
 	},
 ]
 
