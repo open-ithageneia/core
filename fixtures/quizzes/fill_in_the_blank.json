@@ -13,7 +13,9 @@
 					}
 				]
 			},
-			"exam_sessions": []
+			"exam_sessions": [],
+			"created_at": "2026-01-01T10:00:00Z",
+			"updated_at": "2026-01-01T10:00:00Z"
 		}
 	},
 	{
@@ -33,7 +35,9 @@
 					}
 				]
 			},
-			"exam_sessions": []
+			"exam_sessions": [],
+			"created_at": "2026-01-01T10:00:00Z",
+			"updated_at": "2026-01-01T10:00:00Z"
 		}
 	},
 	{
@@ -57,7 +61,9 @@
 				],
 				"prompt_asset_id": 42
 			},
-			"exam_sessions": []
+			"exam_sessions": [],
+			"created_at": "2026-01-01T10:00:00Z",
+			"updated_at": "2026-01-01T10:00:00Z"
 		}
 	},
 	{
@@ -74,7 +80,9 @@
 					}
 				]
 			},
-			"exam_sessions": []
+			"exam_sessions": [],
+			"created_at": "2026-01-01T10:00:00Z",
+			"updated_at": "2026-01-01T10:00:00Z"
 		}
 	}
 ]
