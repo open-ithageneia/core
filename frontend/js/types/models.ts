@@ -85,10 +85,26 @@ export interface Matching extends TimeStamped, Activatable {
 	exam_sessions_preview: string
 }
 
+interface FillBlankChoice {
+	text: string
+	is_correct: boolean
+}
+
+interface FillBlankTextPart {
+	text: string
+	is_blank: boolean
+	choices?: FillBlankChoice[]
+}
+
+interface FillBlankText {
+	parts: FillBlankTextPart[]
+}
+
 interface FillInTheBlankContent {
 	prompt_asset_id?: number
 	show_answers_as_choices: boolean
-	texts: string[]
+	has_multiple_choices: boolean
+	texts: FillBlankText[]
 }
 
 export interface FillInTheBlank extends TimeStamped, Activatable {
