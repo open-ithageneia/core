@@ -56,7 +56,7 @@ RUN chown -R django:django /code
 
 USER django
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=5 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
     CMD curl -f http://localhost:8000/healthcheck/ || exit 1
 
 EXPOSE 8000
