@@ -1,3 +1,4 @@
+import logging
 import re
 import zipfile
 
@@ -27,6 +28,8 @@ from .resources import (
 	load_images_from_zip,
 )
 from .schemas import FillBlankText
+
+logger = logging.getLogger(__name__)
 
 
 class ExamSessionImportMixin:
@@ -78,8 +81,10 @@ class ZipImportMixin:
 				try:
 					xlsx_bytes = load_images_from_zip(raw)
 				except (zipfile.BadZipFile, ValueError):
+					logger.error("Failed to extract ZIP import: %s", import_file.name, exc_info=True)
 					clear_image_store()
 					raise
+				logger.info("ZIP import extracted: %s", import_file.name)
 				# Replace the uploaded file with the extracted spreadsheet.
 				request.FILES["import_file"] = SimpleUploadedFile(
 					name="import.xlsx",

@@ -17,6 +17,9 @@ wheels/
 /static/
 media/
 
+# Logs
+logs/
+
 # Node-generated files
 node_modules/
 

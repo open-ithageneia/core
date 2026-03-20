@@ -226,6 +226,73 @@ def immutable_file_test(path, url):
 WHITENOISE_IMMUTABLE_FILE_TEST = immutable_file_test
 
 
+# ---------------------------------------------------------------------------
+# Logging
+# https://docs.djangoproject.com/en/6.0/topics/logging/
+# ---------------------------------------------------------------------------
+
+LOG_LEVEL = env.str("LOG_LEVEL", default="DEBUG" if DEBUG else "INFO")
+LOG_FILE = env.str("LOG_FILE", default="")
+
+_HANDLERS = {
+	"console": {
+		"class": "logging.StreamHandler",
+		"formatter": "verbose",
+	},
+}
+
+if LOG_FILE:
+	_LOG_FILE_PATH = Path(LOG_FILE) if Path(LOG_FILE).is_absolute() else BASE_DIR / LOG_FILE
+	_LOG_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
+	_HANDLERS["file"] = {
+		"class": "logging.handlers.RotatingFileHandler",
+		"filename": _LOG_FILE_PATH,
+		"maxBytes": 10 * 1024 * 1024,  # 10 MB
+		"backupCount": 5,
+		"formatter": "verbose",
+	}
+
+_HANDLER_NAMES = list(_HANDLERS.keys())
+
+LOGGING = {
+	"version": 1,
+	"disable_existing_loggers": False,
+	"formatters": {
+		"verbose": {
+			"format": "{asctime} {levelname} {name} {message}",
+			"style": "{",
+		},
+	},
+	"handlers": _HANDLERS,
+	"root": {
+		"handlers": _HANDLER_NAMES,
+		"level": "WARNING",
+	},
+	"loggers": {
+		"django": {
+			"handlers": _HANDLER_NAMES,
+			"level": "INFO",
+			"propagate": False,
+		},
+		"django.request": {
+			"handlers": _HANDLER_NAMES,
+			"level": "WARNING",
+			"propagate": False,
+		},
+		"open_ithageneia": {
+			"handlers": _HANDLER_NAMES,
+			"level": LOG_LEVEL,
+			"propagate": False,
+		},
+		"quiz": {
+			"handlers": _HANDLER_NAMES,
+			"level": LOG_LEVEL,
+			"propagate": False,
+		},
+	},
+}
+
+
 ADMIN_STRUCTURE = [
 	(
 		"quiz",
