@@ -25,6 +25,10 @@ export default defineConfig((mode) => {
 				usePolling: true,
 			},
 		},
+		esbuild: {
+			drop: mode === "production" ? ["debugger"] : [],
+			pure: mode === "production" ? ["console.debug", "console.info", "console.log"] : [],
+		},
 		build: {
 			manifest: "manifest.json",
 			emptyOutDir: true,
