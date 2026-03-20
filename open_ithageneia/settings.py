@@ -232,7 +232,6 @@ WHITENOISE_IMMUTABLE_FILE_TEST = immutable_file_test
 # ---------------------------------------------------------------------------
 
 LOG_LEVEL = env.str("LOG_LEVEL", default="DEBUG" if DEBUG else "INFO")
-LOG_FILE = env.str("LOG_FILE", default="")
 
 _HANDLERS = {
 	"console": {
@@ -240,17 +239,6 @@ _HANDLERS = {
 		"formatter": "verbose",
 	},
 }
-
-if LOG_FILE:
-	_LOG_FILE_PATH = Path(LOG_FILE) if Path(LOG_FILE).is_absolute() else BASE_DIR / LOG_FILE
-	_LOG_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
-	_HANDLERS["file"] = {
-		"class": "logging.handlers.RotatingFileHandler",
-		"filename": _LOG_FILE_PATH,
-		"maxBytes": 10 * 1024 * 1024,  # 10 MB
-		"backupCount": 5,
-		"formatter": "verbose",
-	}
 
 _HANDLER_NAMES = list(_HANDLERS.keys())
 
