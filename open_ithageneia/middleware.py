@@ -23,7 +23,9 @@ class DataShareMiddleware(object):
 			messages.append(message)
 
 		if messages:
-			logger.debug("Sharing %d flash message(s) for %s", len(messages), request.path)
+			logger.debug(
+				"Sharing %d flash message(s) for %s", len(messages), request.path
+			)
 
 		share(request, messages=messages)
 

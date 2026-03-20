@@ -27,7 +27,10 @@ export default defineConfig((mode) => {
 		},
 		esbuild: {
 			drop: mode === "production" ? ["debugger"] : [],
-			pure: mode === "production" ? ["console.debug", "console.info", "console.log"] : [],
+			pure:
+				mode === "production"
+					? ["console.debug", "console.info", "console.log"]
+					: [],
 		},
 		build: {
 			manifest: "manifest.json",

@@ -81,7 +81,11 @@ class ZipImportMixin:
 				try:
 					xlsx_bytes = load_images_from_zip(raw)
 				except (zipfile.BadZipFile, ValueError):
-					logger.error("Failed to extract ZIP import: %s", import_file.name, exc_info=True)
+					logger.error(
+						"Failed to extract ZIP import: %s",
+						import_file.name,
+						exc_info=True,
+					)
 					clear_image_store()
 					raise
 				logger.info("ZIP import extracted: %s", import_file.name)
@@ -91,7 +95,9 @@ class ZipImportMixin:
 					content=xlsx_bytes,
 					content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 				)
-			elif not any(name_lower.endswith(ext) for ext in self._SPREADSHEET_EXTENSIONS):
+			elif not any(
+				name_lower.endswith(ext) for ext in self._SPREADSHEET_EXTENSIONS
+			):
 				from django.contrib import messages
 				from django.http import HttpResponseRedirect
 

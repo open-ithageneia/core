@@ -272,12 +272,12 @@ class MatchingResource(AbstractQuizResource):
 				{
 					"id": idx,
 					"text": left_text.strip(),
-					"matched_id": idx+len(pairs),
+					"matched_id": idx + len(pairs),
 				}
 			)
 			right_objects.append(
 				{
-					"id": idx+len(pairs),
+					"id": idx + len(pairs),
 					"text": right_text.strip(),
 					"matched_id": idx,
 				}
