@@ -226,21 +226,10 @@ def immutable_file_test(path, url):
 WHITENOISE_IMMUTABLE_FILE_TEST = immutable_file_test
 
 
-# ---------------------------------------------------------------------------
 # Logging
 # https://docs.djangoproject.com/en/6.0/topics/logging/
-# ---------------------------------------------------------------------------
 
 LOG_LEVEL = env.str("LOG_LEVEL", default="DEBUG" if DEBUG else "INFO")
-
-_HANDLERS = {
-	"console": {
-		"class": "logging.StreamHandler",
-		"formatter": "verbose",
-	},
-}
-
-_HANDLER_NAMES = list(_HANDLERS.keys())
 
 LOGGING = {
 	"version": 1,
@@ -251,35 +240,35 @@ LOGGING = {
 			"style": "{",
 		},
 	},
-	"handlers": _HANDLERS,
+	"handlers": {
+		"console": {
+			"class": "logging.StreamHandler",
+			"formatter": "verbose",
+		},
+	},
 	"root": {
-		"handlers": _HANDLER_NAMES,
+		"handlers": ["console"],
 		"level": "WARNING",
 	},
 	"loggers": {
 		"django": {
-			"handlers": _HANDLER_NAMES,
+			"handlers": ["console"],
 			"level": "INFO",
 			"propagate": False,
 		},
 		"django.request": {
-			"handlers": _HANDLER_NAMES,
+			"handlers": ["console"],
 			"level": "WARNING",
 			"propagate": False,
 		},
 		"open_ithageneia": {
-			"handlers": _HANDLER_NAMES,
 			"level": LOG_LEVEL,
-			"propagate": False,
 		},
 		"quiz": {
-			"handlers": _HANDLER_NAMES,
 			"level": LOG_LEVEL,
-			"propagate": False,
 		},
 	},
 }
-
 
 ADMIN_STRUCTURE = [
 	(
