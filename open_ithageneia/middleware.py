@@ -1,5 +1,9 @@
+import logging
+
 from django.contrib.messages import get_messages
 from inertia import share
+
+logger = logging.getLogger(__name__)
 
 
 class DataShareMiddleware(object):
@@ -17,6 +21,11 @@ class DataShareMiddleware(object):
 				"level_tag": message.level_tag,
 			}
 			messages.append(message)
+
+		if messages:
+			logger.debug(
+				"Sharing %d flash message(s) for %s", len(messages), request.path
+			)
 
 		share(request, messages=messages)
 

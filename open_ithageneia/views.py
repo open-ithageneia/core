@@ -1,6 +1,10 @@
+import logging
+
 from django.db import DatabaseError, connection
 from django.http import JsonResponse
 from inertia import render
+
+logger = logging.getLogger(__name__)
 
 
 def home(request):
@@ -13,6 +17,7 @@ def healthcheck(request):
 			cursor.execute("SELECT 1")
 		db_ok = True
 	except DatabaseError:
+		logger.error("Healthcheck DB query failed", exc_info=True)
 		db_ok = False
 
 	status = "ok" if db_ok else "degraded"
