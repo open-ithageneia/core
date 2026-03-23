@@ -1,4 +1,5 @@
 import { usePage } from "@inertiajs/react"
+import { logger } from "@/lib/logger"
 import type { TrainingData } from "@/types/models"
 
 type TrainingProps = {
@@ -8,7 +9,7 @@ type TrainingProps = {
 export default function Training() {
 	const { data } = usePage<{ data: TrainingProps }>().props
 
-	console.log(data)
+	logger.debug("Training data", data)
 
 	return <h1>Training page</h1>
 }

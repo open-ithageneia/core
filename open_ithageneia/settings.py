@@ -226,6 +226,50 @@ def immutable_file_test(path, url):
 WHITENOISE_IMMUTABLE_FILE_TEST = immutable_file_test
 
 
+# Logging
+# https://docs.djangoproject.com/en/6.0/topics/logging/
+
+LOG_LEVEL = env.str("LOG_LEVEL", default="DEBUG" if DEBUG else "INFO")
+
+LOGGING = {
+	"version": 1,
+	"disable_existing_loggers": False,
+	"formatters": {
+		"verbose": {
+			"format": "{asctime} {levelname} {name} {message}",
+			"style": "{",
+		},
+	},
+	"handlers": {
+		"console": {
+			"class": "logging.StreamHandler",
+			"formatter": "verbose",
+		},
+	},
+	"root": {
+		"handlers": ["console"],
+		"level": "WARNING",
+	},
+	"loggers": {
+		"django": {
+			"handlers": ["console"],
+			"level": "INFO",
+			"propagate": False,
+		},
+		"django.request": {
+			"handlers": ["console"],
+			"level": "WARNING",
+			"propagate": False,
+		},
+		"open_ithageneia": {
+			"level": LOG_LEVEL,
+		},
+		"quiz": {
+			"level": LOG_LEVEL,
+		},
+	},
+}
+
 ADMIN_STRUCTURE = [
 	(
 		"quiz",

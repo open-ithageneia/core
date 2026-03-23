@@ -1,3 +1,5 @@
+import logging
+
 from django.db import connection
 
 from .filters import (
@@ -21,6 +23,8 @@ from .serializers import (
 	MatchingSerializer,
 	StatementSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 QUIZ_MODELS = [
 	Statement,
@@ -81,6 +85,13 @@ def get_random_quiz_items_alt(category: str, amount: int):
 		cursor.execute(sql, params)
 		columns = [col[0] for col in cursor.description]
 		rows = cursor.fetchall()
+
+	logger.debug(
+		"get_random_quiz_items_alt: category=%s amount=%s returned %d rows",
+		category,
+		amount,
+		len(rows),
+	)
 
 	return [dict(zip(columns, row)) for row in rows]
 
@@ -144,6 +155,13 @@ def get_random_quiz_items(category: str, amount: int):
 		cursor.execute(sql, params)
 		columns = [col[0] for col in cursor.description]
 		rows = cursor.fetchall()
+
+	logger.debug(
+		"get_random_quiz_items: category=%s amount=%s returned %d rows",
+		category,
+		amount,
+		len(rows),
+	)
 
 	return [dict(zip(columns, row)) for row in rows]
 

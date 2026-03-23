@@ -1,4 +1,5 @@
-﻿import type { Exam } from "@/types/models"
+﻿import CoreTestFullPagePicker from "@/trueFalse-alkis/core-transfer/pages/CoreTestFullPagePicker"
+import type { Exam } from "@/types/models"
 
 type PlaygroundProps = {
 	exam: Exam
@@ -18,6 +19,16 @@ export default function Playground({ exam }: PlaygroundProps) {
 						<pre className="text-sm text-muted-foreground">
 							{JSON.stringify(exam.true_false[0], null, 2)}
 						</pre>
+					</div>
+				) : (
+					<p className="text-muted-foreground">
+						No true/false questions available.
+					</p>
+				)}
+
+        {exam.true_false?.length ? (
+					<div className="rounded-lg border p-4">
+						<CoreTestFullPagePicker questions={exam.true_false} />
 					</div>
 				) : (
 					<p className="text-muted-foreground">

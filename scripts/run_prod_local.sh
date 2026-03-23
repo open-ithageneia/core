@@ -39,6 +39,6 @@ exec docker run --rm -it \
   -e "DEBUG=False" \
   -e "ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0" \
   -e "CSRF_TRUSTED_ORIGINS=http://localhost:${HOST_PORT},http://127.0.0.1:${HOST_PORT}" \
-  -e DJANGO_SETTINGS_MODULE=open_ithageneia.settings_production \
+  -e DJANGO_SETTINGS_MODULE=open_ithageneia.settings_local_docker \
   -v "open_ithageneia_db:/code/db" \
   "$IMAGE_TAG"
