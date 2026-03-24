@@ -1,10 +1,10 @@
-// frontend/src/core-transfer/pages/CoreTestFullPagePicker.tsx
+// core\frontend\js\trueFalse-alkis\core-transfer\pages\CoreTestFullPagePicker.tsx
 
 import { useState } from "react"
+// import data from "../data/testData.json"
 import { useCoreFullGrading } from "../hooks/useCoreFullGrading"
-import type { CoreGradedAnswer } from "../types/client.types"
+import type { CoreAnswer, CoreGradedAnswer } from "../types/client.types"
 import type { Statement } from "../types/models"
-// import data from '../data/trueFalseData.json'
 import CoreTestFullQuestion from "./CoreTestFullQuestion"
 
 // μεταφορά απο '../data/trueFalseData.json' → props που μου έρχονται απο inertia back
@@ -13,7 +13,8 @@ type Props = {
 }
 
 const CoreTestFullPagePicker = ({ questions }: Props) => {
-	// const questions = data.true_false as Statement[]
+	// const CoreTestFullPagePicker = () => {
+	// const questions = [...data.true_false, ...data.multiple_choice] as Statement[]
 
 	// οι απαντήσεις έχουν την σειρά της απάντησης και το ποια απάντηση επέλεξε ο χρήστης (επειδή οι ερωτήσεις κάνουν shuffle δεν είναι απαραίτητο οτι ταυτίζετε με την σωστή σειρά της απάντησης)
 	// οι απαντήσεις αποθηκεύουν:
@@ -21,9 +22,7 @@ const CoreTestFullPagePicker = ({ questions }: Props) => {
 	// - order: mapping από UI θέση → original index
 	// πχ original: [A, B, C] → shuffled: [B, C, A] → order = [1, 2, 0]
 	// άρα αν user πατήσει index = 0 → επέλεξε το original index 1 (B)
-	const [answers, setAnswers] = useState<
-		Record<number, { index: number; order: number[] }>
-	>({})
+	const [answers, setAnswers] = useState<Record<number, CoreAnswer>>({})
 	const [gradedAnswers, setGradedAnswers] = useState<CoreGradedAnswer[]>([])
 	const [score, setScore] = useState<number | null>(null)
 
@@ -32,10 +31,7 @@ const CoreTestFullPagePicker = ({ questions }: Props) => {
 	const { gradeAll } = useCoreFullGrading()
 
 	// στην επιλογή ερώτηση όλα ίδια εκτός απο το [id]: value
-	const handleChange = (
-		id: number,
-		value: { index: number; order: number[] },
-	) => {
+	const handleChange = (id: number, value: CoreAnswer) => {
 		setAnswers((prev) => ({
 			...prev,
 			[id]: value,
@@ -49,8 +45,8 @@ const CoreTestFullPagePicker = ({ questions }: Props) => {
 
 			setGradedAnswers(results)
 			setScore(score)
-		} catch (error) {
-			console.error("Grading failed:", error)
+		} catch (_error) {
+			// console.error("Grading failed:", error)
 		}
 	}
 
@@ -68,10 +64,10 @@ const CoreTestFullPagePicker = ({ questions }: Props) => {
 						{/* καλούμε το component που διαχειρίζεστε του διαφορετικους τύπους ερωτήσεων */}
 						<CoreTestFullQuestion
 							question={q}
-							userAnswer={answers[q.id]?.index}
-							onChange={(val, order) =>
-								handleChange(q.id, { index: val, order })
-							}
+							userAnswer={answers[q.id]}
+							onChange={(value) => handleChange(q.id, value)}
+							gradedAnswer={graded}
+							showGrading={score !== null}
 						/>
 
 						{/* κάτω απο κάθε απαντημένη ερώτηση το UI εμφανίζει το αποτέλεσμα */}
