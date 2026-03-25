@@ -15,6 +15,7 @@ from .models import (
 	FillInTheBlank,
 	Matching,
 	Statement,
+	QuizAsset,
 )
 from .serializers import (
 	DragAndDropSerializer,
@@ -271,3 +272,12 @@ class QuizService:
 		# random.shuffle(items)
 
 		# return items[:amount]
+
+
+class AssetService:
+	@staticmethod
+	def resolve_asset_url(asset_id):
+		asset = QuizAsset.objects.filter(id=asset_id).first()
+		if asset:
+			return asset.image.url
+		return None

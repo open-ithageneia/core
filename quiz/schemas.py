@@ -19,11 +19,13 @@ class StatementChoice:
 	is_correct: bool = False
 
 	def to_dict(self):
+		from quiz.services import AssetService
+
 		d = {"is_correct": self.is_correct}
 		if self.text is not None:
 			d["text"] = self.text
 		if self.asset_id is not None:
-			d["asset_id"] = self.asset_id
+			d["asset_url"] = AssetService.resolve_asset_url(self.asset_id)
 		return d
 
 	@classmethod
@@ -72,11 +74,13 @@ class StatementChoiceContent:
 	prompt_asset_id: int | None = None
 
 	def to_dict(self):
+		from quiz.services import AssetService
+
 		d = {"choices": [c.to_dict() for c in self.choices]}
 		if self.prompt_text is not None:
 			d["prompt_text"] = self.prompt_text
 		if self.prompt_asset_id is not None:
-			d["prompt_asset_id"] = self.prompt_asset_id
+			d["prompt_asset_url"] = AssetService.resolve_asset_url(self.prompt_asset_id)
 		return d
 
 	@classmethod
@@ -355,13 +359,15 @@ class FillInTheBlankContent:
 	prompt_asset_id: int | None = None
 
 	def to_dict(self):
+		from quiz.services import AssetService
+
 		d = {
 			"show_answers_as_choices": self.show_answers_as_choices,
 			"has_multiple_choices": self.has_multiple_choices,
 			"texts": [t.to_dict() for t in self.texts],
 		}
 		if self.prompt_asset_id is not None:
-			d["prompt_asset_id"] = self.prompt_asset_id
+			d["prompt_asset_url"] = AssetService.resolve_asset_url(self.prompt_asset_id)
 		return d
 
 	@classmethod
