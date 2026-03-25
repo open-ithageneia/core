@@ -273,6 +273,7 @@ class QuizService:
 
 		# return items[:amount]
 
+
 class AssetService:
 	@staticmethod
 	def resolve_asset_url(asset_id):
@@ -280,4 +281,3 @@ class AssetService:
 		if asset:
 			return asset.image.url
 		return None
-
