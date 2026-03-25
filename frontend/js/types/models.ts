@@ -24,19 +24,19 @@ export interface QuizAsset extends TimeStamped {
 
 interface QuizChoice {
 	text?: string
-	asset_id?: number
+	asset_url?: string
 	is_correct: boolean
 }
 
 interface TrueFalseContent {
 	prompt_text?: string
-	prompt_asset_id?: number
+	prompt_asset_url?: string
 	choices: QuizChoice[]
 }
 
 interface MultipleChoiceContent {
 	prompt_text?: string
-	prompt_asset_id?: number
+	prompt_asset_url?: string
 	choices: QuizChoice[]
 }
 
@@ -101,7 +101,7 @@ interface FillBlankText {
 }
 
 interface FillInTheBlankContent {
-	prompt_asset_id?: number
+	prompt_asset_url?: string
 	show_answers_as_choices: boolean
 	has_multiple_choices: boolean
 	texts: FillBlankText[]
