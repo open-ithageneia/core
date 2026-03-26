@@ -8,7 +8,14 @@ from pathlib import PurePosixPath
 from django.core.files.base import ContentFile
 from import_export import resources
 
-from quiz.models import DragAndDrop, FillInTheBlank, Matching, QuizAsset, Statement
+from quiz.models import (
+	DragAndDrop,
+	FillInTheBlank,
+	Matching,
+	QuizAsset,
+	Statement,
+	OpenEnded,
+)
 
 # ---------------------------------------------------------------------------
 # Thread-local store for images extracted from a ZIP upload.
@@ -314,4 +321,31 @@ class FillInTheBlankResource(AbstractQuizResource):
 				row.get("prompt_image"), title="Prompt"
 			),
 			"texts": texts,
+		}
+
+
+class OpenEndedResource(AbstractQuizResource):
+	class Meta(AbstractQuizResource.Meta):
+		model = OpenEnded
+		fields = (
+			"id",
+			"type",
+			"category",
+			"content",
+		)
+
+	def before_save_instance(self, instance, row, **kwargs):
+		raw_texts = row.get("texts", "")
+		texts = [v.strip() for v in raw_texts.split(",") if v.strip()]
+		min_correct_answers = row.get("min_correct_answers")
+		if not min_correct_answers:
+			min_correct_answers = len(texts)
+
+		instance.content = {
+			"prompt_text": row.get("prompt_text") or "",
+			"prompt_asset_id": _import_image_column(
+				row.get("prompt_image"), title="Prompt"
+			),
+			"texts": texts,
+			"min_correct_answers": min_correct_answers,
 		}

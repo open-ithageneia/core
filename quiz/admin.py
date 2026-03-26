@@ -18,6 +18,7 @@ from .models import (
 	Matching,
 	Statement,
 	QuizAsset,
+	OpenEnded,
 )
 from .resources import (
 	FillInTheBlankResource,
@@ -26,6 +27,7 @@ from .resources import (
 	MatchingResource,
 	clear_image_store,
 	load_images_from_zip,
+	OpenEndedResource,
 )
 from .schemas import FillBlankText
 
@@ -480,4 +482,71 @@ class FillInTheBlankAdmin(AbstractQuizAdmin):
 			""",
 			", ".join(all_correct),
 			rendered_html_list,
+		)
+
+
+@admin.register(OpenEnded)
+class OpenEndedAdmin(AbstractQuizAdmin):
+	resource_classes = [OpenEndedResource]
+	list_display = [
+		"id",
+		"category",
+		"get_exam_sessions_preview",
+		"prompt_preview",
+		"answer_preview",
+		"created_at",
+		"updated_at",
+	]
+	search_fields = AbstractQuizAdmin.search_fields + [
+		"content__prompt_text",
+	]
+
+	@admin.display(description="Prompt", ordering="content__prompt_text")
+	def prompt_preview(self, instance):
+		prompt_text = instance.content.get("prompt_text", "")
+		prompt_asset_id = instance.content.get("prompt_asset_id", None)
+
+		image_thumb_preview = get_admin_image_thumb_preview(
+			Statement.get_asset_image(prompt_asset_id)
+		)
+
+		if not prompt_text and not image_thumb_preview:
+			return None
+
+		return format_html_join(
+			"",
+			'<div style="display:flex;gap:10px;align-items:center;margin:10px 0;">'
+			"  <span>{}</span>"
+			"  <span>{}</span>"
+			"</div>",
+			((prompt_text, image_thumb_preview),),
+		)
+
+	@admin.display(description="Answer")
+	def answer_preview(self, instance):
+		texts = instance.content.get("texts", [])
+		min_correct = instance.content.get("min_correct_answers", 0)
+
+		if not texts:
+			return None
+
+		answers = [t.get("text", "") if isinstance(t, dict) else str(t) for t in texts]
+
+		answers_html = format_html_join(
+			"",
+			'<li style="margin:4px 0;">{}</li>',
+			((a,) for a in answers),
+		)
+
+		return format_html(
+			"""
+			<div>
+				<div style="margin-bottom:6px;">
+					<strong>Min correct:</strong> {}
+				</div>
+				<ol style="margin:0;padding-left:18px;">{}</ol>
+			</div>
+			""",
+			min_correct,
+			answers_html,
 		)

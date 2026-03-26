@@ -380,3 +380,55 @@ class FillInTheBlankContent:
 			texts=texts,
 			has_multiple_choices=has_multiple_choices,
 		)
+
+
+@dataclass
+class OpenEndedContent:
+	OPEN_ENDED_CONTENT_SCHEMA = {
+		"type": "object",
+		"required": ["prompt_text", "min_correct_answers", "texts"],
+		"properties": {
+			"prompt_text": {"type": "string", "title": "Question"},
+			"prompt_asset_id": {"type": "integer", "title": "Prompt asset id"},
+			"min_correct_answers": {
+				"type": "integer",
+				"title": "Minimum correct answers",
+			},
+			"texts": {
+				"type": "array",
+				"items": {
+					"type": "object",
+					"required": ["text"],
+					"properties": {"text": {"type": "string"}},
+				},
+				"additionalProperties": False,
+			},
+		},
+		"additionalProperties": False,
+	}
+
+	min_correct_answers: int
+	texts: list[str]
+	prompt_text: str | None = None
+	prompt_asset_id: int | None = None
+
+	def to_dict(self):
+		from quiz.services import AssetService
+
+		d = {
+			"min_min_correct_answers": self.min_correct_answers,
+			"prompt_text": self.prompt_text,
+			"texts": self.texts,
+		}
+		if self.prompt_asset_id is not None:
+			d["prompt_asset_url"] = AssetService.resolve_asset_url(self.prompt_asset_id)
+		return d
+
+	@classmethod
+	def from_json(cls, data: dict):
+		return cls(
+			prompt_asset_id=data.get("prompt_asset_id"),
+			prompt_text=data.get("prompt_text"),
+			texts=data.get("texts"),
+			min_correct_answers=data.get("min_correct_answers"),
+		)

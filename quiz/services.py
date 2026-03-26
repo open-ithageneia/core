@@ -7,6 +7,7 @@ from .filters import (
 	FillInTheBlankFilter,
 	MatchingFilter,
 	StatementFilter,
+	OpenEndedFilter,
 )
 from .models import (
 	AbstractQuiz,
@@ -16,6 +17,7 @@ from .models import (
 	Matching,
 	Statement,
 	QuizAsset,
+	OpenEnded,
 )
 from .serializers import (
 	DragAndDropSerializer,
@@ -23,16 +25,12 @@ from .serializers import (
 	FillInTheBlankSerializer,
 	MatchingSerializer,
 	StatementSerializer,
+	OpenEndedSerializer,
 )
 
 logger = logging.getLogger(__name__)
 
-QUIZ_MODELS = [
-	Statement,
-	Matching,
-	DragAndDrop,
-	FillInTheBlank,
-]
+QUIZ_MODELS = [Statement, Matching, DragAndDrop, FillInTheBlank, OpenEnded]
 
 
 def get_random_quiz_items_alt(category: str, amount: int):
@@ -215,6 +213,12 @@ class QuizService:
 		return QuizService._list(Matching, MatchingFilter, MatchingSerializer, params)
 
 	@staticmethod
+	def open_ended_list(params=None):
+		return QuizService._list(
+			OpenEnded, OpenEndedFilter, OpenEndedSerializer, params
+		)
+
+	@staticmethod
 	def random_quiz(params, n=20):
 		def sample(model, filterset_class, serializer_class, extra_params=None):
 			p = params.copy()
@@ -243,6 +247,7 @@ class QuizService:
 				DragAndDrop, DragAndDropFilter, DragAndDropSerializer
 			),
 			"matching": sample(Matching, MatchingFilter, MatchingSerializer),
+			"open_ended": sample(OpenEnded, OpenEnded, OpenEndedSerializer),
 		}
 
 	@staticmethod
