@@ -8,6 +8,7 @@ from .models import (
 	Matching,
 	QuizAsset,
 	Statement,
+	OpenEnded,
 )
 
 
@@ -120,6 +121,29 @@ class FillInTheBlankSerializer(ParsedContentMixin, serializers.ModelSerializer):
 
 	class Meta:
 		model = FillInTheBlank
+		fields = [
+			"id",
+			"category",
+			"content",
+			"is_active",
+			"exam_sessions",
+			"exam_session_ids",
+			"created_at",
+			"updated_at",
+		]
+
+
+class OpenEndedSerializer(ParsedContentMixin, serializers.ModelSerializer):
+	exam_sessions = ExamSessionSerializer(many=True, read_only=True)
+	exam_session_ids = serializers.PrimaryKeyRelatedField(
+		queryset=ExamSession.objects.all(),
+		many=True,
+		write_only=True,
+		source="exam_sessions",
+	)
+
+	class Meta:
+		model = OpenEnded
 		fields = [
 			"id",
 			"category",

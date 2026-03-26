@@ -17,6 +17,7 @@ from .schemas import (
 	DragAndDropContent,
 	MatchingContent,
 	FillInTheBlankContent,
+	OpenEndedContent,
 )
 
 
@@ -240,3 +241,17 @@ class FillInTheBlank(AbstractQuiz):
 
 	def _parse_content(self):
 		return FillInTheBlankContent.from_json(self.content)
+
+
+class OpenEnded(AbstractQuiz):
+	content = JSONField(
+		blank=True,
+		default=dict,
+		schema=OpenEndedContent.OPEN_ENDED_CONTENT_SCHEMA,
+	)
+
+	class Meta:
+		verbose_name_plural = "Open Ended"
+
+	def _parse_content(self):
+		return OpenEndedContent.from_json(self.content)

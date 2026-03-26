@@ -4,6 +4,7 @@ from .models import (
 	DragAndDrop,
 	Matching,
 	FillInTheBlank,
+	OpenEnded,
 	ExamSession,
 	AbstractQuiz,
 )
@@ -47,4 +48,10 @@ class MatchingFilter(AbstractQuizFilter):
 class FillInTheBlankFilter(AbstractQuizFilter):
 	class Meta:
 		model = FillInTheBlank
+		fields = ["category", "exam_session_id", "year", "month", "is_active"]
+
+
+class OpenEndedFilter(AbstractQuizFilter):
+	class Meta:
+		model = OpenEnded
 		fields = ["category", "exam_session_id", "year", "month", "is_active"]
