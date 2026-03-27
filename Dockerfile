@@ -51,7 +51,7 @@ COPY . .
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-RUN mkdir -p db
+RUN mkdir -p db media static
 RUN chown -R django:django /code
 
 USER django

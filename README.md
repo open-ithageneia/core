@@ -171,6 +171,7 @@ This project loads environment variables from `.env` in the repo root (see `.env
 | `DEBUG` | No | `True` | Base settings default to `True`. Production settings default to `False` but you can temporarily set `DEBUG=True` for troubleshooting. |
 | `ALLOWED_HOSTS` | No | `*` | Comma-separated list in dev. Production defaults to an empty list and should be set explicitly. |
 | `CSRF_TRUSTED_ORIGINS` | No | `[]` | Comma-separated list. Often required in production. |
+| `APP_DOMAIN` | No | - | Used by the Traefik host rule in `docker-compose.yml` for the public `nginx` router. Set per deployment (including previews if they use different domains). |
 | `DJANGO_VITE_DEV_SERVER_HOST` | No | `localhost` | Dev only (HMR). |
 | `DJANGO_VITE_DEV_SERVER_PORT` | No | `5173` | Dev only (HMR). |
 | `IS_PREVIEW_DEPLOYMENT` | No | `False` | Marks the current running container as a preview deployment. Set this only in preview environments. |

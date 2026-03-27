@@ -1,0 +1,45 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DJANGO_SETTINGS_MODULE
+      - SECRET_KEY
+      - DEBUG
+      - ALLOWED_HOSTS
+      - CSRF_TRUSTED_ORIGINS
+      - IS_PREVIEW_DEPLOYMENT
+      - PREVIEW_SUPERUSER_USERNAME
+      - PREVIEW_SUPERUSER_PASSWORD
+    volumes:
+      - static_data:/code/static
+      - media_data:/code/media
+      - db_data:/code/db
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.28-alpine
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - static_data:/var/www/static:ro
+      - media_data:/var/www/media:ro
+      - ./deploy/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.open-ithageneia-http.rule=Host(`${APP_DOMAIN}`)
+      - traefik.http.routers.open-ithageneia-http.entrypoints=http
+      - traefik.http.routers.open-ithageneia-https.rule=Host(`${APP_DOMAIN}`)
+      - traefik.http.routers.open-ithageneia-https.entrypoints=https
+      - traefik.http.routers.open-ithageneia-https.tls=true
+      - traefik.http.routers.open-ithageneia-https.tls.certresolver=letsencrypt
+      - traefik.http.services.open-ithageneia.loadbalancer.server.port=8080
+
+volumes:
+  static_data:
+  media_data:
+  db_data:
+    name: ow44occokc4kswcgc8ks0gwc-ow44occokc4kswcgc8ks0gwc-open_ithageneia_db
