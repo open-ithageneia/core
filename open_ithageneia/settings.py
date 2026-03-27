@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
-import re
 from pathlib import Path
 
 import environ
@@ -62,7 +61,6 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
 	"django.middleware.security.SecurityMiddleware",
-	"whitenoise.middleware.WhiteNoiseMiddleware",
 	"django.contrib.sessions.middleware.SessionMiddleware",
 	"django.middleware.common.CommonMiddleware",
 	"django.middleware.csrf.CsrfViewMiddleware",
@@ -215,15 +213,6 @@ INERTIA_JSON_ENCODER = inertia_settings.INERTIA_JSON_ENCODER
 # https://docs.djangoproject.com/en/6.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-
-# http://whitenoise.evans.io/en/stable/django.html#WHITENOISE_IMMUTABLE_FILE_TEST
-def immutable_file_test(path, url):
-	# Match vite (rollup)-generated hashes, à la, `some_file-CSliV9zW.js`
-	return re.match(r"^.+[.-][0-9a-zA-Z_-]{8,12}\..+$", url)
-
-
-WHITENOISE_IMMUTABLE_FILE_TEST = immutable_file_test
 
 
 # Logging
