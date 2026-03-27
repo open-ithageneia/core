@@ -215,7 +215,6 @@ INERTIA_JSON_ENCODER = inertia_settings.INERTIA_JSON_ENCODER
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
-# ---------------------------------------------------------------------------
 # Logging
 # https://docs.djangoproject.com/en/6.0/topics/logging/
 
