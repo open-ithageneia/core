@@ -29,19 +29,11 @@ services:
       - static_data:/var/www/static:ro
       - media_data:/var/www/media:ro
     restart: unless-stopped
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.open-ithageneia-http.rule=Host(`${APP_DOMAIN}`)
-      - traefik.http.routers.open-ithageneia-http.entrypoints=http
-      - traefik.http.routers.open-ithageneia-https.rule=Host(`${APP_DOMAIN}`)
-      - traefik.http.routers.open-ithageneia-https.entrypoints=https
-      - traefik.http.routers.open-ithageneia-https.tls=true
-      - traefik.http.routers.open-ithageneia-https.tls.certresolver=letsencrypt
-      - traefik.http.services.open-ithageneia.loadbalancer.server.port=8080
 
 volumes:
   static_data:
   media_data:
   # We keep the same volume name we had before to not recreate the db from scratch
   db_data:
+    external: true
     name: ow44occokc4kswcgc8ks0gwc-ow44occokc4kswcgc8ks0gwc-open_ithageneia_db
