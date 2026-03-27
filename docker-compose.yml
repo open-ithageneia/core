@@ -42,4 +42,5 @@ volumes:
   static_data:
   media_data:
   db_data:
+		# We keep the same volume name we had before to non recreate the db from scratch
     name: ow44occokc4kswcgc8ks0gwc-ow44occokc4kswcgc8ks0gwc-open_ithageneia_db
