@@ -29,6 +29,8 @@ services:
       - static_data:/var/www/static:ro
       - media_data:/var/www/media:ro
     restart: unless-stopped
+    labels:
+      - traefik.http.services.open-ithageneia.loadbalancer.server.port=8080
 
 volumes:
   static_data:
