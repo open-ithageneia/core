@@ -35,7 +35,4 @@ services:
 volumes:
   static_data:
   media_data:
-  # We keep the same volume name we had before to not recreate the db from scratch
   db_data:
-    external: true
-    name: ow44occokc4kswcgc8ks0gwc-ow44occokc4kswcgc8ks0gwc-open_ithageneia_db
