@@ -267,11 +267,11 @@ class MatchingResource(AbstractQuizResource):
 		right_objects = []
 
 		for idx, pair in enumerate(pairs, start=1):
-			if "/" not in pair:
+			if "//" not in pair:
 				raise ValueError(
-					f"Item '{pair}' is not in the expected 'left/right' format."
+					f"Item '{pair}' is not in the expected 'left//right' format."
 				)
-			left_item, right_item = pair.split("/", maxsplit=1)
+			left_item, right_item = pair.split("//", maxsplit=1)
 
 			if is_asset:
 				left_asset_id = _import_image_column(
@@ -282,12 +282,12 @@ class MatchingResource(AbstractQuizResource):
 				)
 				left_obj = {
 					"id": idx,
-					"asset_id": left_asset_id,
+					"asset_id": int(left_asset_id),
 					"matched_id": idx + len(pairs),
 				}
 				right_obj = {
 					"id": idx + len(pairs),
-					"asset_id": right_asset_id,
+					"asset_id": int(right_asset_id),
 					"matched_id": idx,
 				}
 			else:
@@ -309,10 +309,14 @@ class MatchingResource(AbstractQuizResource):
 
 	def before_save_instance(self, instance, row, **kwargs):
 		raw_pairs = row.get("pairs", "")
-		pairs = [v.strip() for v in raw_pairs.split(",") if v.strip()]
+		if not raw_pairs:
+			raw_pairs = ""
+		pairs = [v.strip() for v in raw_pairs.split("/,") if v.strip()]
 
 		raw_asset_pairs = row.get("asset_pairs", "")
-		asset_pairs = [v.strip() for v in raw_asset_pairs.split(",") if v.strip()]
+		if not raw_asset_pairs:
+			raw_asset_pairs = ""
+		asset_pairs = [v.strip() for v in raw_asset_pairs.split("/,") if v.strip()]
 
 		left_objects, right_objects = self.extract_pairs(pairs)
 		left_asset_objects, right_asset_objects = self.extract_pairs(
