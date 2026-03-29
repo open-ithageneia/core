@@ -5,6 +5,8 @@ from . import views
 
 router = DefaultRouter()
 
+app_name = "quiz"
+
 urlpatterns = [
 	path("training", views.training, name="training"),
 	path("playground", views.playground, name="playground"),
