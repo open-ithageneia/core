@@ -311,12 +311,12 @@ class MatchingResource(AbstractQuizResource):
 		raw_pairs = row.get("pairs", "")
 		if not raw_pairs:
 			raw_pairs = ""
-		pairs = [v.strip() for v in raw_pairs.split("/,") if v.strip()]
+		pairs = [v.strip() for v in raw_pairs.split(",,") if v.strip()]
 
 		raw_asset_pairs = row.get("asset_pairs", "")
 		if not raw_asset_pairs:
 			raw_asset_pairs = ""
-		asset_pairs = [v.strip() for v in raw_asset_pairs.split("/,") if v.strip()]
+		asset_pairs = [v.strip() for v in raw_asset_pairs.split(",,") if v.strip()]
 
 		left_objects, right_objects = self.extract_pairs(pairs)
 		left_asset_objects, right_asset_objects = self.extract_pairs(

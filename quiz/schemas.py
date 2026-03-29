@@ -397,7 +397,7 @@ class FillInTheBlankContent:
 		return {
 			"show_answers_as_choices": self.show_answers_as_choices,
 			"has_multiple_choices": self.has_multiple_choices,
-			"choices": self.build_choices(),
+			"prompt_instruction_choices": self.build_choices(),
 			"texts": [t.to_dict() for t in self.texts],
 			"prompt_asset_url": AssetService.resolve_asset_url(self.prompt_asset_id),
 		}
