@@ -239,10 +239,7 @@ class FillBlankChoice:
 	is_correct: bool
 
 	def to_dict(self):
-		return {
-			"text": self.text,
-			"is_correct": self.is_correct
-		}
+		return {"text": self.text, "is_correct": self.is_correct}
 
 
 @dataclass
@@ -250,6 +247,13 @@ class FillBlankTextPart:
 	text: str
 	is_blank: bool
 	choices: list[FillBlankChoice] = field(default_factory=list)
+
+	@property
+	def choices_texts(self) -> list[str]:
+		choices_texts = []
+		for choice in self.choices:
+			choices_texts.append(choice.text)
+		return choices_texts
 
 	def to_dict(self):
 		d = {"text": None if self.is_blank else self.text, "is_blank": self.is_blank}
@@ -365,9 +369,9 @@ class FillInTheBlankContent:
 						"text": {
 							"type": "string",
 						}
-					}
-				}
-			}
+					},
+				},
+			},
 		},
 		"additionalProperties": False,
 	}
@@ -383,19 +387,22 @@ class FillInTheBlankContent:
 			return None
 
 		choices = self.extra_choices
+		visited_choices = set()
 		for text in self.texts:
 			for part in text.text_parts:
-				if part.is_blank:
+				if (
+					part.is_blank
+					and part.choices
+					and part.choices_texts not in visited_choices
+				):
+					visited_choices.add(part.choices_texts)
 					choices.extend(c.text for c in part.choices)
-					if len(part.choices) > 1:
-						choices = list(set(choices))
 		return choices
 
 	def to_dict(self):
 		from quiz.services import AssetService
 
 		return {
-			"show_answers_as_choices": self.show_answers_as_choices,
 			"has_multiple_choices": self.has_multiple_choices,
 			"prompt_instruction_choices": self.build_choices(),
 			"texts": [t.to_dict() for t in self.texts],

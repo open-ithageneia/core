@@ -258,20 +258,22 @@ class DragAndDropResource(AbstractQuizResource):
 
 
 class MatchingResource(AbstractQuizResource):
+	ITEM_SEPARATOR = "|"
+	ITEM_PAIR_SEPARATOR = "_"
+
 	class Meta(AbstractQuizResource.Meta):
 		model = Matching
 
-	@staticmethod
-	def extract_pairs(pairs, is_asset=False):
+	def extract_pairs(self, pairs, is_asset=False):
 		left_objects = []
 		right_objects = []
 
 		for idx, pair in enumerate(pairs, start=1):
-			if "//" not in pair:
+			if self.ITEM_PAIR_SEPARATOR not in pair:
 				raise ValueError(
-					f"Item '{pair}' is not in the expected 'left//right' format."
+					f"Item '{pair}' is not in the expected 'left{self.ITEM_PAIR_SEPARATOR}right' format."
 				)
-			left_item, right_item = pair.split("//", maxsplit=1)
+			left_item, right_item = pair.split(self.ITEM_PAIR_SEPARATOR, maxsplit=1)
 
 			if is_asset:
 				left_asset_id = _import_image_column(
@@ -311,12 +313,14 @@ class MatchingResource(AbstractQuizResource):
 		raw_pairs = row.get("pairs", "")
 		if not raw_pairs:
 			raw_pairs = ""
-		pairs = [v.strip() for v in raw_pairs.split(",,") if v.strip()]
+		pairs = [v.strip() for v in raw_pairs.split(self.ITEM_SEPARATOR) if v.strip()]
 
 		raw_asset_pairs = row.get("asset_pairs", "")
 		if not raw_asset_pairs:
 			raw_asset_pairs = ""
-		asset_pairs = [v.strip() for v in raw_asset_pairs.split(",,") if v.strip()]
+		asset_pairs = [
+			v.strip() for v in raw_asset_pairs.split(self.ITEM_SEPARATOR) if v.strip()
+		]
 
 		left_objects, right_objects = self.extract_pairs(pairs)
 		left_asset_objects, right_asset_objects = self.extract_pairs(
