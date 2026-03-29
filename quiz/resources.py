@@ -260,11 +260,32 @@ class DragAndDropResource(AbstractQuizResource):
 class MatchingResource(AbstractQuizResource):
 	ITEM_SEPARATOR = "|"
 	ITEM_PAIR_SEPARATOR = "_"
+	ASSET_PREFIX = "$"
 
 	class Meta(AbstractQuizResource.Meta):
 		model = Matching
 
-	def extract_pairs(self, pairs, is_asset=False):
+	def parse_pair_item(self, item: str):
+		if item.startswith(self.ASSET_PREFIX):
+			return item[len(self.ASSET_PREFIX):], True
+		return item, False
+
+	@staticmethod
+	def get_item_object(identifier, item, is_asset, matched_id):
+
+		obj = {
+			"id": identifier,
+			"matched_id": matched_id,
+		}
+
+		if is_asset:
+			obj["asset_id"] = int(item.strip())
+		else:
+			obj["text"] = item.strip()
+
+		return obj
+
+	def extract_pairs(self, pairs):
 		left_objects = []
 		right_objects = []
 
@@ -275,34 +296,11 @@ class MatchingResource(AbstractQuizResource):
 				)
 			left_item, right_item = pair.split(self.ITEM_PAIR_SEPARATOR, maxsplit=1)
 
-			if is_asset:
-				left_asset_id = _import_image_column(
-					left_item.strip(), title=f"Left {idx}"
-				)
-				right_asset_id = _import_image_column(
-					right_item.strip(), title=f"Right {idx}"
-				)
-				left_obj = {
-					"id": idx,
-					"asset_id": int(left_asset_id),
-					"matched_id": idx + len(pairs),
-				}
-				right_obj = {
-					"id": idx + len(pairs),
-					"asset_id": int(right_asset_id),
-					"matched_id": idx,
-				}
-			else:
-				left_obj = {
-					"id": idx,
-					"text": left_item.strip(),
-					"matched_id": idx + len(pairs),
-				}
-				right_obj = {
-					"id": idx + len(pairs),
-					"text": right_item.strip(),
-					"matched_id": idx,
-				}
+			left_item, is_left_item_asset = self.parse_pair_item(left_item)
+			right_item, is_right_item_asset = self.parse_pair_item(right_item)
+
+			left_obj = self.get_item_object(idx, left_item, is_left_item_asset, idx+len(pairs))
+			right_obj = self.get_item_object(idx+len(pairs), right_item, is_right_item_asset, idx)
 
 			left_objects.append(left_obj)
 			right_objects.append(right_obj)
@@ -310,25 +308,13 @@ class MatchingResource(AbstractQuizResource):
 		return left_objects, right_objects
 
 	def before_save_instance(self, instance, row, **kwargs):
-		raw_pairs = row.get("pairs", "")
+		raw_pairs = row.get("items", "")
 		if not raw_pairs:
 			raw_pairs = ""
 		pairs = [v.strip() for v in raw_pairs.split(self.ITEM_SEPARATOR) if v.strip()]
 
-		raw_asset_pairs = row.get("asset_pairs", "")
-		if not raw_asset_pairs:
-			raw_asset_pairs = ""
-		asset_pairs = [
-			v.strip() for v in raw_asset_pairs.split(self.ITEM_SEPARATOR) if v.strip()
-		]
 
 		left_objects, right_objects = self.extract_pairs(pairs)
-		left_asset_objects, right_asset_objects = self.extract_pairs(
-			asset_pairs, is_asset=True
-		)
-
-		left_objects += left_asset_objects
-		right_objects += right_asset_objects
 
 		instance.content = [
 			{
