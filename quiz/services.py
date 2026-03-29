@@ -247,7 +247,7 @@ class QuizService:
 				DragAndDrop, DragAndDropFilter, DragAndDropSerializer
 			),
 			"matching": sample(Matching, MatchingFilter, MatchingSerializer),
-			"open_ended": sample(OpenEnded, OpenEnded, OpenEndedSerializer),
+			"open_ended": sample(OpenEnded, OpenEndedFilter, OpenEndedSerializer),
 		}
 
 	@staticmethod

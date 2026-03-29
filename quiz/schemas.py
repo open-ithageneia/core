@@ -239,7 +239,10 @@ class FillBlankChoice:
 	is_correct: bool
 
 	def to_dict(self):
-		return {"text": self.text, "is_correct": self.is_correct}
+		return {
+			"text": self.text,
+			"is_correct": self.is_correct
+		}
 
 
 @dataclass
@@ -264,7 +267,9 @@ class FillBlankText:
 	has_multiple_choices: bool
 
 	def to_dict(self):
-		return {"parts": [p.to_dict() for p in self.text_parts]}
+		return {
+			"parts": [p.to_dict() for p in self.text_parts],
+		}
 
 	@classmethod
 	def from_json(cls, data: dict):
@@ -287,9 +292,6 @@ class FillBlankText:
 					f"{blank}: invalid blank — must contain at least one {{{{choice}}}}."
 				)
 
-			if len(choices) > 1:
-				has_multiple_choices = True
-
 			for choice_text, marker in choices:
 				if not choice_text.strip():
 					raise ValidationError(
@@ -303,13 +305,9 @@ class FillBlankText:
 					f"blank '<({blank})>' has no correct answer. Mark exactly one with *."
 				)
 
-			if len(correct) > 1:
-				raise ValidationError(
-					f"blank '<({blank})>' has {len(correct)} correct answers "
-					f"({', '.join(correct)}). Mark exactly one with *."
-				)
+			if len(choices) > 1 and len(correct) == 1:
+				has_multiple_choices = True
 
-		# build text_parts
 		parts = cls.BLANK_PATTERN.split(text)
 
 		for i, part in enumerate(parts):
@@ -325,7 +323,10 @@ class FillBlankText:
 					FillBlankTextPart(text=part, is_blank=True, choices=parsed_choices)
 				)
 
-		return cls(text_parts=text_parts, has_multiple_choices=has_multiple_choices)
+		return cls(
+			text_parts=text_parts,
+			has_multiple_choices=has_multiple_choices,
+		)
 
 
 @dataclass
@@ -355,6 +356,18 @@ class FillInTheBlankContent:
 					"additionalProperties": False,
 				},
 			},
+			"extra_choices": {
+				"type": "array",
+				"items": {
+					"type": "object",
+					"required": ["text"],
+					"properties": {
+						"text": {
+							"type": "string",
+						}
+					}
+				}
+			}
 		},
 		"additionalProperties": False,
 	}
@@ -362,7 +375,21 @@ class FillInTheBlankContent:
 	has_multiple_choices: bool
 	show_answers_as_choices: bool
 	texts: list[FillBlankText]
+	extra_choices: list[str] = field(default_factory=list)
 	prompt_asset_id: int | None = None
+
+	def build_choices(self):
+		if self.has_multiple_choices:
+			return None
+
+		choices = self.extra_choices
+		for text in self.texts:
+			for part in text.text_parts:
+				if part.is_blank:
+					choices.extend(c.text for c in part.choices)
+					if len(part.choices) > 1:
+						choices = list(set(choices))
+		return choices
 
 	def to_dict(self):
 		from quiz.services import AssetService
@@ -370,6 +397,7 @@ class FillInTheBlankContent:
 		return {
 			"show_answers_as_choices": self.show_answers_as_choices,
 			"has_multiple_choices": self.has_multiple_choices,
+			"choices": self.build_choices(),
 			"texts": [t.to_dict() for t in self.texts],
 			"prompt_asset_url": AssetService.resolve_asset_url(self.prompt_asset_id),
 		}
@@ -383,6 +411,7 @@ class FillInTheBlankContent:
 			prompt_asset_id=data.get("prompt_asset_id"),
 			texts=texts,
 			has_multiple_choices=has_multiple_choices,
+			extra_choices=data.get("extra_choices", []),
 		)
 
 
