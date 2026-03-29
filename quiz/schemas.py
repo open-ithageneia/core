@@ -21,12 +21,11 @@ class StatementChoice:
 	def to_dict(self):
 		from quiz.services import AssetService
 
-		d = {"is_correct": self.is_correct}
-		if self.text is not None:
-			d["text"] = self.text
-		if self.asset_id is not None:
-			d["asset_url"] = AssetService.resolve_asset_url(self.asset_id)
-		return d
+		return {
+			"is_correct": self.is_correct,
+			"text": self.text,
+			"asset_url": AssetService.resolve_asset_url(self.asset_id),
+		}
 
 	@classmethod
 	def from_json(cls, data: dict):
@@ -76,12 +75,11 @@ class StatementChoiceContent:
 	def to_dict(self):
 		from quiz.services import AssetService
 
-		d = {"choices": [c.to_dict() for c in self.choices]}
-		if self.prompt_text is not None:
-			d["prompt_text"] = self.prompt_text
-		if self.prompt_asset_id is not None:
-			d["prompt_asset_url"] = AssetService.resolve_asset_url(self.prompt_asset_id)
-		return d
+		return {
+			"choices": [c.to_dict() for c in self.choices],
+			"prompt_text": self.prompt_text,
+			"prompt_asset_url": AssetService.resolve_asset_url(self.prompt_asset_id),
+		}
 
 	@classmethod
 	def from_json(cls, data: dict):
@@ -101,7 +99,10 @@ class DragDropColumn:
 	values: list[str]
 
 	def to_dict(self):
-		return {"title": self.title, "values": self.values}
+		return {
+			"title": self.title,
+			"values": self.values
+		}
 
 	@classmethod
 	def from_json(cls, data: dict):
@@ -148,22 +149,26 @@ class DragAndDropContent:
 
 @dataclass
 class MatchItem:
-	text: str
-	id: int | None = None
-	matched_id: int | None = None
+	id: int
+	matched_id: int
+	text: str | None = None
+	asset_id: str | None = None
 
 	def to_dict(self):
-		d = {"text": self.text}
-		if self.id is not None:
-			d["id"] = self.id
-		if self.matched_id is not None:
-			d["matched_id"] = self.matched_id
-		return d
+		from quiz.services import AssetService
+
+		return {
+			"text": self.text,
+			"asset_url": AssetService.resolve_asset_url(self.asset_id),
+			"id": self.id,
+			"matched_id": self.matched_id
+		}
 
 	@classmethod
 	def from_json(cls, data: dict):
 		return cls(
 			id=data.get("id"),
+			asset_id=data.get("asset_id"),
 			matched_id=data.get("matched_id"),
 			text=_require(data, "text", "MatchItem"),
 		)
@@ -175,7 +180,9 @@ class MatchingColumn:
 	items: list[MatchItem]
 
 	def to_dict(self):
-		return {"title": self.title, "items": [i.to_dict() for i in self.items]}
+		return {
+			"title": self.title, "items": [i.to_dict() for i in self.items]
+		}
 
 	@classmethod
 	def from_json(cls, data: dict):
@@ -200,11 +207,15 @@ class MatchingContent:
 					"type": "array",
 					"items": {
 						"type": "object",
-						"required": ["text"],
+						"required": ["id", "matched_id"],
 						"properties": {
 							"id": {"type": "integer"},
 							"matched_id": {"type": "integer"},
 							"text": {"type": "string"},
+							"asset_id": {
+								"type": "integer",
+								"title": "Image asset ID",
+							},
 						},
 						"additionalProperties": False,
 					},
@@ -233,7 +244,10 @@ class FillBlankChoice:
 	is_correct: bool
 
 	def to_dict(self):
-		return {"text": self.text, "is_correct": self.is_correct}
+		return {
+			"text": self.text,
+			"is_correct": self.is_correct
+		}
 
 
 @dataclass
@@ -258,7 +272,9 @@ class FillBlankText:
 	has_multiple_choices: bool
 
 	def to_dict(self):
-		return {"parts": [p.to_dict() for p in self.text_parts]}
+		return {
+			"parts": [p.to_dict() for p in self.text_parts]
+		}
 
 	@classmethod
 	def from_json(cls, data: dict):
@@ -361,14 +377,12 @@ class FillInTheBlankContent:
 	def to_dict(self):
 		from quiz.services import AssetService
 
-		d = {
+		return {
 			"show_answers_as_choices": self.show_answers_as_choices,
 			"has_multiple_choices": self.has_multiple_choices,
 			"texts": [t.to_dict() for t in self.texts],
+			"prompt_asset_url": AssetService.resolve_asset_url(self.prompt_asset_id),
 		}
-		if self.prompt_asset_id is not None:
-			d["prompt_asset_url"] = AssetService.resolve_asset_url(self.prompt_asset_id)
-		return d
 
 	@classmethod
 	def from_json(cls, data: dict):
@@ -415,14 +429,12 @@ class OpenEndedContent:
 	def to_dict(self):
 		from quiz.services import AssetService
 
-		d = {
+		return {
 			"min_min_correct_answers": self.min_correct_answers,
 			"prompt_text": self.prompt_text,
 			"texts": self.texts,
+			"prompt_asset_url": AssetService.resolve_asset_url(self.prompt_asset_id),
 		}
-		if self.prompt_asset_id is not None:
-			d["prompt_asset_url"] = AssetService.resolve_asset_url(self.prompt_asset_id)
-		return d
 
 	@classmethod
 	def from_json(cls, data: dict):

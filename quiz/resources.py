@@ -261,10 +261,8 @@ class MatchingResource(AbstractQuizResource):
 	class Meta(AbstractQuizResource.Meta):
 		model = Matching
 
-	def before_save_instance(self, instance, row, **kwargs):
-		raw_items = row.get("items", "")
-		pairs = [v.strip() for v in raw_items.split(",") if v.strip()]
-
+	@staticmethod
+	def extract_pairs(pairs, is_asset=False):
 		left_objects = []
 		right_objects = []
 
@@ -273,22 +271,50 @@ class MatchingResource(AbstractQuizResource):
 				raise ValueError(
 					f"Item '{pair}' is not in the expected 'left/right' format."
 				)
-			left_text, right_text = pair.split("/", maxsplit=1)
+			left_item, right_item = pair.split("/", maxsplit=1)
 
-			left_objects.append(
-				{
+			if is_asset:
+				left_asset_id = _import_image_column(left_item.strip(), title=f"Left {idx}")
+				right_asset_id = _import_image_column(right_item.strip(), title=f"Right {idx}")
+				left_obj = {
 					"id": idx,
-					"text": left_text.strip(),
+					"asset_id": left_asset_id,
 					"matched_id": idx + len(pairs),
 				}
-			)
-			right_objects.append(
-				{
+				right_obj = {
 					"id": idx + len(pairs),
-					"text": right_text.strip(),
+					"asset_id": right_asset_id,
 					"matched_id": idx,
 				}
-			)
+			else:
+				left_obj = {
+					"id": idx,
+					"text": left_item.strip(),
+					"matched_id": idx + len(pairs),
+				}
+				right_obj = {
+					"id": idx + len(pairs),
+					"text": right_item.strip(),
+					"matched_id": idx,
+				}
+
+			left_objects.append(left_obj)
+			right_objects.append(right_obj)
+
+		return left_objects, right_objects
+
+	def before_save_instance(self, instance, row, **kwargs):
+		raw_pairs = row.get("pairs", "")
+		pairs = [v.strip() for v in raw_pairs.split(",") if v.strip()]
+
+		raw_asset_pairs = row.get("asset_pairs", "")
+		asset_pairs = [v.strip() for v in raw_asset_pairs.split(",") if v.strip()]
+
+		left_objects, right_objects = self.extract_pairs(pairs)
+		left_asset_objects, right_asset_objects = self.extract_pairs(asset_pairs, is_asset=True)
+
+		left_objects += left_asset_objects
+		right_objects += right_asset_objects
 
 		instance.content = [
 			{
