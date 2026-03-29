@@ -258,37 +258,77 @@ class DragAndDropResource(AbstractQuizResource):
 
 
 class MatchingResource(AbstractQuizResource):
+	ITEM_SEPARATOR = "|"
+	ITEM_PAIR_SEPARATOR = "_"
+
 	class Meta(AbstractQuizResource.Meta):
 		model = Matching
 
-	def before_save_instance(self, instance, row, **kwargs):
-		raw_items = row.get("items", "")
-		pairs = [v.strip() for v in raw_items.split(",") if v.strip()]
-
+	def extract_pairs(self, pairs, is_asset=False):
 		left_objects = []
 		right_objects = []
 
 		for idx, pair in enumerate(pairs, start=1):
-			if "/" not in pair:
+			if self.ITEM_PAIR_SEPARATOR not in pair:
 				raise ValueError(
-					f"Item '{pair}' is not in the expected 'left/right' format."
+					f"Item '{pair}' is not in the expected 'left{self.ITEM_PAIR_SEPARATOR}right' format."
 				)
-			left_text, right_text = pair.split("/", maxsplit=1)
+			left_item, right_item = pair.split(self.ITEM_PAIR_SEPARATOR, maxsplit=1)
 
-			left_objects.append(
-				{
+			if is_asset:
+				left_asset_id = _import_image_column(
+					left_item.strip(), title=f"Left {idx}"
+				)
+				right_asset_id = _import_image_column(
+					right_item.strip(), title=f"Right {idx}"
+				)
+				left_obj = {
 					"id": idx,
-					"text": left_text.strip(),
+					"asset_id": int(left_asset_id),
 					"matched_id": idx + len(pairs),
 				}
-			)
-			right_objects.append(
-				{
+				right_obj = {
 					"id": idx + len(pairs),
-					"text": right_text.strip(),
+					"asset_id": int(right_asset_id),
 					"matched_id": idx,
 				}
-			)
+			else:
+				left_obj = {
+					"id": idx,
+					"text": left_item.strip(),
+					"matched_id": idx + len(pairs),
+				}
+				right_obj = {
+					"id": idx + len(pairs),
+					"text": right_item.strip(),
+					"matched_id": idx,
+				}
+
+			left_objects.append(left_obj)
+			right_objects.append(right_obj)
+
+		return left_objects, right_objects
+
+	def before_save_instance(self, instance, row, **kwargs):
+		raw_pairs = row.get("pairs", "")
+		if not raw_pairs:
+			raw_pairs = ""
+		pairs = [v.strip() for v in raw_pairs.split(self.ITEM_SEPARATOR) if v.strip()]
+
+		raw_asset_pairs = row.get("asset_pairs", "")
+		if not raw_asset_pairs:
+			raw_asset_pairs = ""
+		asset_pairs = [
+			v.strip() for v in raw_asset_pairs.split(self.ITEM_SEPARATOR) if v.strip()
+		]
+
+		left_objects, right_objects = self.extract_pairs(pairs)
+		left_asset_objects, right_asset_objects = self.extract_pairs(
+			asset_pairs, is_asset=True
+		)
+
+		left_objects += left_asset_objects
+		right_objects += right_asset_objects
 
 		instance.content = [
 			{
