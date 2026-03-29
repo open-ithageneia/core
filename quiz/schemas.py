@@ -99,10 +99,7 @@ class DragDropColumn:
 	values: list[str]
 
 	def to_dict(self):
-		return {
-			"title": self.title,
-			"values": self.values
-		}
+		return {"title": self.title, "values": self.values}
 
 	@classmethod
 	def from_json(cls, data: dict):
@@ -161,7 +158,7 @@ class MatchItem:
 			"text": self.text,
 			"asset_url": AssetService.resolve_asset_url(self.asset_id),
 			"id": self.id,
-			"matched_id": self.matched_id
+			"matched_id": self.matched_id,
 		}
 
 	@classmethod
@@ -180,9 +177,7 @@ class MatchingColumn:
 	items: list[MatchItem]
 
 	def to_dict(self):
-		return {
-			"title": self.title, "items": [i.to_dict() for i in self.items]
-		}
+		return {"title": self.title, "items": [i.to_dict() for i in self.items]}
 
 	@classmethod
 	def from_json(cls, data: dict):
@@ -244,10 +239,7 @@ class FillBlankChoice:
 	is_correct: bool
 
 	def to_dict(self):
-		return {
-			"text": self.text,
-			"is_correct": self.is_correct
-		}
+		return {"text": self.text, "is_correct": self.is_correct}
 
 
 @dataclass
@@ -272,9 +264,7 @@ class FillBlankText:
 	has_multiple_choices: bool
 
 	def to_dict(self):
-		return {
-			"parts": [p.to_dict() for p in self.text_parts]
-		}
+		return {"parts": [p.to_dict() for p in self.text_parts]}
 
 	@classmethod
 	def from_json(cls, data: dict):

@@ -274,8 +274,12 @@ class MatchingResource(AbstractQuizResource):
 			left_item, right_item = pair.split("/", maxsplit=1)
 
 			if is_asset:
-				left_asset_id = _import_image_column(left_item.strip(), title=f"Left {idx}")
-				right_asset_id = _import_image_column(right_item.strip(), title=f"Right {idx}")
+				left_asset_id = _import_image_column(
+					left_item.strip(), title=f"Left {idx}"
+				)
+				right_asset_id = _import_image_column(
+					right_item.strip(), title=f"Right {idx}"
+				)
 				left_obj = {
 					"id": idx,
 					"asset_id": left_asset_id,
@@ -311,7 +315,9 @@ class MatchingResource(AbstractQuizResource):
 		asset_pairs = [v.strip() for v in raw_asset_pairs.split(",") if v.strip()]
 
 		left_objects, right_objects = self.extract_pairs(pairs)
-		left_asset_objects, right_asset_objects = self.extract_pairs(asset_pairs, is_asset=True)
+		left_asset_objects, right_asset_objects = self.extract_pairs(
+			asset_pairs, is_asset=True
+		)
 
 		left_objects += left_asset_objects
 		right_objects += right_asset_objects
