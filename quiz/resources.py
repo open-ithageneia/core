@@ -99,15 +99,6 @@ def _create_asset_from_bytes(image_bytes: bytes, filename: str, title: str = "")
 	return asset.pk
 
 
-def _is_asset_id(value) -> bool:
-	"""Return True when *value* looks like an integer asset ID."""
-	try:
-		int_val = int(value)
-		return int_val > 0
-	except (TypeError, ValueError):
-		return False
-
-
 def _import_image_column(value, title: str = "") -> int | None:
 	"""Resolve an image column value to a ``QuizAsset`` pk.
 
@@ -125,8 +116,8 @@ def _import_image_column(value, title: str = "") -> int | None:
 	raw = str(value).strip()
 
 	# --- path 1: existing asset ID (numeric) ---
-	if _is_asset_id(raw):
-		asset_pk = int(raw)
+	if int(float(raw)) > 0:
+		asset_pk = int(float(raw))
 		if not QuizAsset.objects.filter(pk=asset_pk).exists():
 			raise ValueError(
 				f"QuizAsset with ID {asset_pk} does not exist. "
