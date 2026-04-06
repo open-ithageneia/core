@@ -13,6 +13,7 @@ def get_nav(request):
 		"home": ("Αρχική", "home"),
 		"playground": ("Παίξε και μάθε", "quiz:playground"),
 		"training": ("Τεστ προσομοίωσης", "quiz:training"),
+		"dnd": ("Drag N Drop", "quiz:test_dnd"),
 	}
 
 	try:

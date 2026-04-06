@@ -6,8 +6,8 @@ from .filters import (
 	DragAndDropFilter,
 	FillInTheBlankFilter,
 	MatchingFilter,
-	StatementFilter,
 	OpenEndedFilter,
+	StatementFilter,
 )
 from .models import (
 	AbstractQuiz,
@@ -15,17 +15,17 @@ from .models import (
 	ExamSession,
 	FillInTheBlank,
 	Matching,
-	Statement,
-	QuizAsset,
 	OpenEnded,
+	QuizAsset,
+	Statement,
 )
 from .serializers import (
 	DragAndDropSerializer,
 	ExamSessionSerializer,
 	FillInTheBlankSerializer,
 	MatchingSerializer,
-	StatementSerializer,
 	OpenEndedSerializer,
+	StatementSerializer,
 )
 
 logger = logging.getLogger(__name__)
