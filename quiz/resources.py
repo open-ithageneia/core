@@ -258,12 +258,11 @@ class MatchingResource(AbstractQuizResource):
 
 	def parse_pair_item(self, item: str):
 		if item.startswith(self.ASSET_PREFIX):
-			return item[len(self.ASSET_PREFIX):], True
+			return item[len(self.ASSET_PREFIX) :], True
 		return item, False
 
 	@staticmethod
 	def get_item_object(identifier, item, is_asset, matched_id):
-
 		obj = {
 			"id": identifier,
 			"matched_id": matched_id,
@@ -290,8 +289,12 @@ class MatchingResource(AbstractQuizResource):
 			left_item, is_left_item_asset = self.parse_pair_item(left_item)
 			right_item, is_right_item_asset = self.parse_pair_item(right_item)
 
-			left_obj = self.get_item_object(idx, left_item, is_left_item_asset, idx+len(pairs))
-			right_obj = self.get_item_object(idx+len(pairs), right_item, is_right_item_asset, idx)
+			left_obj = self.get_item_object(
+				idx, left_item, is_left_item_asset, idx + len(pairs)
+			)
+			right_obj = self.get_item_object(
+				idx + len(pairs), right_item, is_right_item_asset, idx
+			)
 
 			left_objects.append(left_obj)
 			right_objects.append(right_obj)
@@ -303,7 +306,6 @@ class MatchingResource(AbstractQuizResource):
 		if not raw_pairs:
 			raw_pairs = ""
 		pairs = [v.strip() for v in raw_pairs.split(self.ITEM_SEPARATOR) if v.strip()]
-
 
 		left_objects, right_objects = self.extract_pairs(pairs)
 

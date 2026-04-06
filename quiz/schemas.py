@@ -167,7 +167,7 @@ class MatchItem:
 			id=data.get("id"),
 			asset_id=data.get("asset_id"),
 			matched_id=data.get("matched_id"),
-			text=data.get("text")
+			text=data.get("text"),
 		)
 
 

@@ -1,6 +1,7 @@
 import DragNDrop from "@/components/quiz/DragNDrop"
 
 type DndListProps = {
+	// biome-ignore lint/suspicious/noExplicitAny: temporary until proper type is defined
 	dnd_list: any[]
 }
 
