@@ -3,6 +3,8 @@ import logging
 from django.contrib.messages import get_messages
 from inertia import share
 
+from .utils import get_nav
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,7 +29,7 @@ class DataShareMiddleware(object):
 				"Sharing %d flash message(s) for %s", len(messages), request.path
 			)
 
-		share(request, messages=messages)
+		share(request, messages=messages, nav=get_nav(request))
 
 		response = self.get_response(request)
 
