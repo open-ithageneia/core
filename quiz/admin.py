@@ -363,7 +363,7 @@ class MatchingAdmin(AbstractQuizAdmin):
 			items = col.get("items", [])
 
 			items_html = (
-				format_html_join("", "<li>{}</li>", ((item["text"],) for item in items))
+				format_html_join("", "<li>{}</li>", ((item.get("text", item.get("asset_id", "")),) for item in items))
 				if isinstance(items, list)
 				else ""
 			)
@@ -396,7 +396,9 @@ class MatchingAdmin(AbstractQuizAdmin):
 		for left_item in left_items:
 			for right_item in right_items:
 				if left_item.get("id", None) == right_item.get("matched_id", None):
-					result_list.append(f"{left_item['text']} → {right_item['text']}")
+					left_text = left_item.get("text", left_item.get("asset_id", ""))
+					right_text = right_item.get("text", right_item.get("asset_id", ""))
+					result_list.append(f"{left_text} → {right_text}")
 					break
 
 		result_list_html = (

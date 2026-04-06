@@ -99,15 +99,6 @@ def _create_asset_from_bytes(image_bytes: bytes, filename: str, title: str = "")
 	return asset.pk
 
 
-def _is_asset_id(value) -> bool:
-	"""Return True when *value* looks like an integer asset ID."""
-	try:
-		int_val = int(value)
-		return int_val > 0
-	except (TypeError, ValueError):
-		return False
-
-
 def _import_image_column(value, title: str = "") -> int | None:
 	"""Resolve an image column value to a ``QuizAsset`` pk.
 
@@ -125,8 +116,8 @@ def _import_image_column(value, title: str = "") -> int | None:
 	raw = str(value).strip()
 
 	# --- path 1: existing asset ID (numeric) ---
-	if _is_asset_id(raw):
-		asset_pk = int(raw)
+	if int(float(raw)) > 0:
+		asset_pk = int(float(raw))
 		if not QuizAsset.objects.filter(pk=asset_pk).exists():
 			raise ValueError(
 				f"QuizAsset with ID {asset_pk} does not exist. "
@@ -258,37 +249,63 @@ class DragAndDropResource(AbstractQuizResource):
 
 
 class MatchingResource(AbstractQuizResource):
+	ITEM_SEPARATOR = "|"
+	ITEM_PAIR_SEPARATOR = "_"
+	ASSET_PREFIX = "$"
+
 	class Meta(AbstractQuizResource.Meta):
 		model = Matching
 
-	def before_save_instance(self, instance, row, **kwargs):
-		raw_items = row.get("items", "")
-		pairs = [v.strip() for v in raw_items.split(",") if v.strip()]
+	def parse_pair_item(self, item: str):
+		if item.startswith(self.ASSET_PREFIX):
+			return item[len(self.ASSET_PREFIX):], True
+		return item, False
 
+	@staticmethod
+	def get_item_object(identifier, item, is_asset, matched_id):
+
+		obj = {
+			"id": identifier,
+			"matched_id": matched_id,
+		}
+
+		if is_asset:
+			obj["asset_id"] = int(item.strip())
+		else:
+			obj["text"] = item.strip()
+
+		return obj
+
+	def extract_pairs(self, pairs):
 		left_objects = []
 		right_objects = []
 
 		for idx, pair in enumerate(pairs, start=1):
-			if "/" not in pair:
+			if self.ITEM_PAIR_SEPARATOR not in pair:
 				raise ValueError(
-					f"Item '{pair}' is not in the expected 'left/right' format."
+					f"Item '{pair}' is not in the expected 'left{self.ITEM_PAIR_SEPARATOR}right' format."
 				)
-			left_text, right_text = pair.split("/", maxsplit=1)
+			left_item, right_item = pair.split(self.ITEM_PAIR_SEPARATOR, maxsplit=1)
 
-			left_objects.append(
-				{
-					"id": idx,
-					"text": left_text.strip(),
-					"matched_id": idx + len(pairs),
-				}
-			)
-			right_objects.append(
-				{
-					"id": idx + len(pairs),
-					"text": right_text.strip(),
-					"matched_id": idx,
-				}
-			)
+			left_item, is_left_item_asset = self.parse_pair_item(left_item)
+			right_item, is_right_item_asset = self.parse_pair_item(right_item)
+
+			left_obj = self.get_item_object(idx, left_item, is_left_item_asset, idx+len(pairs))
+			right_obj = self.get_item_object(idx+len(pairs), right_item, is_right_item_asset, idx)
+
+			left_objects.append(left_obj)
+			right_objects.append(right_obj)
+
+		return left_objects, right_objects
+
+	def before_save_instance(self, instance, row, **kwargs):
+		raw_pairs = row.get("items", "")
+		if not raw_pairs:
+			raw_pairs = ""
+		pairs = [v.strip() for v in raw_pairs.split(self.ITEM_SEPARATOR) if v.strip()]
+
+
+		left_objects, right_objects = self.extract_pairs(pairs)
 
 		instance.content = [
 			{
