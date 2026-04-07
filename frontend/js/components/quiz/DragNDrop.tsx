@@ -1,5 +1,5 @@
 import { DragDropProvider, useDraggable, useDroppable } from "@dnd-kit/react"
-import { Magnet, X } from "lucide-react"
+import { X } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
