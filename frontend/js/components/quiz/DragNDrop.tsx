@@ -1,10 +1,5 @@
-import {
-	DragDropProvider,
-	DragOverlay,
-	useDraggable,
-	useDroppable,
-} from "@dnd-kit/react"
-import { X } from "lucide-react"
+import { DragDropProvider, useDraggable, useDroppable } from "@dnd-kit/react"
+import { Magnet, X } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
@@ -54,12 +49,12 @@ function DraggableChip({ value }: { value: string }) {
 		<button
 			ref={ref}
 			type="button"
-			className="touch-none"
+			className="touch-none cursor-pointer"
 			style={{ opacity: isDragging ? 0.45 : 1 }}
 		>
 			<Badge
 				variant="secondary"
-				className="rounded-full px-3 py-1 text-sm font-medium"
+				className="pointer-events-none cursor-inherit rounded-full px-3 py-1 text-sm font-medium"
 			>
 				{value}
 			</Badge>
@@ -122,64 +117,57 @@ export default function DragNDrop({ item }: DragNDropProps) {
 
 	const [availableValues, setAvailableValues] =
 		useState<string[]>(initialValues)
-	const [activeValue, _setActiveValue] = useState<string | null>(null)
-	const [placedValues, setPlacedValues] = useState<CellValue[][]>(
+
+	const [tableValues, setTableValues] = useState<CellValue[][]>(
 		Array.from({ length: maxRows }, () =>
 			Array.from({ length: columnCount }, () => null),
 		),
 	)
 
-	function returnValueToSource(value: string) {
-		setAvailableValues((prev) => [...prev, value])
+	function returnValueToAvailable(value: string) {
+		setAvailableValues((prevAvailableValues) => [...prevAvailableValues, value])
 	}
 
 	return (
-		<DragDropProvider
-		// onDragStart={({ source }) => {
-		// 	setActiveValue(String(source.id))
-		// }}
-		// onDragEnd={({ source, target }) => {
-		// 	setActiveValue(null)
+		<Card className="w-full rounded-2xl shadow-sm">
+			<CardHeader>
+				<CardTitle>Drag and Drop</CardTitle>
+			</CardHeader>
 
-		// 	if (!target) return
+			<CardContent className="space-y-6">
+				<DragDropProvider
+					onDragEnd={({ operation }) => {
+						if (!operation.source || !operation.target) return
 
-		// 	const draggedValue = String(source.id)
-		// 	const targetId = String(target.id)
+						const draggedValue = String(operation.source.id)
+						const targetId = String(operation.target.id) // cell-{rowIndex}-{colIndex}
 
-		// 	if (!targetId.startsWith("cell-")) return
+						if (!targetId.startsWith("cell-")) return
 
-		// 	const [, rowIndexString, colIndexString] = targetId.split("-")
-		// 	const rowIndex = Number(rowIndexString)
-		// 	const colIndex = Number(colIndexString)
+						const [, rowIndexString, colIndexString] = targetId.split("-")
+						const rowIndex = Number(rowIndexString)
+						const colIndex = Number(colIndexString)
 
-		// 	if (Number.isNaN(rowIndex) || Number.isNaN(colIndex)) return
+						// add draggedValue to current cell with targetId
+						setTableValues((prevTableValues) => {
+							const newTableValues = prevTableValues.map((row) => [...row]) // clone
+							const existingValue = newTableValues[rowIndex][colIndex]
 
-		// 	setPlacedValues((prev) => {
-		// 		const next = prev.map((row) => [...row])
-		// 		const existingValue = next[rowIndex][colIndex]
+							if (existingValue) {
+								returnValueToAvailable(existingValue)
+							}
 
-		// 		if (existingValue) {
-		// 			returnValueToSource(existingValue)
-		// 		}
+							newTableValues[rowIndex][colIndex] = draggedValue
 
-		// 		next[rowIndex][colIndex] = draggedValue
-		// 		return next
-		// 	})
+							return newTableValues
+						})
 
-		// 	setAvailableValues((prev) =>
-		// 		prev.filter((value) => value !== draggedValue),
-		// 	)
-		// }}
-		// onDragCancel={() => {
-		// 	setActiveValue(null)
-		// }}
-		>
-			<Card className="w-full rounded-2xl shadow-sm">
-				<CardHeader>
-					<CardTitle>Drag and Drop</CardTitle>
-				</CardHeader>
-
-				<CardContent className="space-y-6">
+						// remove draggedValue from list
+						setAvailableValues((prevAvailableValues) =>
+							prevAvailableValues.filter((value) => value !== draggedValue),
+						)
+					}}
+				>
 					<div className="rounded-xl border bg-muted/30 p-4">
 						<div className="flex flex-wrap gap-2">
 							{availableValues.map((value) => (
@@ -220,18 +208,20 @@ export default function DragNDrop({ item }: DragNDropProps) {
 											>
 												<DroppableCell
 													id={`cell-${rowIndex}-${colIndex}`}
-													value={placedValues[rowIndex][colIndex]}
+													value={tableValues[rowIndex][colIndex]}
 													onRemove={() => {
-														const value = placedValues[rowIndex][colIndex]
+														const value = tableValues[rowIndex][colIndex]
 														if (!value) return
 
-														setPlacedValues((prev) => {
-															const next = prev.map((row) => [...row])
-															next[rowIndex][colIndex] = null
-															return next
+														setTableValues((prevTableValues) => {
+															const newTableValues = prevTableValues.map(
+																(row) => [...row],
+															)
+															newTableValues[rowIndex][colIndex] = null
+															return newTableValues
 														})
 
-														returnValueToSource(value)
+														returnValueToAvailable(value)
 													}}
 												/>
 											</TableCell>
@@ -241,19 +231,8 @@ export default function DragNDrop({ item }: DragNDropProps) {
 							</TableBody>
 						</Table>
 					</div>
-				</CardContent>
-			</Card>
-
-			<DragOverlay>
-				{activeValue ? (
-					<Badge
-						variant="secondary"
-						className="rounded-full px-3 py-1 text-sm font-medium shadow-md"
-					>
-						{activeValue}
-					</Badge>
-				) : null}
-			</DragOverlay>
-		</DragDropProvider>
+				</DragDropProvider>
+			</CardContent>
+		</Card>
 	)
 }
