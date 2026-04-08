@@ -66,22 +66,29 @@ function DroppableCell({
 	id,
 	value,
 	onRemove,
+	disabled,
 }: {
 	id: string
 	value: string | null
 	onRemove: () => void
+	disabled: boolean
 }) {
 	const { ref, isDropTarget } = useDroppable({
 		id,
+		disabled,
 	})
+
+	const isActiveDropTarget = isDropTarget && !disabled
 
 	return (
 		<div
 			ref={ref}
-			className={`flex min-h-14 items-center justify-center rounded-lg border-2 border-dashed bg-background p-2 transition-colors ${
-				isDropTarget
-					? "border-primary/60 bg-primary/5"
-					: "border-muted-foreground/25"
+			className={`flex min-h-14 items-center justify-center rounded-lg border-2 border-dashed p-2 transition-colors ${
+				disabled
+					? "border-muted-foreground/5 bg-muted/40"
+					: isActiveDropTarget
+						? "border-primary/60 bg-primary/5"
+						: "border-muted-foreground/25 bg-background"
 			}`}
 		>
 			{value ? (
@@ -96,7 +103,7 @@ function DroppableCell({
 						className="rounded-full p-1 hover:bg-muted"
 						aria-label={`Remove ${value}`}
 					>
-						<X className="h-4 w-4" />
+						<X className="h-4 w-4 cursor-pointer" />
 					</button>
 				</div>
 			) : (
@@ -135,16 +142,11 @@ export default function DragNDrop({ item }: DragNDropProps) {
 	}
 
 	function placeValueInCell(rowIndex: number, colIndex: number, value: string) {
+		if (tableValues[rowIndex][colIndex]) return
+
 		setTableValues((prevTableValues) => {
 			const newTableValues = prevTableValues.map((row) => [...row])
-			const existingValue = newTableValues[rowIndex][colIndex]
-
-			if (existingValue) {
-				returnValueToAvailable(existingValue)
-			}
-
 			newTableValues[rowIndex][colIndex] = value
-
 			return newTableValues
 		})
 
@@ -183,6 +185,8 @@ export default function DragNDrop({ item }: DragNDropProps) {
 						const [, rowIndexString, colIndexString] = targetId.split("-")
 						const rowIndex = Number(rowIndexString)
 						const colIndex = Number(colIndexString)
+
+						if (tableValues[rowIndex][colIndex]) return
 
 						placeValueInCell(rowIndex, colIndex, draggedValue)
 					}}
@@ -228,6 +232,7 @@ export default function DragNDrop({ item }: DragNDropProps) {
 												<DroppableCell
 													id={`cell-${rowIndex}-${colIndex}`}
 													value={tableValues[rowIndex][colIndex]}
+													disabled={Boolean(tableValues[rowIndex][colIndex])}
 													onRemove={() => clearCell(rowIndex, colIndex)}
 												/>
 											</TableCell>
