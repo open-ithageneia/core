@@ -167,7 +167,7 @@ class MatchItem:
 			id=data.get("id"),
 			asset_id=data.get("asset_id"),
 			matched_id=data.get("matched_id"),
-			text=data.get("text")
+			text=data.get("text"),
 		)
 
 
@@ -393,9 +393,9 @@ class FillInTheBlankContent:
 				if (
 					part.is_blank
 					and part.choices
-					and part.choices_texts not in visited_choices
+					and tuple(part.choices_texts) not in visited_choices
 				):
-					visited_choices.add(part.choices_texts)
+					visited_choices.add(tuple(part.choices_texts))
 					choices.extend(c.text for c in part.choices)
 		return choices
 
