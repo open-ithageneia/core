@@ -1,7 +1,6 @@
 import { DragDropProvider, useDraggable, useDroppable } from "@dnd-kit/react"
 import { X } from "lucide-react"
 import { useMemo, useState } from "react"
-
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,18 +12,10 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table"
-
-type ContentGroup = {
-	title: string
-	values: string[]
-}
-
-type DragNDropItem = {
-	content: ContentGroup[]
-}
+import type { DragAndDrop } from "@/types/models"
 
 type DragNDropProps = {
-	item: DragNDropItem
+	item: DragAndDrop
 }
 
 type CellValue = string | null
@@ -283,8 +274,8 @@ export default function DragNDrop({ item }: DragNDropProps) {
 							<TableBody>
 								{Array.from({ length: maxRows }).map((_, rowIndex) => (
 									<TableRow
-										// biome-ignore lint/suspicious/noArrayIndexKey: Till we fix this
-										key={rowIndex}
+										// biome-ignore lint/suspicious/noArrayIndexKey: static grid, order never changes
+										key={`row-${rowIndex}`}
 										className={rowIndex % 2 === 0 ? "bg-muted/20" : ""}
 									>
 										{item.content.map((group, colIndex) => {
@@ -299,7 +290,7 @@ export default function DragNDrop({ item }: DragNDropProps) {
 
 											return (
 												<TableCell
-													// biome-ignore lint/suspicious/noArrayIndexKey: Till we fix this
+													// biome-ignore lint/suspicious/noArrayIndexKey: static grid, order never changes
 													key={`${group.title}-${rowIndex}`}
 													className={colIndex !== 0 ? "border-l" : ""}
 												>

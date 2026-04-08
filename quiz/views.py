@@ -41,9 +41,9 @@ def training(request):
 	return render(request, "Training", props={"data": data_by_category})
 
 
-def test_dnd(request):
+def dnd_playground(request):
 	return render(
 		request,
-		"Dnd",
+		"DndPlayground",
 		props={"dnd_list": QuizService.drag_and_drop_list()},
 	)
