@@ -47,9 +47,16 @@ function shuffleArray<T>(array: T[]): T[] {
 	return newArray
 }
 
-function DraggableChip({ value }: { value: string }) {
+function DraggableChip({
+	value,
+	disabled,
+}: {
+	value: string
+	disabled: boolean
+}) {
 	const { ref, isDragging } = useDraggable({
 		id: value,
+		disabled,
 		data: { value },
 	})
 
@@ -57,7 +64,8 @@ function DraggableChip({ value }: { value: string }) {
 		<button
 			ref={ref}
 			type="button"
-			className="touch-none cursor-pointer"
+			disabled={disabled}
+			className={`touch-none ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
 			style={{ opacity: isDragging ? 0.45 : 1 }}
 		>
 			<Badge
@@ -76,26 +84,28 @@ function DroppableCell({
 	onRemove,
 	disabled,
 	validationState,
+	isLocked,
 }: {
 	id: string
 	value: string | null
 	onRemove: () => void
 	disabled: boolean
 	validationState: ValidationState
+	isLocked: boolean
 }) {
 	const { ref, isDropTarget } = useDroppable({
 		id,
-		disabled,
+		disabled: disabled || isLocked,
 	})
 
-	const isActiveDropTarget = isDropTarget && !disabled
+	const isActiveDropTarget = isDropTarget && !disabled && !isLocked
 
 	const stateClasses =
 		validationState === ValidationStatus.Correct
 			? "border-green-500/60 bg-green-500/5"
 			: validationState === ValidationStatus.Incorrect
 				? "border-red-500/60 bg-red-500/5"
-				: disabled
+				: disabled || isLocked
 					? "border-muted-foreground/5 bg-muted/40"
 					: isActiveDropTarget
 						? "border-primary/60 bg-primary/5"
@@ -112,17 +122,21 @@ function DroppableCell({
 						{value}
 					</Badge>
 
-					<button
-						type="button"
-						onClick={onRemove}
-						className="rounded-full p-1 hover:bg-muted"
-						aria-label={`Remove ${value}`}
-					>
-						<X className="h-4 w-4 cursor-pointer" />
-					</button>
+					{!isLocked ? (
+						<button
+							type="button"
+							onClick={onRemove}
+							className="rounded-full p-1 hover:bg-muted"
+							aria-label={`Remove ${value}`}
+						>
+							<X className="h-4 w-4 cursor-pointer" />
+						</button>
+					) : null}
 				</div>
 			) : (
-				<span className="text-sm text-muted-foreground" />
+				<span className="text-sm text-muted-foreground">
+					{isLocked ? "Κλειδωμένο" : ""}
+				</span>
 			)}
 		</div>
 	)
@@ -146,6 +160,10 @@ export default function DragNDrop({ item }: DragNDropProps) {
 		),
 	)
 
+	const [showValidation, setShowValidation] = useState(false)
+
+	// const isLocked = showValidation
+
 	function returnValueToAvailable(value: string) {
 		setAvailableValues((prevAvailableValues) => [...prevAvailableValues, value])
 	}
@@ -157,6 +175,7 @@ export default function DragNDrop({ item }: DragNDropProps) {
 	}
 
 	function placeValueInCell(rowIndex: number, colIndex: number, value: string) {
+		if (showValidation) return
 		if (tableValues[rowIndex][colIndex]) return
 
 		setTableValues((prevTableValues) => {
@@ -166,10 +185,11 @@ export default function DragNDrop({ item }: DragNDropProps) {
 		})
 
 		removeValueFromAvailable(value)
-		// setShowValidation(false)
 	}
 
 	function clearCell(rowIndex: number, colIndex: number) {
+		if (showValidation) return
+
 		const value = tableValues[rowIndex][colIndex]
 		if (!value) return
 
@@ -180,10 +200,7 @@ export default function DragNDrop({ item }: DragNDropProps) {
 		})
 
 		returnValueToAvailable(value)
-		// setShowValidation(false)
 	}
-
-	const [showValidation, setShowValidation] = useState(false)
 
 	function isValueCorrectForColumn(colIndex: number, value: string | null) {
 		if (!value) return false
@@ -215,6 +232,7 @@ export default function DragNDrop({ item }: DragNDropProps) {
 			<CardContent className="space-y-6">
 				<DragDropProvider
 					onDragEnd={({ operation }) => {
+						if (showValidation) return
 						if (!operation.source || !operation.target) return
 
 						const draggedValue = String(operation.source.id)
@@ -234,7 +252,11 @@ export default function DragNDrop({ item }: DragNDropProps) {
 					<div className="rounded-xl border bg-muted/30 p-4">
 						<div className="flex flex-wrap gap-2">
 							{availableValues.map((value) => (
-								<DraggableChip key={value} value={value} />
+								<DraggableChip
+									key={value}
+									value={value}
+									disabled={showValidation}
+								/>
 							))}
 						</div>
 					</div>
@@ -284,6 +306,7 @@ export default function DragNDrop({ item }: DragNDropProps) {
 														value={cellValue}
 														disabled={Boolean(cellValue)}
 														validationState={validationState}
+														isLocked={showValidation}
 														onRemove={() => clearCell(rowIndex, colIndex)}
 													/>
 												</TableCell>
@@ -297,8 +320,14 @@ export default function DragNDrop({ item }: DragNDropProps) {
 
 					{isTableComplete && (
 						<div className="flex flex-col items-center justify-center gap-2">
-							<Button type="button" onClick={() => setShowValidation(true)}>
-								Έλεγχος απαντήσεων
+							<Button
+								type="button"
+								onClick={() => setShowValidation(true)}
+								disabled={showValidation}
+							>
+								{showValidation
+									? "Οι απαντήσεις ελέγχθηκαν"
+									: "Έλεγχος απαντήσεων"}
 							</Button>
 
 							{showValidation && (

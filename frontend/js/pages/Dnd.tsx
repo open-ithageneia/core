@@ -10,7 +10,9 @@ export default function Dnd({ dnd_list }: DndListProps) {
 		<section>
 			{/* {JSON.stringify(dnd_list)} */}
 			{dnd_list.map((item) => (
-				<DragNDrop key={item.id} item={item} />
+				<div key={item.id} className="py-5">
+					<DragNDrop key={item.id} item={item} />
+				</div>
 			))}
 		</section>
 	)
