@@ -3,6 +3,7 @@ import { X } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
 	Table,
@@ -27,6 +28,13 @@ type DragNDropProps = {
 }
 
 type CellValue = string | null
+
+enum ValidationStatus {
+	Correct = "correct",
+	Incorrect = "incorrect",
+}
+
+type ValidationState = ValidationStatus | null
 
 function shuffleArray<T>(array: T[]): T[] {
 	const newArray = [...array]
@@ -67,11 +75,13 @@ function DroppableCell({
 	value,
 	onRemove,
 	disabled,
+	validationState,
 }: {
 	id: string
 	value: string | null
 	onRemove: () => void
 	disabled: boolean
+	validationState: ValidationState
 }) {
 	const { ref, isDropTarget } = useDroppable({
 		id,
@@ -80,16 +90,21 @@ function DroppableCell({
 
 	const isActiveDropTarget = isDropTarget && !disabled
 
-	return (
-		<div
-			ref={ref}
-			className={`flex min-h-14 items-center justify-center rounded-lg border-2 border-dashed p-2 transition-colors ${
-				disabled
+	const stateClasses =
+		validationState === ValidationStatus.Correct
+			? "border-green-500/60 bg-green-500/5"
+			: validationState === ValidationStatus.Incorrect
+				? "border-red-500/60 bg-red-500/5"
+				: disabled
 					? "border-muted-foreground/5 bg-muted/40"
 					: isActiveDropTarget
 						? "border-primary/60 bg-primary/5"
 						: "border-muted-foreground/25 bg-background"
-			}`}
+
+	return (
+		<div
+			ref={ref}
+			className={`flex min-h-14 items-center justify-center rounded-lg border-2 border-dashed p-2 transition-colors ${stateClasses}`}
 		>
 			{value ? (
 				<div className="flex items-center gap-2">
@@ -151,6 +166,7 @@ export default function DragNDrop({ item }: DragNDropProps) {
 		})
 
 		removeValueFromAvailable(value)
+		// setShowValidation(false)
 	}
 
 	function clearCell(rowIndex: number, colIndex: number) {
@@ -164,7 +180,31 @@ export default function DragNDrop({ item }: DragNDropProps) {
 		})
 
 		returnValueToAvailable(value)
+		// setShowValidation(false)
 	}
+
+	const [showValidation, setShowValidation] = useState(false)
+
+	function isValueCorrectForColumn(colIndex: number, value: string | null) {
+		if (!value) return false
+
+		return item.content[colIndex].values.includes(value)
+	}
+
+	const isTableComplete = useMemo(() => {
+		return tableValues.every((row) => row.every((cell) => cell !== null))
+	}, [tableValues])
+
+	const correctAnswersCount = useMemo(() => {
+		return tableValues.reduce((count, row) => {
+			return (
+				count +
+				row.filter((cellValue, colIndex) =>
+					cellValue ? item.content[colIndex].values.includes(cellValue) : false,
+				).length
+			)
+		}, 0)
+	}, [tableValues, item])
 
 	return (
 		<Card className="w-full rounded-2xl shadow-sm">
@@ -223,25 +263,51 @@ export default function DragNDrop({ item }: DragNDropProps) {
 										key={rowIndex}
 										className={rowIndex % 2 === 0 ? "bg-muted/20" : ""}
 									>
-										{item.content.map((group, colIndex) => (
-											<TableCell
-												// biome-ignore lint/suspicious/noArrayIndexKey: Till we fix this
-												key={`${group.title}-${rowIndex}`}
-												className={colIndex !== 0 ? "border-l" : ""}
-											>
-												<DroppableCell
-													id={`cell-${rowIndex}-${colIndex}`}
-													value={tableValues[rowIndex][colIndex]}
-													disabled={Boolean(tableValues[rowIndex][colIndex])}
-													onRemove={() => clearCell(rowIndex, colIndex)}
-												/>
-											</TableCell>
-										))}
+										{item.content.map((group, colIndex) => {
+											const cellValue = tableValues[rowIndex][colIndex]
+
+											const validationState: ValidationState =
+												showValidation && cellValue
+													? isValueCorrectForColumn(colIndex, cellValue)
+														? ValidationStatus.Correct
+														: ValidationStatus.Incorrect
+													: null
+
+											return (
+												<TableCell
+													// biome-ignore lint/suspicious/noArrayIndexKey: Till we fix this
+													key={`${group.title}-${rowIndex}`}
+													className={colIndex !== 0 ? "border-l" : ""}
+												>
+													<DroppableCell
+														id={`cell-${rowIndex}-${colIndex}`}
+														value={cellValue}
+														disabled={Boolean(cellValue)}
+														validationState={validationState}
+														onRemove={() => clearCell(rowIndex, colIndex)}
+													/>
+												</TableCell>
+											)
+										})}
 									</TableRow>
 								))}
 							</TableBody>
 						</Table>
 					</div>
+
+					{isTableComplete && (
+						<div className="flex flex-col items-center justify-center gap-2">
+							<Button type="button" onClick={() => setShowValidation(true)}>
+								Έλεγχος απαντήσεων
+							</Button>
+
+							{showValidation && (
+								<p className="text-sm text-muted-foreground">
+									Score: {correctAnswersCount} / {maxRows * columnCount}
+								</p>
+							)}
+						</div>
+					)}
 				</DragDropProvider>
 			</CardContent>
 		</Card>
