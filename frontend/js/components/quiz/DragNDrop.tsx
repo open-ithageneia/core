@@ -128,6 +128,42 @@ export default function DragNDrop({ item }: DragNDropProps) {
 		setAvailableValues((prevAvailableValues) => [...prevAvailableValues, value])
 	}
 
+	function removeValueFromAvailable(value: string) {
+		setAvailableValues((prevAvailableValues) =>
+			prevAvailableValues.filter((availableValue) => availableValue !== value),
+		)
+	}
+
+	function placeValueInCell(rowIndex: number, colIndex: number, value: string) {
+		setTableValues((prevTableValues) => {
+			const newTableValues = prevTableValues.map((row) => [...row])
+			const existingValue = newTableValues[rowIndex][colIndex]
+
+			if (existingValue) {
+				returnValueToAvailable(existingValue)
+			}
+
+			newTableValues[rowIndex][colIndex] = value
+
+			return newTableValues
+		})
+
+		removeValueFromAvailable(value)
+	}
+
+	function clearCell(rowIndex: number, colIndex: number) {
+		const value = tableValues[rowIndex][colIndex]
+		if (!value) return
+
+		setTableValues((prevTableValues) => {
+			const newTableValues = prevTableValues.map((row) => [...row])
+			newTableValues[rowIndex][colIndex] = null
+			return newTableValues
+		})
+
+		returnValueToAvailable(value)
+	}
+
 	return (
 		<Card className="w-full rounded-2xl shadow-sm">
 			<CardHeader>
@@ -148,24 +184,7 @@ export default function DragNDrop({ item }: DragNDropProps) {
 						const rowIndex = Number(rowIndexString)
 						const colIndex = Number(colIndexString)
 
-						// add draggedValue to current cell with targetId
-						setTableValues((prevTableValues) => {
-							const newTableValues = prevTableValues.map((row) => [...row]) // clone
-							const existingValue = newTableValues[rowIndex][colIndex]
-
-							if (existingValue) {
-								returnValueToAvailable(existingValue)
-							}
-
-							newTableValues[rowIndex][colIndex] = draggedValue
-
-							return newTableValues
-						})
-
-						// remove draggedValue from list
-						setAvailableValues((prevAvailableValues) =>
-							prevAvailableValues.filter((value) => value !== draggedValue),
-						)
+						placeValueInCell(rowIndex, colIndex, draggedValue)
 					}}
 				>
 					<div className="rounded-xl border bg-muted/30 p-4">
@@ -177,13 +196,13 @@ export default function DragNDrop({ item }: DragNDropProps) {
 					</div>
 
 					<div className="overflow-x-auto rounded-xl border">
-						<Table>
+						<Table className="table-fixed w-full">
 							<TableHeader>
 								<TableRow>
 									{item.content.map((group, index) => (
 										<TableHead
 											key={group.title}
-											className={`border-b text-center font-semibold ${
+											className={`w-48 border-b text-center font-semibold ${
 												index !== 0 ? "border-l" : ""
 											}`}
 										>
@@ -209,20 +228,7 @@ export default function DragNDrop({ item }: DragNDropProps) {
 												<DroppableCell
 													id={`cell-${rowIndex}-${colIndex}`}
 													value={tableValues[rowIndex][colIndex]}
-													onRemove={() => {
-														const value = tableValues[rowIndex][colIndex]
-														if (!value) return
-
-														setTableValues((prevTableValues) => {
-															const newTableValues = prevTableValues.map(
-																(row) => [...row],
-															)
-															newTableValues[rowIndex][colIndex] = null
-															return newTableValues
-														})
-
-														returnValueToAvailable(value)
-													}}
+													onRemove={() => clearCell(rowIndex, colIndex)}
 												/>
 											</TableCell>
 										))}
