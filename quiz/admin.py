@@ -363,7 +363,11 @@ class MatchingAdmin(AbstractQuizAdmin):
 			items = col.get("items", [])
 
 			items_html = (
-				format_html_join("", "<li>{}</li>", ((item.get("text", item.get("asset_id", "")),) for item in items))
+				format_html_join(
+					"",
+					"<li>{}</li>",
+					((item.get("text", item.get("asset_id", "")),) for item in items),
+				)
 				if isinstance(items, list)
 				else ""
 			)
