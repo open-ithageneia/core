@@ -48,14 +48,16 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 function DraggableChip({
+	id,
 	value,
 	disabled,
 }: {
+	id: string
 	value: string
 	disabled: boolean
 }) {
 	const { ref, isDragging } = useDraggable({
-		id: value,
+		id,
 		disabled,
 		data: { value },
 	})
@@ -150,6 +152,7 @@ export default function DragNDrop({ item }: DragNDropProps) {
 
 	const maxRows = Math.max(...item.content.map((group) => group.values.length))
 	const columnCount = item.content.length
+	const totalScore = maxRows * columnCount
 
 	const [availableValues, setAvailableValues] =
 		useState<string[]>(initialValues)
@@ -161,8 +164,6 @@ export default function DragNDrop({ item }: DragNDropProps) {
 	)
 
 	const [showValidation, setShowValidation] = useState(false)
-
-	// const isLocked = showValidation
 
 	function returnValueToAvailable(value: string) {
 		setAvailableValues((prevAvailableValues) => [...prevAvailableValues, value])
@@ -235,7 +236,7 @@ export default function DragNDrop({ item }: DragNDropProps) {
 						if (showValidation) return
 						if (!operation.source || !operation.target) return
 
-						const draggedValue = String(operation.source.id)
+						const draggedValue = operation.source.data.value
 						const targetId = String(operation.target.id) // cell-{rowIndex}-{colIndex}
 
 						if (!targetId.startsWith("cell-")) return
@@ -254,6 +255,7 @@ export default function DragNDrop({ item }: DragNDropProps) {
 							{availableValues.map((value) => (
 								<DraggableChip
 									key={value}
+									id={`chip-${value}`}
 									value={value}
 									disabled={showValidation}
 								/>
@@ -332,7 +334,7 @@ export default function DragNDrop({ item }: DragNDropProps) {
 
 							{showValidation && (
 								<p className="text-sm text-muted-foreground">
-									Score: {correctAnswersCount} / {maxRows * columnCount}
+									Score: {correctAnswersCount} / {totalScore}
 								</p>
 							)}
 						</div>
