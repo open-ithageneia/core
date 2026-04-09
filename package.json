@@ -15,6 +15,7 @@
 		}
 	},
 	"dependencies": {
+		"@dnd-kit/react": "^0.3.2",
 		"@inertiajs/react": "^2.0.0",
 		"@radix-ui/react-dialog": "^1.1.15",
 		"@radix-ui/react-slot": "^1.2.4",

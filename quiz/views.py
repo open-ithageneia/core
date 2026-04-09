@@ -39,3 +39,11 @@ def training(request):
 	)
 
 	return render(request, "Training", props={"data": data_by_category})
+
+
+def dnd_playground(request):
+	return render(
+		request,
+		"DndPlayground",
+		props={"dnd_list": QuizService.drag_and_drop_list()},
+	)

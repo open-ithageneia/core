@@ -61,7 +61,7 @@ export interface DragAndDrop extends TimeStamped, Activatable {
 	category: QuizCategory
 	content: DragAndDropContent
 	exam_sessions: ExamSession[]
-	exam_sessions_preview: string
+	// exam_sessions_preview: string
 }
 
 interface MatchingItem {
