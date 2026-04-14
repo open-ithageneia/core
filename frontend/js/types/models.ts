@@ -22,6 +22,13 @@ export interface QuizAsset extends TimeStamped {
 	image: string
 }
 
+interface QuizBase extends TimeStamped, Activatable {
+	id: number
+	exam_sessions: ExamSession[]
+	exam_sessions_preview: string
+	category: QuizCategory
+}
+
 interface QuizChoice {
 	text?: string
 	asset_url?: string
@@ -40,13 +47,9 @@ interface MultipleChoiceContent {
 	choices: QuizChoice[]
 }
 
-export interface Statement extends TimeStamped, Activatable {
-	id: number
+export interface StatementModel extends QuizBase {
 	type: StatementType
-	category: QuizCategory
 	content: TrueFalseContent | MultipleChoiceContent
-	exam_sessions: ExamSession[]
-	exam_sessions_preview: string
 }
 
 interface DragAndDropColumn {
@@ -56,12 +59,8 @@ interface DragAndDropColumn {
 
 export type DragAndDropContent = [DragAndDropColumn, DragAndDropColumn]
 
-export interface DragAndDrop extends TimeStamped, Activatable {
-	id: number
-	category: QuizCategory
+export interface DragAndDropModel extends QuizBase {
 	content: DragAndDropContent
-	exam_sessions: ExamSession[]
-	// exam_sessions_preview: string
 }
 
 interface MatchingItem {
@@ -77,12 +76,8 @@ interface MatchingColumn {
 
 export type MatchingContent = [MatchingColumn, MatchingColumn]
 
-export interface Matching extends TimeStamped, Activatable {
-	id: number
-	category: QuizCategory
+export interface MatchingModel extends QuizBase {
 	content: MatchingContent
-	exam_sessions: ExamSession[]
-	exam_sessions_preview: string
 }
 
 interface FillBlankChoice {
@@ -107,20 +102,29 @@ interface FillInTheBlankContent {
 	texts: FillBlankText[]
 }
 
-export interface FillInTheBlank extends TimeStamped, Activatable {
-	id: number
-	category: QuizCategory
+export interface FillInTheBlankModel extends QuizBase {
 	content: FillInTheBlankContent
-	exam_sessions: ExamSession[]
-	exam_sessions_preview: string
+}
+
+export interface OpenEndedContent {
+	min_correct_answers: number
+	is_ans_num_shown: boolean
+	prompt_text?: string
+	prompt_asset_url?: string
+	texts: string[][]
+}
+
+export interface OpenEndedModel extends QuizBase {
+	content: OpenEndedContent
 }
 
 export interface Exam {
-	true_false: [Statement]
-	multiple_choice: [Statement]
-	fill_in_the_blank: [FillInTheBlank]
-	drag_and_drop: [DragAndDrop]
-	matching: [Matching]
+	true_false: [StatementModel]
+	multiple_choice: [StatementModel]
+	fill_in_the_blank: [FillInTheBlankModel]
+	drag_and_drop: [DragAndDropModel]
+	matching: [MatchingModel]
+	open_ended: [OpenEndedModel]
 }
 
 export type TrainingData = {
@@ -132,5 +136,6 @@ export type TrainingData = {
 		| MultipleChoiceContent
 		| MatchingContent
 		| DragAndDropContent
+		| OpenEndedContent
 	quiz_type: string
 }[]

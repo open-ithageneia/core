@@ -47,3 +47,11 @@ def dnd_playground(request):
 		"DndPlayground",
 		props={"dnd_list": QuizService.drag_and_drop_list()},
 	)
+
+
+def open_ended_playground(request):
+	return render(
+		request,
+		"OpenEndedPlayground",
+		props={"open_ended_list": QuizService.open_ended_list()},
+	)

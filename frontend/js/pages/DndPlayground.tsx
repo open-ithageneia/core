@@ -1,8 +1,8 @@
 import DragAndDropQuiz from "@/components/quiz/DragAndDrop"
-import type { DragAndDrop } from "@/types/models"
+import type { DragAndDropModel } from "@/types/models"
 
 type DndListProps = {
-	dnd_list: DragAndDrop[]
+	dnd_list: DragAndDropModel[]
 }
 
 export default function Dnd({ dnd_list }: DndListProps) {

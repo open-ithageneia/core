@@ -255,3 +255,13 @@ class OpenEnded(AbstractQuiz):
 
 	def _parse_content(self):
 		return OpenEndedContent.from_json(self.content)
+
+	def _validate_content(self):
+		data = self.content_model
+		if data.min_correct_answers < 1:
+			raise ValidationError("min_correct_answers must be at least 1.")
+		if data.min_correct_answers > len(data.texts):
+			raise ValidationError(
+				f"min_correct_answers ({data.min_correct_answers}) cannot exceed "
+				f"the number of available answers ({len(data.texts)})."
+			)
