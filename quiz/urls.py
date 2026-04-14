@@ -11,5 +11,9 @@ urlpatterns = [
 	path("training", views.training, name="training"),
 	path("playground", views.playground, name="playground"),
 	path("dnd-playground", views.dnd_playground, name="dnd_playground"),
-	path("open-ended-playground", views.open_ended_playground, name="open_ended_playground",),
+	path(
+		"open-ended-playground",
+		views.open_ended_playground,
+		name="open_ended_playground",
+	),
 ]

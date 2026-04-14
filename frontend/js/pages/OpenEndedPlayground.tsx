@@ -12,11 +12,7 @@ export default function OpenEndedPlayground({
 		<section>
 			{open_ended_list.map((item, index) => (
 				<div key={item.id} className="py-5">
-					<OpenEnded
-						key={item.id}
-						item={item}
-						item_index={index + 1}
-					/>
+					<OpenEnded key={item.id} item={item} item_index={index + 1} />
 				</div>
 			))}
 		</section>

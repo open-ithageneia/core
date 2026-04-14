@@ -14,10 +14,7 @@ type OpenEndedProps = {
 	item_index: number
 }
 
-export default function OpenEnded({
-	item,
-	item_index,
-}: OpenEndedProps) {
+export default function OpenEnded({ item, item_index }: OpenEndedProps) {
 	const {
 		answers,
 		showValidation,
@@ -40,10 +37,8 @@ export default function OpenEnded({
 		>
 			<div className="space-y-3">
 				{answers.map((answer, index) => (
-					<div
-						key={`open-ended-${item.id}-${index}`}
-						className="flex items-center gap-2"
-					>
+					// biome-ignore lint/suspicious/noArrayIndexKey: index used only for placeholder and validation state lookup
+					<div key={index} className="flex items-center gap-2">
 						<Input
 							type="text"
 							placeholder={`Απάντηση ${index + 1}`}
