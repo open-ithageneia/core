@@ -10,7 +10,10 @@ type MultipleChoiceProps = {
 	item_index: number
 }
 
-export default function MultipleChoice({ item, item_index }: MultipleChoiceProps) {
+export default function MultipleChoice({
+	item,
+	item_index,
+}: MultipleChoiceProps) {
 	const {
 		selectedIndex,
 		showValidation,
@@ -41,9 +44,7 @@ export default function MultipleChoice({ item, item_index }: MultipleChoiceProps
 							!showValidation &&
 								selectedIndex === index &&
 								"border-blue-500 bg-blue-50 dark:bg-blue-950",
-							!showValidation &&
-								selectedIndex !== index &&
-								"hover:bg-muted",
+							!showValidation && selectedIndex !== index && "hover:bg-muted",
 							showValidation &&
 								choiceStates[index] === ValidationStatus.Correct &&
 								"border-green-500 bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-300",

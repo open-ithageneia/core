@@ -67,4 +67,3 @@ def multiple_choice_playground(request):
 			)
 		},
 	)
-
