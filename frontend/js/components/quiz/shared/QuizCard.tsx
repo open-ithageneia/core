@@ -11,12 +11,14 @@ import {
 type QuizCardProps = {
 	title: string
 	promptText?: string
+	promptAssetUrl?: string
 	children: ReactNode
 }
 
 export default function QuizCard({
 	title,
 	promptText,
+	promptAssetUrl,
 	children,
 }: QuizCardProps) {
 	return (
@@ -24,6 +26,13 @@ export default function QuizCard({
 			<CardHeader>
 				<CardTitle>{title}</CardTitle>
 				{promptText && <CardDescription>{promptText}</CardDescription>}
+				{promptAssetUrl && (
+					<img
+						src={promptAssetUrl}
+						alt={promptText ?? title}
+						className="mt-2 max-h-60 rounded object-contain"
+					/>
+				)}
 			</CardHeader>
 
 			<CardContent className="space-y-6">{children}</CardContent>
