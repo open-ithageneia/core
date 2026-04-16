@@ -436,19 +436,27 @@ class OpenEndedContent:
 			},
 			"texts": {
 				"type": "array",
+				"title": "Answer groups",
 				"items": {
 					"type": "object",
-					"required": ["text"],
-					"properties": {"text": {"type": "string"}},
+					"required": ["alternatives"],
+					"properties": {
+						"alternatives": {
+							"type": "array",
+							"title": "Alternative spellings / phrasings",
+							"items": {"type": "string"},
+							"minItems": 1,
+						},
+					},
+					"additionalProperties": False,
 				},
-				"additionalProperties": False,
 			},
 		},
 		"additionalProperties": False,
 	}
 
 	min_correct_answers: int
-	texts: list[str]
+	texts: list[list[str]]
 	prompt_text: str | None = None
 	prompt_asset_id: int | None = None
 
@@ -456,7 +464,7 @@ class OpenEndedContent:
 		from quiz.services import AssetService
 
 		return {
-			"min_min_correct_answers": self.min_correct_answers,
+			"min_correct_answers": self.min_correct_answers,
 			"prompt_text": self.prompt_text,
 			"texts": self.texts,
 			"prompt_asset_url": AssetService.resolve_asset_url(self.prompt_asset_id),
@@ -464,9 +472,25 @@ class OpenEndedContent:
 
 	@classmethod
 	def from_json(cls, data: dict):
+		raw_texts = data.get("texts", [])
+		texts: list[list[str]] = []
+		for t in raw_texts:
+			if isinstance(t, dict):
+				# New format: {"alternatives": ["word1", "word2"]}
+				alts = t.get("alternatives", [])
+				if not alts and "text" in t:
+					# Legacy single-text dict: {"text": "word"}
+					alts = [t["text"]]
+				texts.append(alts)
+			elif isinstance(t, list):
+				texts.append(t)
+			elif isinstance(t, str):
+				texts.append([t])
+			else:
+				texts.append([str(t)])
 		return cls(
 			prompt_asset_id=data.get("prompt_asset_id"),
 			prompt_text=data.get("prompt_text"),
-			texts=data.get("texts"),
-			min_correct_answers=data.get("min_correct_answers"),
+			texts=texts,
+			min_correct_answers=data.get("min_correct_answers", 0),
 		)

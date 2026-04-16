@@ -346,16 +346,18 @@ class FillInTheBlankResource(AbstractQuizResource):
 class OpenEndedResource(AbstractQuizResource):
 	class Meta(AbstractQuizResource.Meta):
 		model = OpenEnded
-		fields = (
-			"id",
-			"type",
-			"category",
-			"content",
-		)
 
 	def before_save_instance(self, instance, row, **kwargs):
 		raw_texts = row.get("texts", "")
-		texts = [v.strip() for v in raw_texts.split(",") if v.strip()]
+		texts = []
+		for v in raw_texts.split(","):
+			v = v.strip()
+			if not v:
+				continue
+			# Support pipe-separated alternatives: "word1|word2"
+			alternatives = [a.strip() for a in v.split("|") if a.strip()]
+			if alternatives:
+				texts.append({"alternatives": alternatives})
 		min_correct_answers = row.get("min_correct_answers")
 		if not min_correct_answers:
 			min_correct_answers = len(texts)
@@ -366,5 +368,5 @@ class OpenEndedResource(AbstractQuizResource):
 				row.get("prompt_image"), title="Prompt"
 			),
 			"texts": texts,
-			"min_correct_answers": min_correct_answers,
+			"min_correct_answers": int(min_correct_answers),
 		}

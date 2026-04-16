@@ -8,72 +8,28 @@
 				"prompt_text": "Ποια είναι 4 νησιά των Κυκλάδων;",
 				"min_correct_answers": 4,
 				"texts": [
-					{
-						"text": "Πάρος"
-					},
-					{
-						"text": "Νάξος"
-					},
-					{
-						"text": "Σαντορίνη"
-					},
-					{
-						"text": "Μύκονος"
-					},
-					{
-						"text": "Ίος"
-					},
-					{
-						"text": "Σέριφος"
-					},
-					{
-						"text": "Σίφνος"
-					},
-					{
-						"text": "Κύθνος"
-					},
-					{
-						"text": "Αμοργός"
-					},
-					{
-						"text": "Φολέγανδρος"
-					},
-					{
-						"text": "Σύρος"
-					},
-					{
-						"text": "Μήλος"
-					},
-					{
-						"text": "Κέα"
-					},
-					{
-						"text": "Δονούσα"
-					},
-					{
-						"text": "Ηρακλειά"
-					},
-					{
-						"text": "Κουφονήσια"
-					},
-					{
-						"text": "Σχοινούσα"
-					},
-					{
-						"text": "Αντίπαρος"
-					},
-					{
-						"text": "Καρπάθος"
-					},
-					{
-						"text": "Κάσος"
-					},
-					{
-						"text": "Τήνος"
-					},
-					{
-						"text": "Άνδρος"
-					}
+					{ "alternatives": ["Πάρος"] },
+					{ "alternatives": ["Νάξος"] },
+					{ "alternatives": ["Σαντορίνη"] },
+					{ "alternatives": ["Μύκονος"] },
+					{ "alternatives": ["Ίος"] },
+					{ "alternatives": ["Σέριφος"] },
+					{ "alternatives": ["Σίφνος"] },
+					{ "alternatives": ["Κύθνος"] },
+					{ "alternatives": ["Αμοργός"] },
+					{ "alternatives": ["Φολέγανδρος"] },
+					{ "alternatives": ["Σύρος"] },
+					{ "alternatives": ["Μήλος"] },
+					{ "alternatives": ["Κέα"] },
+					{ "alternatives": ["Δονούσα"] },
+					{ "alternatives": ["Ηρακλειά"] },
+					{ "alternatives": ["Κουφονήσια"] },
+					{ "alternatives": ["Σχοινούσα"] },
+					{ "alternatives": ["Αντίπαρος"] },
+					{ "alternatives": ["Καρπάθος"] },
+					{ "alternatives": ["Κάσος"] },
+					{ "alternatives": ["Τήνος"] },
+					{ "alternatives": ["Άνδρος"] }
 				]
 			},
 			"exam_sessions": [1, 2],
@@ -90,12 +46,8 @@
 				"prompt_text": "Ποια είναι τα πελάγη από τα οποία βρέχεται η Κρήτη;",
 				"min_correct_answers": 2,
 				"texts": [
-					{
-						"text": "Λιβυκό Πέλαγος"
-					},
-					{
-						"text": "Κρητικό Πέλαγος"
-					}
+					{ "alternatives": ["Λιβυκό Πέλαγος"] },
+					{ "alternatives": ["Κρητικό Πέλαγος"] }
 				]
 			},
 			"exam_sessions": [1, 2],
