@@ -16,4 +16,9 @@ urlpatterns = [
 		views.open_ended_playground,
 		name="open_ended_playground",
 	),
+	path(
+		"multiple-choice-playground",
+		views.multiple_choice_playground,
+		name="multiple_choice_playground",
+	),
 ]

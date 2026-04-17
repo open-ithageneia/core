@@ -14,6 +14,14 @@ def get_nav(request):
 		"playground": ("Παίξε και μάθε", "quiz:playground"),
 		"training": ("Τεστ προσομοίωσης", "quiz:training"),
 		"dnd_playground": ("Drag N Drop playground", "quiz:dnd_playground"),
+		"open_ended_playground": (
+			"Open Ended playground",
+			"quiz:open_ended_playground",
+		),
+		"multiple_choice_playground": (
+			"Multiple Choice playground",
+			"quiz:multiple_choice_playground",
+		),
 	}
 
 	try:

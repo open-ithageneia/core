@@ -55,3 +55,15 @@ def open_ended_playground(request):
 		"OpenEndedPlayground",
 		props={"open_ended_list": QuizService.open_ended_list()},
 	)
+
+
+def multiple_choice_playground(request):
+	return render(
+		request,
+		"MultipleChoicePlayground",
+		props={
+			"multiple_choice_list": QuizService.statement_list(
+				{"type": "MULTIPLE_CHOICE"}
+			)
+		},
+	)

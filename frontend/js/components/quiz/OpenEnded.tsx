@@ -34,6 +34,7 @@ export default function OpenEnded({ item, item_index }: OpenEndedProps) {
 		<QuizCard
 			title={`Ερώτηση ${item_index}`}
 			promptText={item.content.prompt_text}
+			promptAssetUrl={item.content.prompt_asset_url}
 		>
 			<div className="space-y-3">
 				{answers.map((answer, index) => (
