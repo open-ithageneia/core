@@ -30,7 +30,7 @@ export default function MultipleChoice({
 
 	return (
 		<QuizCard
-			title={`???t?s? ${item_index}`}
+			title={`Ερώτηση ${item_index}`}
 			promptText={item.content.prompt_text}
 			promptAssetUrl={item.content.prompt_asset_url}
 		>
@@ -59,7 +59,7 @@ export default function MultipleChoice({
 						{choice.asset_url && (
 							<img
 								src={choice.asset_url}
-								alt={choice.text ?? `?p????? ${index + 1}`}
+								alt={choice.text ?? `Επιλογή ${index + 1}`}
 								className="mt-2 max-h-40 rounded"
 							/>
 						)}

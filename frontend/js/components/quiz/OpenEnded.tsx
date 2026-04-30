@@ -38,7 +38,7 @@ export default function OpenEnded({
 
 	return (
 		<QuizCard
-			title={`???t?s? ${item_index}`}
+			title={`Ερώτηση ${item_index}`}
 			promptText={item.content.prompt_text}
 			promptAssetUrl={item.content.prompt_asset_url}
 		>
@@ -47,7 +47,7 @@ export default function OpenEnded({
 					<div key={index} className="flex items-center gap-2">
 						<Input
 							type="text"
-							placeholder={`?p??t?s? ${index + 1}`}
+							placeholder={`Απάντηση ${index + 1}`}
 							value={answer}
 							onChange={(e) => updateAnswer(index, e.target.value)}
 							disabled={showValidation}
@@ -80,7 +80,7 @@ export default function OpenEnded({
 
 				{showValidation && (
 					<PostValidationNotes
-						title="S?st?? apa?t?se?? p?? ?e?p???:"
+						title="Σωστές απαντήσεις που λείπουν:"
 						notes={missedAnswers}
 					/>
 				)}

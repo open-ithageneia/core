@@ -29,7 +29,7 @@ export default function TrueFalse({
 
 	return (
 		<QuizCard
-			title={`???t?s? ${item_index}`}
+			title={`Ερώτηση ${item_index}`}
 			promptText={item.content.prompt_text}
 			promptAssetUrl={item.content.prompt_asset_url}
 		>
@@ -52,7 +52,7 @@ export default function TrueFalse({
 							{choice.asset_url && (
 								<img
 									src={choice.asset_url}
-									alt={choice.text ?? `????s? ${index + 1}`}
+									alt={choice.text ?? `Δήλωση ${index + 1}`}
 									className="mt-2 max-h-40 rounded"
 								/>
 							)}
@@ -72,7 +72,7 @@ export default function TrueFalse({
 										"hover:bg-muted",
 								)}
 							>
-								S?st?
+								Σωστό
 							</button>
 							<button
 								type="button"
@@ -87,7 +87,7 @@ export default function TrueFalse({
 										"hover:bg-muted",
 								)}
 							>
-								?????
+								Λάθος
 							</button>
 						</div>
 					</div>
