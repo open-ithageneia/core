@@ -1,4 +1,5 @@
 ﻿import { useCallback, useMemo, useState } from "react"
+import { useValidation } from "@/hooks/useValidation"
 import { normalizeForTextComparison } from "@/lib/utils"
 import { ValidationStatus } from "@/types/enums"
 import type { OpenEndedModel } from "@/types/models"
@@ -33,9 +34,17 @@ function validateAnswers(
 	return { states, matchedGroupIndices }
 }
 
-export function useOpenEnded(item: OpenEndedModel) {
+type UseOpenEndedOptions = {
+	forceValidation?: boolean
+}
+
+export function useOpenEnded(
+	item: OpenEndedModel,
+	options?: UseOpenEndedOptions,
+) {
 	const [answers, setAnswers] = useState<string[]>([""])
-	const [showValidation, setShowValidation] = useState(false)
+	const { showValidation, setShowValidation, showValidationButton } =
+		useValidation(options)
 
 	const hasAtLeastOneAnswer = useMemo(
 		() => answers.some((a) => a.trim().length > 0),
@@ -94,6 +103,7 @@ export function useOpenEnded(item: OpenEndedModel) {
 		answers,
 		showValidation,
 		setShowValidation,
+		showValidationButton,
 		hasAtLeastOneAnswer,
 		states,
 		correctAnswersCount,

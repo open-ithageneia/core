@@ -114,6 +114,8 @@ def get_random_quiz_items(category: str, amount: int):
 
 		per_model_amount = amount * 2 if model is Statement else amount
 
+		category_clause = "AND m.category = %s" if category else ""
+
 		union_parts.append(f"""
             SELECT * FROM (
                 SELECT
@@ -124,19 +126,20 @@ def get_random_quiz_items(category: str, amount: int):
                 FROM {model_table} m
                 INNER JOIN {through_table} t
                     ON t.{model_name}_id = m.id
-                WHERE m.category = %s
-                AND t.examsession_id = (
+                WHERE t.examsession_id = (
                     SELECT id
                     FROM {ExamSession._meta.db_table}
                     ORDER BY year DESC, month DESC
                     LIMIT 1
                 )
+                {category_clause}
                 ORDER BY RANDOM()
                 LIMIT %s
             )
         """)
 
-		params.append(category)
+		if category:
+			params.append(category)
 		params.append(per_model_amount)
 
 	sql = f"""

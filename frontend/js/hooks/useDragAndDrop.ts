@@ -1,10 +1,18 @@
 ﻿import { useMemo, useState } from "react"
+import { useValidation } from "@/hooks/useValidation"
 import { useValuePool } from "@/lib/utils"
 import { ValidationStatus } from "@/types/enums"
 import type { DragAndDropModel } from "@/types/models"
 import type { CellValue, ValidationState } from "@/types/quiz"
 
-export function useDragAndDrop(item: DragAndDropModel) {
+type UseDragAndDropOptions = {
+	forceValidation?: boolean
+}
+
+export function useDragAndDrop(
+	item: DragAndDropModel,
+	options?: UseDragAndDropOptions,
+) {
 	const allValues = useMemo(
 		() => item.content.flatMap((group) => group.values),
 		[item],
@@ -13,7 +21,8 @@ export function useDragAndDrop(item: DragAndDropModel) {
 	const { availableValues, removeValueFromAvailable, returnValueToAvailable } =
 		useValuePool(allValues)
 
-	const [showValidation, setShowValidation] = useState(false)
+	const { showValidation, setShowValidation, showValidationButton } =
+		useValidation(options)
 
 	const maxRows = Math.max(...item.content.map((group) => group.values.length))
 	const columnCount = item.content.length
@@ -101,6 +110,7 @@ export function useDragAndDrop(item: DragAndDropModel) {
 		availableValues,
 		showValidation,
 		setShowValidation,
+		showValidationButton,
 		maxRows,
 		tableValues,
 		totalScore,

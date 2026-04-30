@@ -1,4 +1,4 @@
-﻿import AddAnswerButton from "@/components/quiz/shared/AddAnswerButton"
+import AddAnswerButton from "@/components/quiz/shared/AddAnswerButton"
 import PostValidationNotes from "@/components/quiz/shared/PostValidationNotes"
 import QuizCard from "@/components/quiz/shared/QuizCard"
 import RemoveAnswerButton from "@/components/quiz/shared/RemoveAnswerButton"
@@ -12,13 +12,19 @@ import type { OpenEndedModel } from "@/types/models"
 type OpenEndedProps = {
 	item: OpenEndedModel
 	item_index: number
+	forceValidation?: boolean
 }
 
-export default function OpenEnded({ item, item_index }: OpenEndedProps) {
+export default function OpenEnded({
+	item,
+	item_index,
+	forceValidation,
+}: OpenEndedProps) {
 	const {
 		answers,
 		showValidation,
 		setShowValidation,
+		showValidationButton,
 		hasAtLeastOneAnswer,
 		states,
 		correctAnswersCount,
@@ -28,21 +34,20 @@ export default function OpenEnded({ item, item_index }: OpenEndedProps) {
 		removeAnswerField,
 		updateAnswer,
 		minCorrectAnswers,
-	} = useOpenEnded(item)
+	} = useOpenEnded(item, { forceValidation })
 
 	return (
 		<QuizCard
-			title={`Ερώτηση ${item_index}`}
+			title={`???t?s? ${item_index}`}
 			promptText={item.content.prompt_text}
 			promptAssetUrl={item.content.prompt_asset_url}
 		>
 			<div className="space-y-3">
 				{answers.map((answer, index) => (
-					// biome-ignore lint/suspicious/noArrayIndexKey: index used only for placeholder and validation state lookup
 					<div key={index} className="flex items-center gap-2">
 						<Input
 							type="text"
-							placeholder={`Απάντηση ${index + 1}`}
+							placeholder={`?p??t?s? ${index + 1}`}
 							value={answer}
 							onChange={(e) => updateAnswer(index, e.target.value)}
 							disabled={showValidation}
@@ -64,7 +69,7 @@ export default function OpenEnded({ item, item_index }: OpenEndedProps) {
 
 				{canAddAnswer && <AddAnswerButton onClick={addAnswerField} />}
 
-				{hasAtLeastOneAnswer && (
+				{hasAtLeastOneAnswer && showValidationButton && (
 					<ValidationButton
 						showValidation={showValidation}
 						onValidate={() => setShowValidation(true)}
@@ -75,7 +80,7 @@ export default function OpenEnded({ item, item_index }: OpenEndedProps) {
 
 				{showValidation && (
 					<PostValidationNotes
-						title="Σωστές απαντήσεις που λείπουν:"
+						title="S?st?? apa?t?se?? p?? ?e?p???:"
 						notes={missedAnswers}
 					/>
 				)}

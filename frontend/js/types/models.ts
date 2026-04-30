@@ -80,22 +80,22 @@ export interface MatchingModel extends QuizBase {
 	content: MatchingContent
 }
 
-interface FillBlankChoice {
+export interface FillBlankChoice {
 	text: string
 	is_correct: boolean
 }
 
-interface FillBlankTextPart {
+export interface FillBlankTextPart {
 	text: string
 	is_blank: boolean
 	choices?: FillBlankChoice[]
 }
 
-interface FillBlankText {
+export interface FillBlankText {
 	parts: FillBlankTextPart[]
 }
 
-interface FillInTheBlankContent {
+export interface FillInTheBlankContent {
 	prompt_asset_url?: string
 	prompt_instruction_choices?: string[]
 	has_multiple_choices: boolean

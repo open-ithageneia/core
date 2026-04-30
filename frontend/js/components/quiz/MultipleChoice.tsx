@@ -1,4 +1,4 @@
-﻿import QuizCard from "@/components/quiz/shared/QuizCard"
+import QuizCard from "@/components/quiz/shared/QuizCard"
 import ValidationButton from "@/components/quiz/shared/ValidationButton"
 import { useMultipleChoice } from "@/hooks/useMultipleChoice"
 import { cn } from "@/lib/utils"
@@ -8,33 +8,35 @@ import type { StatementModel } from "@/types/models"
 type MultipleChoiceProps = {
 	item: StatementModel
 	item_index: number
+	forceValidation?: boolean
 }
 
 export default function MultipleChoice({
 	item,
 	item_index,
+	forceValidation,
 }: MultipleChoiceProps) {
 	const {
 		selectedIndex,
 		showValidation,
 		setShowValidation,
+		showValidationButton,
 		hasSelection,
 		selectChoice,
 		choiceStates,
 		correctAnswersCount,
 		choices,
-	} = useMultipleChoice(item)
+	} = useMultipleChoice(item, { forceValidation })
 
 	return (
 		<QuizCard
-			title={`Ερώτηση ${item_index}`}
+			title={`???t?s? ${item_index}`}
 			promptText={item.content.prompt_text}
 			promptAssetUrl={item.content.prompt_asset_url}
 		>
 			<div className="space-y-3">
 				{choices.map((choice, index) => (
 					<button
-						// biome-ignore lint/suspicious/noArrayIndexKey: stable list of choices
 						key={index}
 						type="button"
 						disabled={showValidation}
@@ -57,14 +59,14 @@ export default function MultipleChoice({
 						{choice.asset_url && (
 							<img
 								src={choice.asset_url}
-								alt={choice.text ?? `Επιλογή ${index + 1}`}
+								alt={choice.text ?? `?p????? ${index + 1}`}
 								className="mt-2 max-h-40 rounded"
 							/>
 						)}
 					</button>
 				))}
 
-				{hasSelection && (
+				{hasSelection && showValidationButton && (
 					<ValidationButton
 						showValidation={showValidation}
 						onValidate={() => setShowValidation(true)}

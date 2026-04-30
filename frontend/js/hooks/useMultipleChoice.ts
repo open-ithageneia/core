@@ -1,11 +1,20 @@
 ﻿import { useCallback, useMemo, useState } from "react"
+import { useValidation } from "@/hooks/useValidation"
 import { ValidationStatus } from "@/types/enums"
 import type { StatementModel } from "@/types/models"
 import type { ValidationState } from "@/types/quiz"
 
-export function useMultipleChoice(item: StatementModel) {
+type UseMultipleChoiceOptions = {
+	forceValidation?: boolean
+}
+
+export function useMultipleChoice(
+	item: StatementModel,
+	options?: UseMultipleChoiceOptions,
+) {
 	const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-	const [showValidation, setShowValidation] = useState(false)
+	const { showValidation, setShowValidation, showValidationButton } =
+		useValidation(options)
 
 	const choices = item.content.choices
 
@@ -39,6 +48,7 @@ export function useMultipleChoice(item: StatementModel) {
 		selectedIndex,
 		showValidation,
 		setShowValidation,
+		showValidationButton,
 		hasSelection,
 		selectChoice,
 		choiceStates,

@@ -16,13 +16,15 @@ import type { DragAndDropModel } from "@/types/models"
 
 type DragNDropProps = {
 	item: DragAndDropModel
+	forceValidation?: boolean
 }
 
-export default function DragAndDrop({ item }: DragNDropProps) {
+export default function DragAndDrop({ item, forceValidation }: DragNDropProps) {
 	const {
 		availableValues,
 		showValidation,
 		setShowValidation,
+		showValidationButton,
 		maxRows,
 		tableValues,
 		totalScore,
@@ -31,7 +33,7 @@ export default function DragAndDrop({ item }: DragNDropProps) {
 		clearCell,
 		getCellValidationState,
 		handleDragEnd,
-	} = useDragAndDrop(item)
+	} = useDragAndDrop(item, { forceValidation })
 
 	return (
 		<QuizCard title="Drag and Drop">
@@ -77,7 +79,6 @@ export default function DragAndDrop({ item }: DragNDropProps) {
 						<TableBody>
 							{Array.from({ length: maxRows }).map((_, rowIndex) => (
 								<TableRow
-									// biome-ignore lint/suspicious/noArrayIndexKey: static grid, order never changes
 									key={`row-${rowIndex}`}
 									className={rowIndex % 2 === 0 ? "bg-muted/20" : ""}
 								>
@@ -90,7 +91,6 @@ export default function DragAndDrop({ item }: DragNDropProps) {
 
 										return (
 											<TableCell
-												// biome-ignore lint/suspicious/noArrayIndexKey: static grid, order never changes
 												key={`${group.title}-${rowIndex}`}
 												className={colIndex !== 0 ? "border-l" : ""}
 											>
@@ -111,7 +111,7 @@ export default function DragAndDrop({ item }: DragNDropProps) {
 					</Table>
 				</div>
 
-				{isTableComplete && (
+				{isTableComplete && showValidationButton && (
 					<ValidationButton
 						showValidation={showValidation}
 						onValidate={() => setShowValidation(true)}
