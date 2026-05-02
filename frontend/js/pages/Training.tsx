@@ -1,5 +1,5 @@
 import { router } from "@inertiajs/react"
-import { useCallback, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import DragAndDrop from "@/components/quiz/DragAndDrop"
 import FillInTheBlank from "@/components/quiz/FillInTheBlank"
 import MultipleChoice from "@/components/quiz/MultipleChoice"
@@ -93,10 +93,12 @@ function QuizRenderer({
 	item,
 	index,
 	forceValidation,
+	onScore,
 }: {
 	item: TrainingData[number]
 	index: number
 	forceValidation?: boolean
+	onScore?: (correct: number, total: number) => void
 }) {
 	switch (item.quiz_type) {
 		case "Statement": {
@@ -117,6 +119,7 @@ function QuizRenderer({
 						item={statementItem}
 						item_index={index}
 						forceValidation={forceValidation}
+						onScore={onScore}
 					/>
 				)
 			}
@@ -125,6 +128,7 @@ function QuizRenderer({
 					item={statementItem}
 					item_index={index}
 					forceValidation={forceValidation}
+					onScore={onScore}
 				/>
 			)
 		}
@@ -134,7 +138,7 @@ function QuizRenderer({
 				category: item.category,
 				content: item.content as DragAndDropContent,
 			} as DragAndDropModel
-			return <DragAndDrop item={dndItem} forceValidation={forceValidation} />
+			return <DragAndDrop item={dndItem} forceValidation={forceValidation} onScore={onScore} />
 		}
 		case "OpenEnded": {
 			const openEndedItem = {
@@ -147,6 +151,7 @@ function QuizRenderer({
 					item={openEndedItem}
 					item_index={index}
 					forceValidation={forceValidation}
+					onScore={onScore}
 				/>
 			)
 		}
@@ -161,6 +166,7 @@ function QuizRenderer({
 					item={fitbItem}
 					item_index={index}
 					forceValidation={forceValidation}
+					onScore={onScore}
 				/>
 			)
 		}
@@ -176,6 +182,34 @@ function QuizRenderer({
 function TrainingSession({ data }: { data: TrainingData }) {
 	const [currentIndex, setCurrentIndex] = useState(0)
 	const [finished, setFinished] = useState(false)
+	const scoresRef = useRef<Map<number, { correct: number; total: number }>>(
+		new Map(),
+	)
+	const [scoreVersion, setScoreVersion] = useState(0)
+
+	const POINTS_PER_QUESTION = 2
+
+	const scoreCallbacks = useMemo(
+		() =>
+			data.map(
+				(_, index) => (correct: number, total: number) => {
+					scoresRef.current.set(index, { correct, total })
+					setScoreVersion((v) => v + 1)
+				},
+			),
+		[data],
+	)
+
+	const { earnedPoints, maxPoints } = useMemo(() => {
+		// Force recalc when scoreVersion changes
+		void scoreVersion
+		let earned = 0
+		const max = data.length * POINTS_PER_QUESTION
+		for (const { correct, total } of scoresRef.current.values()) {
+			earned += total > 0 ? (correct / total) * POINTS_PER_QUESTION : 0
+		}
+		return { earnedPoints: Math.round(earned * 100) / 100, maxPoints: max }
+	}, [scoreVersion, data.length])
 
 	const total = data.length
 	const isFirst = currentIndex === 0
@@ -208,6 +242,9 @@ function TrainingSession({ data }: { data: TrainingData }) {
 			{finished && (
 				<div className="rounded-2xl bg-white p-6 text-center shadow-sm">
 					<h1 className="mb-2 text-2xl font-bold">Αποτελέσματα</h1>
+					<p className="mb-2 text-3xl font-bold text-blue-600">
+						{earnedPoints} / {maxPoints}
+					</p>
 					<p className="mb-4 text-sm text-gray-600">
 						Δείτε τις σωστές και λάθος απαντήσεις σας παρακάτω.
 					</p>
@@ -251,6 +288,7 @@ function TrainingSession({ data }: { data: TrainingData }) {
 						item={item}
 						index={idx + 1}
 						forceValidation={!!finished}
+						onScore={scoreCallbacks[idx]}
 					/>
 				</div>
 			))}

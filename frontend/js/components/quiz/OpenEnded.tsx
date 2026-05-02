@@ -1,6 +1,7 @@
 import AddAnswerButton from "@/components/quiz/shared/AddAnswerButton"
 import PostValidationNotes from "@/components/quiz/shared/PostValidationNotes"
 import QuizCard from "@/components/quiz/shared/QuizCard"
+import QuizScore from "@/components/quiz/shared/QuizScore"
 import RemoveAnswerButton from "@/components/quiz/shared/RemoveAnswerButton"
 import ValidationButton from "@/components/quiz/shared/ValidationButton"
 import { Input } from "@/components/ui/input"
@@ -8,17 +9,20 @@ import { useOpenEnded } from "@/hooks/useOpenEnded"
 import { cn } from "@/lib/utils"
 import { ValidationStatus } from "@/types/enums"
 import type { OpenEndedModel } from "@/types/models"
+import { useEffect } from "react"
 
 type OpenEndedProps = {
 	item: OpenEndedModel
 	item_index: number
 	forceValidation?: boolean
+	onScore?: (correct: number, total: number) => void
 }
 
 export default function OpenEnded({
 	item,
 	item_index,
 	forceValidation,
+	onScore,
 }: OpenEndedProps) {
 	const {
 		answers,
@@ -35,6 +39,12 @@ export default function OpenEnded({
 		updateAnswer,
 		minCorrectAnswers,
 	} = useOpenEnded(item, { forceValidation })
+
+	useEffect(() => {
+		if (showValidation && onScore) {
+			onScore(correctAnswersCount, minCorrectAnswers)
+		}
+	}, [showValidation, onScore, correctAnswersCount, minCorrectAnswers])
 
 	return (
 		<QuizCard
@@ -73,8 +83,6 @@ export default function OpenEnded({
 					<ValidationButton
 						showValidation={showValidation}
 						onValidate={() => setShowValidation(true)}
-						correctAnswersCount={correctAnswersCount}
-						totalScore={minCorrectAnswers}
 					/>
 				)}
 
@@ -84,6 +92,12 @@ export default function OpenEnded({
 						notes={missedAnswers}
 					/>
 				)}
+
+				<QuizScore
+					correctAnswersCount={correctAnswersCount}
+					totalSubAnswers={minCorrectAnswers}
+					showValidation={showValidation}
+				/>
 			</div>
 		</QuizCard>
 	)

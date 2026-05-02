@@ -1,19 +1,23 @@
 import QuizCard from "@/components/quiz/shared/QuizCard"
+import QuizScore from "@/components/quiz/shared/QuizScore"
 import ValidationButton from "@/components/quiz/shared/ValidationButton"
 import { useTrueFalse } from "@/hooks/useTrueFalse"
 import { cn } from "@/lib/utils"
 import type { StatementModel } from "@/types/models"
+import { useEffect } from "react"
 
 type TrueFalseProps = {
 	item: StatementModel
 	item_index: number
 	forceValidation?: boolean
+	onScore?: (correct: number, total: number) => void
 }
 
 export default function TrueFalse({
 	item,
 	item_index,
 	forceValidation,
+	onScore,
 }: TrueFalseProps) {
 	const {
 		choices,
@@ -26,6 +30,12 @@ export default function TrueFalse({
 		results,
 		correctAnswersCount,
 	} = useTrueFalse(item, { forceValidation })
+
+	useEffect(() => {
+		if (showValidation && onScore) {
+			onScore(correctAnswersCount, choices.length)
+		}
+	}, [showValidation, onScore, correctAnswersCount, choices.length])
 
 	return (
 		<QuizCard
@@ -99,11 +109,15 @@ export default function TrueFalse({
 					<ValidationButton
 						showValidation={showValidation}
 						onValidate={() => setShowValidation(true)}
-						correctAnswersCount={correctAnswersCount}
-						totalScore={choices.length}
 					/>
 				</div>
 			)}
+
+			<QuizScore
+				correctAnswersCount={correctAnswersCount}
+				totalSubAnswers={choices.length}
+				showValidation={showValidation}
+			/>
 		</QuizCard>
 	)
 }

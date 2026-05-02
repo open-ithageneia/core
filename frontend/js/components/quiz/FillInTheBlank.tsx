@@ -2,23 +2,27 @@
 import DraggableChip from "@/components/quiz/shared/DraggableChip"
 import DroppableCell from "@/components/quiz/shared/DroppableCell"
 import QuizCard from "@/components/quiz/shared/QuizCard"
+import QuizScore from "@/components/quiz/shared/QuizScore"
 import ValidationButton from "@/components/quiz/shared/ValidationButton"
 import { Input } from "@/components/ui/input"
 import { useFillInTheBlank } from "@/hooks/useFillInTheBlank"
 import { cn } from "@/lib/utils"
 import { ValidationStatus } from "@/types/enums"
 import type { FillInTheBlankModel } from "@/types/models"
+import { useEffect } from "react"
 
 type FillInTheBlankProps = {
 	item: FillInTheBlankModel
 	item_index: number
 	forceValidation?: boolean
+	onScore?: (correct: number, total: number) => void
 }
 
 export default function FillInTheBlank({
 	item,
 	item_index,
 	forceValidation,
+	onScore,
 }: FillInTheBlankProps) {
 	const {
 		content,
@@ -38,6 +42,12 @@ export default function FillInTheBlank({
 		clearDroppedValue,
 		handleDragEnd,
 	} = useFillInTheBlank(item, { forceValidation })
+
+	useEffect(() => {
+		if (showValidation && onScore) {
+			onScore(correctAnswersCount, blanks.length)
+		}
+	}, [showValidation, onScore, correctAnswersCount, blanks.length])
 
 	// Map (textIndex, partIndex) → flat blank index for lookup
 	let blankCounter = 0
@@ -184,11 +194,15 @@ export default function FillInTheBlank({
 					<ValidationButton
 						showValidation={showValidation}
 						onValidate={() => setShowValidation(true)}
-						correctAnswersCount={correctAnswersCount}
-						totalScore={blanks.length}
 					/>
 				</div>
 			)}
+
+			<QuizScore
+				correctAnswersCount={correctAnswersCount}
+				totalSubAnswers={blanks.length}
+				showValidation={showValidation}
+			/>
 		</>
 	)
 

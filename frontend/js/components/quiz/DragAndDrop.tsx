@@ -2,6 +2,7 @@ import { DragDropProvider } from "@dnd-kit/react"
 import DraggableChip from "@/components/quiz/shared/DraggableChip"
 import DroppableCell from "@/components/quiz/shared/DroppableCell"
 import QuizCard from "@/components/quiz/shared/QuizCard"
+import QuizScore from "@/components/quiz/shared/QuizScore"
 import ValidationButton from "@/components/quiz/shared/ValidationButton"
 import {
 	Table,
@@ -13,13 +14,15 @@ import {
 } from "@/components/ui/table"
 import { useDragAndDrop } from "@/hooks/useDragAndDrop"
 import type { DragAndDropModel } from "@/types/models"
+import { useEffect } from "react"
 
 type DragNDropProps = {
 	item: DragAndDropModel
 	forceValidation?: boolean
+	onScore?: (correct: number, total: number) => void
 }
 
-export default function DragAndDrop({ item, forceValidation }: DragNDropProps) {
+export default function DragAndDrop({ item, forceValidation, onScore }: DragNDropProps) {
 	const {
 		availableValues,
 		showValidation,
@@ -34,6 +37,12 @@ export default function DragAndDrop({ item, forceValidation }: DragNDropProps) {
 		getCellValidationState,
 		handleDragEnd,
 	} = useDragAndDrop(item, { forceValidation })
+
+	useEffect(() => {
+		if (showValidation && onScore) {
+			onScore(correctAnswersCount, totalScore)
+		}
+	}, [showValidation, onScore, correctAnswersCount, totalScore])
 
 	return (
 		<QuizCard title="Drag and Drop">
@@ -115,10 +124,14 @@ export default function DragAndDrop({ item, forceValidation }: DragNDropProps) {
 					<ValidationButton
 						showValidation={showValidation}
 						onValidate={() => setShowValidation(true)}
-						correctAnswersCount={correctAnswersCount}
-						totalScore={totalScore}
 					/>
 				)}
+
+				<QuizScore
+					correctAnswersCount={correctAnswersCount}
+					totalSubAnswers={totalScore}
+					showValidation={showValidation}
+				/>
 			</DragDropProvider>
 		</QuizCard>
 	)
