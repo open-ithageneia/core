@@ -12,9 +12,7 @@ export function useMultipleChoice(
 	item: StatementModel,
 	options?: UseMultipleChoiceOptions,
 ) {
-	const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
-		new Set(),
-	)
+	const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set())
 	const { showValidation, setShowValidation, showValidationButton } =
 		useValidation(options)
 

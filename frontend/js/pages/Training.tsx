@@ -138,7 +138,13 @@ function QuizRenderer({
 				category: item.category,
 				content: item.content as DragAndDropContent,
 			} as DragAndDropModel
-			return <DragAndDrop item={dndItem} forceValidation={forceValidation} onScore={onScore} />
+			return (
+				<DragAndDrop
+					item={dndItem}
+					forceValidation={forceValidation}
+					onScore={onScore}
+				/>
+			)
 		}
 		case "OpenEnded": {
 			const openEndedItem = {
@@ -191,12 +197,10 @@ function TrainingSession({ data }: { data: TrainingData }) {
 
 	const scoreCallbacks = useMemo(
 		() =>
-			data.map(
-				(_, index) => (correct: number, total: number) => {
-					scoresRef.current.set(index, { correct, total })
-					setScoreVersion((v) => v + 1)
-				},
-			),
+			data.map((_, index) => (correct: number, total: number) => {
+				scoresRef.current.set(index, { correct, total })
+				setScoreVersion((v) => v + 1)
+			}),
 		[data],
 	)
 

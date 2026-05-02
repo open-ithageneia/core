@@ -14,7 +14,9 @@ export default function QuizScore({
 	if (!showValidation || totalSubAnswers === 0) return null
 
 	const earned =
-		Math.round((correctAnswersCount / totalSubAnswers) * POINTS_PER_QUESTION * 100) / 100
+		Math.round(
+			(correctAnswersCount / totalSubAnswers) * POINTS_PER_QUESTION * 100,
+		) / 100
 
 	return (
 		<p className="mt-3 text-center text-sm font-medium text-muted-foreground">
@@ -22,4 +24,3 @@ export default function QuizScore({
 		</p>
 	)
 }
-

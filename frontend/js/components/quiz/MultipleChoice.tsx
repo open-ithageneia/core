@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import QuizCard from "@/components/quiz/shared/QuizCard"
 import QuizScore from "@/components/quiz/shared/QuizScore"
 import ValidationButton from "@/components/quiz/shared/ValidationButton"
@@ -5,7 +6,6 @@ import { useMultipleChoice } from "@/hooks/useMultipleChoice"
 import { cn } from "@/lib/utils"
 import { ValidationStatus } from "@/types/enums"
 import type { StatementModel } from "@/types/models"
-import { useEffect } from "react"
 
 type MultipleChoiceProps = {
 	item: StatementModel
@@ -63,7 +63,9 @@ export default function MultipleChoice({
 							!showValidation &&
 								selectedIndices.has(index) &&
 								"border-blue-500 bg-blue-50 dark:bg-blue-950",
-							!showValidation && !selectedIndices.has(index) && "hover:bg-muted",
+							!showValidation &&
+								!selectedIndices.has(index) &&
+								"hover:bg-muted",
 							showValidation &&
 								choiceStates[index] === ValidationStatus.Correct &&
 								"border-green-500 bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-300",

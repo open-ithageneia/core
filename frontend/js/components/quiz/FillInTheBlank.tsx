@@ -1,4 +1,5 @@
 ﻿import { DragDropProvider } from "@dnd-kit/react"
+import { useEffect } from "react"
 import DraggableChip from "@/components/quiz/shared/DraggableChip"
 import DroppableCell from "@/components/quiz/shared/DroppableCell"
 import QuizCard from "@/components/quiz/shared/QuizCard"
@@ -9,7 +10,6 @@ import { useFillInTheBlank } from "@/hooks/useFillInTheBlank"
 import { cn } from "@/lib/utils"
 import { ValidationStatus } from "@/types/enums"
 import type { FillInTheBlankModel } from "@/types/models"
-import { useEffect } from "react"
 
 type FillInTheBlankProps = {
 	item: FillInTheBlankModel

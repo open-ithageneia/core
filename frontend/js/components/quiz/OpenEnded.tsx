@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import AddAnswerButton from "@/components/quiz/shared/AddAnswerButton"
 import PostValidationNotes from "@/components/quiz/shared/PostValidationNotes"
 import QuizCard from "@/components/quiz/shared/QuizCard"
@@ -9,7 +10,6 @@ import { useOpenEnded } from "@/hooks/useOpenEnded"
 import { cn } from "@/lib/utils"
 import { ValidationStatus } from "@/types/enums"
 import type { OpenEndedModel } from "@/types/models"
-import { useEffect } from "react"
 
 type OpenEndedProps = {
 	item: OpenEndedModel

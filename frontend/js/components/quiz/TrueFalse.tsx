@@ -1,10 +1,10 @@
+import { useEffect } from "react"
 import QuizCard from "@/components/quiz/shared/QuizCard"
 import QuizScore from "@/components/quiz/shared/QuizScore"
 import ValidationButton from "@/components/quiz/shared/ValidationButton"
 import { useTrueFalse } from "@/hooks/useTrueFalse"
 import { cn } from "@/lib/utils"
 import type { StatementModel } from "@/types/models"
-import { useEffect } from "react"
 
 type TrueFalseProps = {
 	item: StatementModel

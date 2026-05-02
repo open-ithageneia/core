@@ -1,4 +1,5 @@
 import { DragDropProvider } from "@dnd-kit/react"
+import { useEffect } from "react"
 import DraggableChip from "@/components/quiz/shared/DraggableChip"
 import DroppableCell from "@/components/quiz/shared/DroppableCell"
 import QuizCard from "@/components/quiz/shared/QuizCard"
@@ -14,7 +15,6 @@ import {
 } from "@/components/ui/table"
 import { useDragAndDrop } from "@/hooks/useDragAndDrop"
 import type { DragAndDropModel } from "@/types/models"
-import { useEffect } from "react"
 
 type DragNDropProps = {
 	item: DragAndDropModel
@@ -22,7 +22,11 @@ type DragNDropProps = {
 	onScore?: (correct: number, total: number) => void
 }
 
-export default function DragAndDrop({ item, forceValidation, onScore }: DragNDropProps) {
+export default function DragAndDrop({
+	item,
+	forceValidation,
+	onScore,
+}: DragNDropProps) {
 	const {
 		availableValues,
 		showValidation,
