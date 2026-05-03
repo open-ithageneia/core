@@ -11,7 +11,6 @@ def get_admin_image_thumb_preview(image):
 def get_nav(request):
 	items = {
 		"home": ("Αρχική", "home"),
-		"playground": ("Παίξε και μάθε", "quiz:playground"),
 		"training": ("Τεστ προσομοίωσης", "quiz:training"),
 		"dnd_playground": ("Drag N Drop playground", "quiz:dnd_playground"),
 		"open_ended_playground": (
@@ -21,6 +20,14 @@ def get_nav(request):
 		"multiple_choice_playground": (
 			"Multiple Choice playground",
 			"quiz:multiple_choice_playground",
+		),
+		"true_false_playground": (
+			"True False playground",
+			"quiz:true_false_playground",
+		),
+		"fill_in_the_blank_playground": (
+			"Fill in the Blank playground",
+			"quiz:fill_in_the_blank_playground",
 		),
 	}
 

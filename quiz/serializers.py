@@ -158,6 +158,7 @@ class OpenEndedSerializer(ParsedContentMixin, serializers.ModelSerializer):
 
 class ExerciseQuerySerializer(serializers.Serializer):
 	category = serializers.ChoiceField(
-		default="", choices=AbstractQuiz.QuizCategory.choices
+		default="",
+		choices=[("", "All")] + list(AbstractQuiz.QuizCategory.choices),
 	)
 	amount = serializers.ChoiceField(default=10, choices=[5, 10, 20])

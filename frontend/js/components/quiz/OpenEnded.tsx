@@ -1,6 +1,8 @@
-﻿import AddAnswerButton from "@/components/quiz/shared/AddAnswerButton"
+import { useEffect } from "react"
+import AddAnswerButton from "@/components/quiz/shared/AddAnswerButton"
 import PostValidationNotes from "@/components/quiz/shared/PostValidationNotes"
 import QuizCard from "@/components/quiz/shared/QuizCard"
+import QuizScore from "@/components/quiz/shared/QuizScore"
 import RemoveAnswerButton from "@/components/quiz/shared/RemoveAnswerButton"
 import ValidationButton from "@/components/quiz/shared/ValidationButton"
 import { Input } from "@/components/ui/input"
@@ -12,13 +14,21 @@ import type { OpenEndedModel } from "@/types/models"
 type OpenEndedProps = {
 	item: OpenEndedModel
 	item_index: number
+	forceValidation?: boolean
+	onScore?: (correct: number, total: number) => void
 }
 
-export default function OpenEnded({ item, item_index }: OpenEndedProps) {
+export default function OpenEnded({
+	item,
+	item_index,
+	forceValidation,
+	onScore,
+}: OpenEndedProps) {
 	const {
 		answers,
 		showValidation,
 		setShowValidation,
+		showValidationButton,
 		hasAtLeastOneAnswer,
 		states,
 		correctAnswersCount,
@@ -28,7 +38,13 @@ export default function OpenEnded({ item, item_index }: OpenEndedProps) {
 		removeAnswerField,
 		updateAnswer,
 		minCorrectAnswers,
-	} = useOpenEnded(item)
+	} = useOpenEnded(item, { forceValidation })
+
+	useEffect(() => {
+		if (showValidation && onScore) {
+			onScore(correctAnswersCount, minCorrectAnswers)
+		}
+	}, [showValidation, onScore, correctAnswersCount, minCorrectAnswers])
 
 	return (
 		<QuizCard
@@ -38,7 +54,6 @@ export default function OpenEnded({ item, item_index }: OpenEndedProps) {
 		>
 			<div className="space-y-3">
 				{answers.map((answer, index) => (
-					// biome-ignore lint/suspicious/noArrayIndexKey: index used only for placeholder and validation state lookup
 					<div key={index} className="flex items-center gap-2">
 						<Input
 							type="text"
@@ -64,12 +79,10 @@ export default function OpenEnded({ item, item_index }: OpenEndedProps) {
 
 				{canAddAnswer && <AddAnswerButton onClick={addAnswerField} />}
 
-				{hasAtLeastOneAnswer && (
+				{hasAtLeastOneAnswer && showValidationButton && (
 					<ValidationButton
 						showValidation={showValidation}
 						onValidate={() => setShowValidation(true)}
-						correctAnswersCount={correctAnswersCount}
-						totalScore={minCorrectAnswers}
 					/>
 				)}
 
@@ -79,6 +92,12 @@ export default function OpenEnded({ item, item_index }: OpenEndedProps) {
 						notes={missedAnswers}
 					/>
 				)}
+
+				<QuizScore
+					correctAnswersCount={correctAnswersCount}
+					totalSubAnswers={minCorrectAnswers}
+					showValidation={showValidation}
+				/>
 			</div>
 		</QuizCard>
 	)
