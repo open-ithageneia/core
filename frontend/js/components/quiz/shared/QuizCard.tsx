@@ -10,6 +10,7 @@ import {
 
 type QuizCardProps = {
 	title: string
+	instruction?: string
 	promptText?: string
 	promptAssetUrl?: string
 	children: ReactNode
@@ -17,6 +18,7 @@ type QuizCardProps = {
 
 export default function QuizCard({
 	title,
+	instruction,
 	promptText,
 	promptAssetUrl,
 	children,
@@ -25,6 +27,9 @@ export default function QuizCard({
 		<Card className="w-full rounded-2xl shadow-sm">
 			<CardHeader>
 				<CardTitle>{title}</CardTitle>
+				{instruction && (
+					<p className="text-sm text-muted-foreground">{instruction}</p>
+				)}
 				{promptText && <CardDescription>{promptText}</CardDescription>}
 				{promptAssetUrl && (
 					<img

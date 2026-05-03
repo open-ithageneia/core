@@ -14,6 +14,7 @@ import {
 	TableRow,
 } from "@/components/ui/table"
 import { useDragAndDrop } from "@/hooks/useDragAndDrop"
+import { QUIZ_INSTRUCTIONS } from "@/types/enums"
 import type { DragAndDropModel } from "@/types/models"
 
 type DragNDropProps = {
@@ -49,7 +50,10 @@ export default function DragAndDrop({
 	}, [showValidation, onScore, correctAnswersCount, totalScore])
 
 	return (
-		<QuizCard title="Drag and Drop">
+		<QuizCard
+			title="Drag and Drop"
+			instruction={QUIZ_INSTRUCTIONS.DRAG_AND_DROP}
+		>
 			<DragDropProvider
 				onDragEnd={({ operation }) => {
 					if (!operation.source || !operation.target) return
