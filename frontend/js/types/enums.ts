@@ -14,3 +14,14 @@ export enum ValidationStatus {
 	Correct = "correct",
 	Incorrect = "incorrect",
 }
+
+export const QUIZ_INSTRUCTIONS = {
+	TRUE_FALSE: "Επιλέξτε τη σωστή απάντηση",
+	MULTIPLE_CHOICE_SINGLE: "Επιλέξτε τη σωστή απάντηση",
+	MULTIPLE_CHOICE_MULTI: "Επιλέξτε τις σωστές απαντήσεις",
+	DRAG_AND_DROP: "Σύρετε και αποθέστε στη σωστή θέση",
+	MATCHING: "Αντιστοιχίστε τα σωστά ζεύγη",
+	FILL_IN_THE_BLANK: "Συμπληρώστε τα κενά",
+} as const
+
+export type QuizType = keyof typeof QUIZ_INSTRUCTIONS

@@ -4,7 +4,7 @@ import QuizScore from "@/components/quiz/shared/QuizScore"
 import ValidationButton from "@/components/quiz/shared/ValidationButton"
 import { useMultipleChoice } from "@/hooks/useMultipleChoice"
 import { cn } from "@/lib/utils"
-import { ValidationStatus } from "@/types/enums"
+import { QUIZ_INSTRUCTIONS, ValidationStatus } from "@/types/enums"
 import type { StatementModel } from "@/types/models"
 
 type MultipleChoiceProps = {
@@ -43,14 +43,14 @@ export default function MultipleChoice({
 	return (
 		<QuizCard
 			title={`Ερώτηση ${item_index}`}
+			instruction={
+				isMultiSelect
+					? QUIZ_INSTRUCTIONS.MULTIPLE_CHOICE_MULTI
+					: QUIZ_INSTRUCTIONS.MULTIPLE_CHOICE_SINGLE
+			}
 			promptText={item.content.prompt_text}
 			promptAssetUrl={item.content.prompt_asset_url}
 		>
-			{isMultiSelect && (
-				<p className="text-sm text-muted-foreground mb-2">
-					Επιλέξτε όλες τις σωστές απαντήσεις.
-				</p>
-			)}
 			<div className="space-y-3">
 				{choices.map((choice, index) => (
 					<button

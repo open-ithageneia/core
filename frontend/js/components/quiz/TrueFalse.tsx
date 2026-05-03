@@ -4,6 +4,7 @@ import QuizScore from "@/components/quiz/shared/QuizScore"
 import ValidationButton from "@/components/quiz/shared/ValidationButton"
 import { useTrueFalse } from "@/hooks/useTrueFalse"
 import { cn } from "@/lib/utils"
+import { QUIZ_INSTRUCTIONS } from "@/types/enums"
 import type { StatementModel } from "@/types/models"
 
 type TrueFalseProps = {
@@ -40,6 +41,7 @@ export default function TrueFalse({
 	return (
 		<QuizCard
 			title={`Ερώτηση ${item_index}`}
+			instruction={QUIZ_INSTRUCTIONS.TRUE_FALSE}
 			promptText={item.content.prompt_text}
 			promptAssetUrl={item.content.prompt_asset_url}
 		>

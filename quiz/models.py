@@ -143,6 +143,12 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
 
 
 class Statement(AbstractQuiz):
+	INSTRUCTION_TEXT = {
+		"TRUE_FALSE": "Επιλέξτε τη σωστή απάντηση",
+		"MULTIPLE_CHOICE_SINGLE": "Επιλέξτε τη σωστή απάντηση",
+		"MULTIPLE_CHOICE_MULTI": "Επιλέξτε τις σωστές απαντήσεις",
+	}
+
 	class QuizType(models.TextChoices):
 		TRUE_FALSE = "TRUE_FALSE", "True/False"
 		MULTIPLE_CHOICE = "MULTIPLE_CHOICE", "Multiple Choice"
@@ -206,6 +212,8 @@ class Statement(AbstractQuiz):
 
 
 class DragAndDrop(AbstractQuiz):
+	INSTRUCTION_TEXT = "Σύρετε και αποθέστε στη σωστή θέση"
+
 	content = JSONField(
 		blank=True, default=list, schema=DragAndDropContent.DRAG_AND_DROP_CONTENT_SCHEMA
 	)
@@ -218,6 +226,8 @@ class DragAndDrop(AbstractQuiz):
 
 
 class Matching(AbstractQuiz):
+	INSTRUCTION_TEXT = "Αντιστοιχίστε τα σωστά ζεύγη"
+
 	content = JSONField(
 		blank=True, default=list, schema=MatchingContent.MATCHING_CONTENT_SCHEMA
 	)
@@ -230,6 +240,8 @@ class Matching(AbstractQuiz):
 
 
 class FillInTheBlank(AbstractQuiz):
+	INSTRUCTION_TEXT = "Συμπληρώστε τα κενά"
+
 	content = JSONField(
 		blank=True,
 		default=dict,

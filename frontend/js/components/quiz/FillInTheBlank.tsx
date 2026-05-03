@@ -8,7 +8,7 @@ import ValidationButton from "@/components/quiz/shared/ValidationButton"
 import { Input } from "@/components/ui/input"
 import { useFillInTheBlank } from "@/hooks/useFillInTheBlank"
 import { cn } from "@/lib/utils"
-import { ValidationStatus } from "@/types/enums"
+import { QUIZ_INSTRUCTIONS, ValidationStatus } from "@/types/enums"
 import type { FillInTheBlankModel } from "@/types/models"
 
 type FillInTheBlankProps = {
@@ -211,6 +211,7 @@ export default function FillInTheBlank({
 		return (
 			<QuizCard
 				title={`Ερώτηση ${item_index}`}
+				instruction={QUIZ_INSTRUCTIONS.FILL_IN_THE_BLANK}
 				promptAssetUrl={content.prompt_asset_url}
 			>
 				<DragDropProvider
@@ -249,6 +250,7 @@ export default function FillInTheBlank({
 	return (
 		<QuizCard
 			title={`Ερώτηση ${item_index}`}
+			instruction={QUIZ_INSTRUCTIONS.FILL_IN_THE_BLANK}
 			promptAssetUrl={content.prompt_asset_url}
 		>
 			{body}
