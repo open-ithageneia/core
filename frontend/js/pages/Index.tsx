@@ -18,8 +18,8 @@ export default function Home() {
 
 			<div className="flex flex-col gap-3 sm:flex-row">
 				<Button asChild>
-					<Link href={nav.items.dnd_playground.href}>
-						{nav.items.dnd_playground.label}
+					<Link href={nav.items.simulation.href}>
+						{nav.items.simulation.label}
 					</Link>
 				</Button>
 

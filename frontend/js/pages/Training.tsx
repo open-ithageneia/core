@@ -6,9 +6,11 @@ import MultipleChoice from "@/components/quiz/MultipleChoice"
 import OpenEnded from "@/components/quiz/OpenEnded"
 import TrueFalse from "@/components/quiz/TrueFalse"
 import { Button } from "@/components/ui/button"
+import { QUIZ_CATEGORY_LABELS, type QuizCategory } from "@/types/enums"
 import type {
 	DragAndDropContent,
 	DragAndDropModel,
+	ExamSession,
 	FillInTheBlankContent,
 	FillInTheBlankModel,
 	OpenEndedContent,
@@ -24,22 +26,62 @@ type CategoryOption = {
 
 type TrainingProps = {
 	categories: CategoryOption[]
+	exam_sessions: ExamSession[]
 	data: TrainingData | null
 }
 
-function TrainingSetup({ categories }: { categories: CategoryOption[] }) {
+function TrainingSetup({
+	categories,
+	exam_sessions,
+}: {
+	categories: CategoryOption[]
+	exam_sessions: ExamSession[]
+}) {
 	const [category, setCategory] = useState("")
 	const [amount, setAmount] = useState("10")
+	const [examSession, setExamSession] = useState("")
+	const [quizType, setQuizType] = useState("")
 
 	function handleStart() {
 		const params: Record<string, string> = { amount }
 		if (category) params.category = category
+		if (examSession) params.exam_session = examSession
+		if (quizType) params.quiz_type = quizType
 		router.get("/quiz/training", params, { preserveState: false })
 	}
 
 	return (
 		<section className="mx-auto max-w-md rounded-2xl bg-white p-6 shadow-sm sm:p-8">
 			<h1 className="mb-6 text-2xl font-bold">Τεστ προσομοίωσης</h1>
+
+			<div className="mb-4">
+				<label
+					htmlFor="exam-session"
+					className="mb-1 block text-sm font-medium text-gray-700"
+				>
+					Εξεταστική περίοδος
+				</label>
+				<select
+					id="exam-session"
+					value={examSession}
+					onChange={(e) => setExamSession(e.target.value)}
+					className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+				>
+					<option value="">Όλες οι περίοδοι</option>
+					{exam_sessions.map((es) => {
+						const monthName = new Date(es.year, es.month - 1).toLocaleString(
+							"el-GR",
+							{ month: "long" },
+						)
+						return (
+							<option key={es.id} value={String(es.id)}>
+								{monthName.charAt(0).toUpperCase() + monthName.slice(1)}{" "}
+								{es.year}
+							</option>
+						)
+					})}
+				</select>
+			</div>
 
 			<div className="mb-4">
 				<label
@@ -57,9 +99,31 @@ function TrainingSetup({ categories }: { categories: CategoryOption[] }) {
 					<option value="">Όλες οι κατηγορίες</option>
 					{categories.map((c) => (
 						<option key={c.value} value={c.value}>
-							{c.label}
+							{QUIZ_CATEGORY_LABELS[c.value as QuizCategory] ?? c.label}
 						</option>
 					))}
+				</select>
+			</div>
+
+			<div className="mb-6">
+				<label
+					htmlFor="quiz-type"
+					className="mb-1 block text-sm font-medium text-gray-700"
+				>
+					Τύπος ερώτησης
+				</label>
+				<select
+					id="quiz-type"
+					value={quizType}
+					onChange={(e) => setQuizType(e.target.value)}
+					className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+				>
+					<option value="">Όλοι οι τύποι</option>
+					<option value="Statement">Σωστό / Λάθος & Πολλαπλής επιλογής</option>
+					<option value="DragAndDrop">Κατάταξη</option>
+					<option value="Matching">Αντιστοίχηση</option>
+					<option value="FillInTheBlank">Συμπλήρωση κενού</option>
+					<option value="OpenEnded">Ανοιχτή ερώτηση</option>
 				</select>
 			</div>
 
@@ -187,7 +251,7 @@ function QuizRenderer({
 
 function TrainingSession({ data }: { data: TrainingData }) {
 	const [currentIndex, setCurrentIndex] = useState(0)
-	const [finished, setFinished] = useState(false)
+	const [validatedSet, setValidatedSet] = useState<Set<number>>(new Set())
 	const scoresRef = useRef<Map<number, { correct: number; total: number }>>(
 		new Map(),
 	)
@@ -205,7 +269,6 @@ function TrainingSession({ data }: { data: TrainingData }) {
 	)
 
 	const { earnedPoints, maxPoints } = useMemo(() => {
-		// Force recalc when scoreVersion changes
 		void scoreVersion
 		let earned = 0
 		const max = data.length * POINTS_PER_QUESTION
@@ -218,6 +281,12 @@ function TrainingSession({ data }: { data: TrainingData }) {
 	const total = data.length
 	const isFirst = currentIndex === 0
 	const isLast = currentIndex === total - 1
+	const isCurrentValidated = validatedSet.has(currentIndex)
+	const allValidated = validatedSet.size === total
+
+	const handleValidate = useCallback(() => {
+		setValidatedSet((prev) => new Set(prev).add(currentIndex))
+	}, [currentIndex])
 
 	const goNext = useCallback(() => {
 		if (currentIndex < total - 1) setCurrentIndex((i) => i + 1)
@@ -242,15 +311,16 @@ function TrainingSession({ data }: { data: TrainingData }) {
 	}
 
 	return (
-		<section className="space-y-4">
-			{finished && (
+		<section className="flex h-full flex-col">
+			{allValidated && (
 				<div className="rounded-2xl bg-white p-6 text-center shadow-sm">
 					<h1 className="mb-2 text-2xl font-bold">Αποτελέσματα</h1>
 					<p className="mb-2 text-3xl font-bold text-blue-600">
 						{earnedPoints} / {maxPoints}
 					</p>
 					<p className="mb-4 text-sm text-gray-600">
-						Δείτε τις σωστές και λάθος απαντήσεις σας παρακάτω.
+						Μπορείτε να πλοηγηθείτε στις ερωτήσεις για να δείτε τις απαντήσεις
+						σας.
 					</p>
 					<Button
 						variant="outline"
@@ -261,62 +331,69 @@ function TrainingSession({ data }: { data: TrainingData }) {
 				</div>
 			)}
 
-			{!finished && (
-				<div className="rounded-2xl bg-white p-4 shadow-sm">
-					<div className="mb-2 flex items-center justify-between text-sm text-gray-600">
-						<span>
-							Ερώτηση {currentIndex + 1} από {total}
-						</span>
-						<span className="text-xs uppercase tracking-wide text-gray-400">
-							{data[currentIndex].quiz_type}
-						</span>
-					</div>
-					<div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-						<div
-							className="h-full rounded-full bg-blue-500 transition-all duration-300"
-							style={{
-								width: `${((currentIndex + 1) / total) * 100}%`,
-							}}
-						/>
-					</div>
+			<div className="shrink-0 rounded-2xl bg-white p-4 shadow-sm">
+				<div className="mb-2 flex items-center justify-between text-sm text-gray-600">
+					<span>
+						Ερώτηση {currentIndex + 1} από {total}
+					</span>
+					<span className="text-xs uppercase tracking-wide text-gray-400">
+						{data[currentIndex].quiz_type}
+					</span>
 				</div>
-			)}
-
-			{/* Render all components — hide non-current with CSS to preserve state */}
-			{data.map((item, idx) => (
-				<div
-					key={`${item.quiz_type}-${item.id}`}
-					className={!finished && idx !== currentIndex ? "hidden" : undefined}
-				>
-					<QuizRenderer
-						item={item}
-						index={idx + 1}
-						forceValidation={!!finished}
-						onScore={scoreCallbacks[idx]}
+				<div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+					<div
+						className="h-full rounded-full bg-blue-500 transition-all duration-300"
+						style={{
+							width: `${((currentIndex + 1) / total) * 100}%`,
+						}}
 					/>
 				</div>
-			))}
+			</div>
 
-			{!finished && (
-				<div className="flex items-center justify-between rounded-2xl bg-white p-4 shadow-sm">
-					<Button variant="outline" onClick={goPrev} disabled={isFirst}>
-						← Προηγούμενη
-					</Button>
+			<div className="min-h-0 flex-1 py-4">
+				{data.map((item, idx) => (
+					<div
+						key={`${item.quiz_type}-${item.id}`}
+						className={idx !== currentIndex ? "hidden" : "h-full"}
+					>
+						<QuizRenderer
+							item={item}
+							index={idx + 1}
+							forceValidation={validatedSet.has(idx)}
+							onScore={scoreCallbacks[idx]}
+						/>
+					</div>
+				))}
+			</div>
 
-					{isLast ? (
-						<Button onClick={() => setFinished(true)}>Ολοκλήρωση</Button>
-					) : (
-						<Button onClick={goNext}>Επόμενη →</Button>
-					)}
-				</div>
-			)}
+			<div className="sticky bottom-0 flex shrink-0 items-center justify-between rounded-2xl bg-white p-4 shadow-sm">
+				<Button variant="outline" onClick={goPrev} disabled={isFirst}>
+					← Προηγούμενη
+				</Button>
+
+				{!isCurrentValidated ? (
+					<Button onClick={handleValidate}>Έλεγχος</Button>
+				) : isLast ? (
+					allValidated ? null : (
+						<span className="text-sm text-gray-500">✓ Ελεγμένη</span>
+					)
+				) : (
+					<Button onClick={goNext}>Επόμενη →</Button>
+				)}
+			</div>
 		</section>
 	)
 }
 
-export default function Training({ categories, data }: TrainingProps) {
+export default function Training({
+	categories,
+	exam_sessions,
+	data,
+}: TrainingProps) {
 	if (!data) {
-		return <TrainingSetup categories={categories} />
+		return (
+			<TrainingSetup categories={categories} exam_sessions={exam_sessions} />
+		)
 	}
 	return <TrainingSession data={data} />
 }

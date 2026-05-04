@@ -10,8 +10,8 @@ const Layout = ({ children }: PropsWithChildren) => {
 	const isActive = (key: string) => nav.current === key
 
 	return (
-		<div className="min-h-screen bg-gray-50 text-gray-900">
-			<header className="border-b bg-white">
+		<div className="flex h-dvh flex-col bg-gray-50 text-gray-900">
+			<header className="shrink-0 border-b bg-white">
 				<div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
 					<Link href={nav.items.home.href} className="text-lg font-semibold">
 						Open Ithageneia
@@ -73,7 +73,9 @@ const Layout = ({ children }: PropsWithChildren) => {
 				</div>
 			</header>
 
-			<main className="mx-auto max-w-6xl px-4 py-6 md:py-10">{children}</main>
+			<main className="mx-auto w-full max-w-6xl flex-1 overflow-y-auto px-4 py-6 md:py-10">
+				{children}
+			</main>
 		</div>
 	)
 }

@@ -24,8 +24,8 @@ export default function QuizCard({
 	children,
 }: QuizCardProps) {
 	return (
-		<Card className="w-full rounded-2xl shadow-sm">
-			<CardHeader>
+		<Card className="flex h-full w-full flex-col rounded-2xl shadow-sm">
+			<CardHeader className="shrink-0">
 				<CardTitle>{title}</CardTitle>
 				{instruction && (
 					<p className="text-sm text-muted-foreground">{instruction}</p>
@@ -40,7 +40,9 @@ export default function QuizCard({
 				)}
 			</CardHeader>
 
-			<CardContent className="space-y-6">{children}</CardContent>
+			<CardContent className="min-h-0 flex-1 space-y-6 overflow-y-auto">
+				{children}
+			</CardContent>
 		</Card>
 	)
 }

@@ -43,7 +43,7 @@ export default function DroppableCell({
 	return (
 		<div
 			ref={ref}
-			className={`flex min-h-14 items-center justify-center rounded-lg border-2 border-dashed p-2 transition-colors ${stateClasses}`}
+			className={`flex min-w-30 min-h-14 items-center justify-center rounded-lg border-2 border-dashed p-2 transition-colors ${stateClasses}`}
 		>
 			{value ? (
 				<div className="flex items-center gap-2">
@@ -64,7 +64,7 @@ export default function DroppableCell({
 				</div>
 			) : (
 				<span className="text-sm text-muted-foreground">
-					{isLocked ? "Κλειδωμένο" : ""}
+					{isLocked ? "---" : ""}
 				</span>
 			)}
 		</div>
