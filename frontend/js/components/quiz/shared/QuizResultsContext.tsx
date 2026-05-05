@@ -2,18 +2,16 @@
 
 type QuizResultsContextType = {
 	badge?: ReactNode
-	hideScore?: boolean
 }
 
 const QuizResultsContext = createContext<QuizResultsContextType>({})
 
 export function QuizResultsProvider({
 	badge,
-	hideScore,
 	children,
 }: QuizResultsContextType & { children: ReactNode }) {
 	return (
-		<QuizResultsContext.Provider value={{ badge, hideScore }}>
+		<QuizResultsContext.Provider value={{ badge }}>
 			{children}
 		</QuizResultsContext.Provider>
 	)

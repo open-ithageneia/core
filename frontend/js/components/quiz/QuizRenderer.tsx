@@ -22,14 +22,12 @@ export function QuizRenderer({
 	forceValidation,
 	onScore,
 	badge,
-	hideScore,
 }: {
 	item: TrainingData[number]
 	index: number
 	forceValidation?: boolean
 	onScore?: (correct: number, total: number) => void
 	badge?: ReactNode
-	hideScore?: boolean
 }) {
 	const content = (() => {
 		switch (item.quiz_type) {
@@ -117,9 +115,5 @@ export function QuizRenderer({
 		}
 	})()
 
-	return (
-		<QuizResultsProvider badge={badge} hideScore={hideScore}>
-			{content}
-		</QuizResultsProvider>
-	)
+	return <QuizResultsProvider badge={badge}>{content}</QuizResultsProvider>
 }

@@ -1,6 +1,5 @@
 import { useEffect } from "react"
 import QuizCard from "@/components/quiz/shared/QuizCard"
-import QuizScore from "@/components/quiz/shared/QuizScore"
 import ValidationButton from "@/components/quiz/shared/ValidationButton"
 import { useMultipleChoice } from "@/hooks/useMultipleChoice"
 import { cn } from "@/lib/utils"
@@ -94,12 +93,6 @@ export default function MultipleChoice({
 						onValidate={() => setShowValidation(true)}
 					/>
 				)}
-
-				<QuizScore
-					correctAnswersCount={correctAnswersCount}
-					totalSubAnswers={totalCorrect}
-					showValidation={showValidation}
-				/>
 			</div>
 		</QuizCard>
 	)

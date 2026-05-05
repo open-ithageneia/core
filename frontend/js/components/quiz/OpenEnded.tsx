@@ -2,7 +2,6 @@ import { useEffect } from "react"
 import AddAnswerButton from "@/components/quiz/shared/AddAnswerButton"
 import PostValidationNotes from "@/components/quiz/shared/PostValidationNotes"
 import QuizCard from "@/components/quiz/shared/QuizCard"
-import QuizScore from "@/components/quiz/shared/QuizScore"
 import RemoveAnswerButton from "@/components/quiz/shared/RemoveAnswerButton"
 import ValidationButton from "@/components/quiz/shared/ValidationButton"
 import { Input } from "@/components/ui/input"
@@ -92,12 +91,6 @@ export default function OpenEnded({
 						notes={missedAnswers}
 					/>
 				)}
-
-				<QuizScore
-					correctAnswersCount={correctAnswersCount}
-					totalSubAnswers={minCorrectAnswers}
-					showValidation={showValidation}
-				/>
 			</div>
 		</QuizCard>
 	)

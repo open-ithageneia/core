@@ -3,7 +3,6 @@ import { useEffect } from "react"
 import DraggableChip from "@/components/quiz/shared/DraggableChip"
 import DroppableCell from "@/components/quiz/shared/DroppableCell"
 import QuizCard from "@/components/quiz/shared/QuizCard"
-import QuizScore from "@/components/quiz/shared/QuizScore"
 import ValidationButton from "@/components/quiz/shared/ValidationButton"
 import { Input } from "@/components/ui/input"
 import { useFillInTheBlank } from "@/hooks/useFillInTheBlank"
@@ -197,53 +196,50 @@ export default function FillInTheBlank({
 					/>
 				</div>
 			)}
-
-			<QuizScore
-				correctAnswersCount={correctAnswersCount}
-				totalSubAnswers={blanks.length}
-				showValidation={showValidation}
-			/>
 		</>
 	)
 
 	// Wrap in DragDropProvider only for choices_shown variant
 	if (variant === "choices_shown") {
-		return (
-			<QuizCard
-				title={`Ερώτηση ${item_index}`}
-				instruction={QUIZ_INSTRUCTIONS.FILL_IN_THE_BLANK}
-				promptAssetUrl={content.prompt_asset_url}
-			>
-				<DragDropProvider
-					onDragEnd={({ operation }) => {
-						if (!operation.source || !operation.target) return
-						handleDragEnd(
-							operation.source.data.value,
-							String(operation.target.id),
-						)
-					}}
-				>
-					<div className="rounded-xl border bg-muted/30 p-4">
-						<div className="flex flex-wrap gap-2">
-							{availableValues.map((value) => (
-								<DraggableChip
-									key={value}
-									id={`fitb-chip-${value}`}
-									value={value}
-									disabled={showValidation}
-								/>
-							))}
-							{availableValues.length === 0 && !showValidation && (
-								<span className="text-sm text-muted-foreground">
-									Όλες οι λέξεις έχουν τοποθετηθεί
-								</span>
-							)}
-						</div>
-					</div>
+		const choicesBank = (
+			<div className="rounded-xl border bg-muted/30 p-4">
+				<div className="flex flex-wrap gap-2">
+					{availableValues.map((value) => (
+						<DraggableChip
+							key={value}
+							id={`fitb-chip-${value}`}
+							value={value}
+							disabled={showValidation}
+						/>
+					))}
+					{availableValues.length === 0 && !showValidation && (
+						<span className="text-sm text-muted-foreground">
+							Όλες οι λέξεις έχουν τοποθετηθεί
+						</span>
+					)}
+				</div>
+			</div>
+		)
 
+		return (
+			<DragDropProvider
+				onDragEnd={({ operation }) => {
+					if (!operation.source || !operation.target) return
+					handleDragEnd(
+						operation.source.data.value,
+						String(operation.target.id),
+					)
+				}}
+			>
+				<QuizCard
+					title={`Ερώτηση ${item_index}`}
+					instruction={QUIZ_INSTRUCTIONS.FILL_IN_THE_BLANK}
+					promptAssetUrl={content.prompt_asset_url}
+					headerExtra={choicesBank}
+				>
 					{body}
-				</DragDropProvider>
-			</QuizCard>
+				</QuizCard>
+			</DragDropProvider>
 		)
 	}
 

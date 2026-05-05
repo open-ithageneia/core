@@ -157,10 +157,7 @@ class OpenEndedSerializer(ParsedContentMixin, serializers.ModelSerializer):
 
 
 class ExerciseQuerySerializer(serializers.Serializer):
-	category = serializers.ChoiceField(
-		default="",
-		choices=[("", "All")] + list(AbstractQuiz.QuizCategory.choices),
-	)
+	category = serializers.CharField(default="", allow_blank=True)
 	amount = serializers.ChoiceField(default=10, choices=[5, 10, 20])
 	exam_session = serializers.IntegerField(required=False, default=None)
 	quiz_type = serializers.ChoiceField(
@@ -173,3 +170,13 @@ class ExerciseQuerySerializer(serializers.Serializer):
 			("OpenEnded", "OpenEnded"),
 		],
 	)
+
+	def validate_category(self, value):
+		if not value:
+			return ""
+		valid = {c.value for c in AbstractQuiz.QuizCategory}
+		for cat in value.split(","):
+			cat = cat.strip()
+			if cat and cat not in valid:
+				raise serializers.ValidationError(f"Invalid category: {cat}")
+		return value
