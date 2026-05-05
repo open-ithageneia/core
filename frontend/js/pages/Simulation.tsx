@@ -1,122 +1,14 @@
 ﻿import { router } from "@inertiajs/react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import DragAndDrop from "@/components/quiz/DragAndDrop"
-import FillInTheBlank from "@/components/quiz/FillInTheBlank"
-import MultipleChoice from "@/components/quiz/MultipleChoice"
-import OpenEnded from "@/components/quiz/OpenEnded"
-import TrueFalse from "@/components/quiz/TrueFalse"
+import { QuizRenderer } from "@/components/quiz/QuizRenderer"
 import { Button } from "@/components/ui/button"
-import type {
-	DragAndDropContent,
-	DragAndDropModel,
-	FillInTheBlankContent,
-	FillInTheBlankModel,
-	OpenEndedContent,
-	OpenEndedModel,
-	StatementModel,
-	TrainingData,
-} from "@/types/models"
+import { getScoreColor } from "@/lib/score-color"
+import type { TrainingData } from "@/types/models"
 
 const SIMULATION_DURATION = 30 * 60 // 30 minutes in seconds
 
 type SimulationProps = {
 	data: TrainingData | null
-}
-
-function QuizRenderer({
-	item,
-	index,
-	forceValidation,
-	onScore,
-}: {
-	item: TrainingData[number]
-	index: number
-	forceValidation?: boolean
-	onScore?: (correct: number, total: number) => void
-}) {
-	switch (item.quiz_type) {
-		case "Statement": {
-			const statementItem = {
-				id: item.id,
-				category: item.category,
-				content: item.content,
-				type:
-					"choices" in item.content &&
-					Array.isArray(item.content.choices) &&
-					item.content.choices.length === 2
-						? "TRUE_FALSE"
-						: "MULTIPLE_CHOICE",
-			} as StatementModel
-			if (statementItem.type === "TRUE_FALSE") {
-				return (
-					<TrueFalse
-						item={statementItem}
-						item_index={index}
-						forceValidation={forceValidation}
-						onScore={onScore}
-					/>
-				)
-			}
-			return (
-				<MultipleChoice
-					item={statementItem}
-					item_index={index}
-					forceValidation={forceValidation}
-					onScore={onScore}
-				/>
-			)
-		}
-		case "DragAndDrop": {
-			const dndItem = {
-				id: item.id,
-				category: item.category,
-				content: item.content as DragAndDropContent,
-			} as DragAndDropModel
-			return (
-				<DragAndDrop
-					item={dndItem}
-					forceValidation={forceValidation}
-					onScore={onScore}
-				/>
-			)
-		}
-		case "OpenEnded": {
-			const openEndedItem = {
-				id: item.id,
-				category: item.category,
-				content: item.content as OpenEndedContent,
-			} as OpenEndedModel
-			return (
-				<OpenEnded
-					item={openEndedItem}
-					item_index={index}
-					forceValidation={forceValidation}
-					onScore={onScore}
-				/>
-			)
-		}
-		case "FillInTheBlank": {
-			const fitbItem = {
-				id: item.id,
-				category: item.category,
-				content: item.content as FillInTheBlankContent,
-			} as FillInTheBlankModel
-			return (
-				<FillInTheBlank
-					item={fitbItem}
-					item_index={index}
-					forceValidation={forceValidation}
-					onScore={onScore}
-				/>
-			)
-		}
-		default:
-			return (
-				<div className="rounded-lg border p-4 text-sm text-gray-500">
-					Μη υποστηριζόμενος τύπος ερώτησης: {item.quiz_type}
-				</div>
-			)
-	}
 }
 
 function formatTime(seconds: number): string {
@@ -196,9 +88,9 @@ function SimulationSession({ data }: { data: TrainingData }) {
 	const timerWarning = timeLeft <= 5 * 60
 
 	return (
-		<section className="flex h-full flex-col">
+		<section className={`flex ${finished ? "" : "h-full"} flex-col`}>
 			{finished && (
-				<div className="rounded-2xl bg-white p-2 text-center shadow-sm">
+				<div className="sticky top-0 z-10 rounded-2xl bg-white p-2 text-center shadow-sm">
 					<h1 className="mb-1 text-2xl font-bold">Αποτελέσματα</h1>
 					<p className="mb-1 text-3xl font-bold text-blue-600">
 						{earnedPoints} / {maxPoints}
@@ -238,20 +130,47 @@ function SimulationSession({ data }: { data: TrainingData }) {
 				</div>
 			)}
 
-			<div className="min-h-0 flex-1 py-1">
-				{data.map((item, idx) => (
-					<div
-						key={`${item.quiz_type}-${item.id}`}
-						className={!finished && idx !== currentIndex ? "hidden" : "h-full"}
-					>
-						<QuizRenderer
-							item={item}
-							index={idx + 1}
-							forceValidation={finished}
-							onScore={scoreCallbacks[idx]}
-						/>
-					</div>
-				))}
+			<div className={`${finished ? "space-y-4" : "min-h-0 flex-1"} py-1`}>
+				{data.map((item, idx) => {
+					const score = scoresRef.current.get(idx)
+					const earned =
+						score && score.total > 0
+							? Math.round(
+									(score.correct / score.total) * POINTS_PER_QUESTION * 100,
+								) / 100
+							: 0
+					const ratio = earned / POINTS_PER_QUESTION
+					return (
+						<div
+							key={`${item.quiz_type}-${item.id}`}
+							className={
+								!finished && idx !== currentIndex
+									? "hidden"
+									: !finished
+										? "h-full"
+										: ""
+							}
+						>
+							<QuizRenderer
+								item={item}
+								index={idx + 1}
+								forceValidation={finished}
+								onScore={scoreCallbacks[idx]}
+								hideScore={finished}
+								badge={
+									finished && score ? (
+										<span
+											className="text-sm font-bold"
+											style={{ color: getScoreColor(ratio) }}
+										>
+											{earned} / {POINTS_PER_QUESTION}
+										</span>
+									) : undefined
+								}
+							/>
+						</div>
+					)
+				})}
 			</div>
 
 			{!finished && (

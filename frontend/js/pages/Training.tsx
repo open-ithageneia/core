@@ -1,23 +1,10 @@
 import { router } from "@inertiajs/react"
 import { useCallback, useMemo, useRef, useState } from "react"
-import DragAndDrop from "@/components/quiz/DragAndDrop"
-import FillInTheBlank from "@/components/quiz/FillInTheBlank"
-import MultipleChoice from "@/components/quiz/MultipleChoice"
-import OpenEnded from "@/components/quiz/OpenEnded"
-import TrueFalse from "@/components/quiz/TrueFalse"
+import { QuizRenderer } from "@/components/quiz/QuizRenderer"
 import { Button } from "@/components/ui/button"
+import { getScoreColor } from "@/lib/score-color"
 import { QUIZ_CATEGORY_LABELS, type QuizCategory } from "@/types/enums"
-import type {
-	DragAndDropContent,
-	DragAndDropModel,
-	ExamSession,
-	FillInTheBlankContent,
-	FillInTheBlankModel,
-	OpenEndedContent,
-	OpenEndedModel,
-	StatementModel,
-	TrainingData,
-} from "@/types/models"
+import type { ExamSession, TrainingData } from "@/types/models"
 
 type CategoryOption = {
 	value: string
@@ -153,102 +140,6 @@ function TrainingSetup({
 	)
 }
 
-function QuizRenderer({
-	item,
-	index,
-	forceValidation,
-	onScore,
-}: {
-	item: TrainingData[number]
-	index: number
-	forceValidation?: boolean
-	onScore?: (correct: number, total: number) => void
-}) {
-	switch (item.quiz_type) {
-		case "Statement": {
-			const statementItem = {
-				id: item.id,
-				category: item.category,
-				content: item.content,
-				type:
-					"choices" in item.content &&
-					Array.isArray(item.content.choices) &&
-					item.content.choices.length === 2
-						? "TRUE_FALSE"
-						: "MULTIPLE_CHOICE",
-			} as StatementModel
-			if (statementItem.type === "TRUE_FALSE") {
-				return (
-					<TrueFalse
-						item={statementItem}
-						item_index={index}
-						forceValidation={forceValidation}
-						onScore={onScore}
-					/>
-				)
-			}
-			return (
-				<MultipleChoice
-					item={statementItem}
-					item_index={index}
-					forceValidation={forceValidation}
-					onScore={onScore}
-				/>
-			)
-		}
-		case "DragAndDrop": {
-			const dndItem = {
-				id: item.id,
-				category: item.category,
-				content: item.content as DragAndDropContent,
-			} as DragAndDropModel
-			return (
-				<DragAndDrop
-					item={dndItem}
-					forceValidation={forceValidation}
-					onScore={onScore}
-				/>
-			)
-		}
-		case "OpenEnded": {
-			const openEndedItem = {
-				id: item.id,
-				category: item.category,
-				content: item.content as OpenEndedContent,
-			} as OpenEndedModel
-			return (
-				<OpenEnded
-					item={openEndedItem}
-					item_index={index}
-					forceValidation={forceValidation}
-					onScore={onScore}
-				/>
-			)
-		}
-		case "FillInTheBlank": {
-			const fitbItem = {
-				id: item.id,
-				category: item.category,
-				content: item.content as FillInTheBlankContent,
-			} as FillInTheBlankModel
-			return (
-				<FillInTheBlank
-					item={fitbItem}
-					item_index={index}
-					forceValidation={forceValidation}
-					onScore={onScore}
-				/>
-			)
-		}
-		default:
-			return (
-				<div className="rounded-lg border p-4 text-sm text-gray-500">
-					Μη υποστηριζόμενος τύπος ερώτησης: {item.quiz_type}
-				</div>
-			)
-	}
-}
-
 function TrainingSession({ data }: { data: TrainingData }) {
 	const [currentIndex, setCurrentIndex] = useState(0)
 	const [validatedSet, setValidatedSet] = useState<Set<number>>(new Set())
@@ -311,16 +202,15 @@ function TrainingSession({ data }: { data: TrainingData }) {
 	}
 
 	return (
-		<section className="flex h-full flex-col">
+		<section className={`flex ${allValidated ? "" : "h-full"} flex-col`}>
 			{allValidated && (
-				<div className="rounded-2xl bg-white p-6 text-center shadow-sm">
-					<h1 className="mb-2 text-2xl font-bold">Αποτελέσματα</h1>
-					<p className="mb-2 text-3xl font-bold text-blue-600">
+				<div className="sticky top-0 z-10 rounded-2xl bg-white p-2 text-center shadow-sm">
+					<h1 className="mb-1 text-2xl font-bold">Αποτελέσματα</h1>
+					<p className="mb-1 text-3xl font-bold text-blue-600">
 						{earnedPoints} / {maxPoints}
 					</p>
-					<p className="mb-4 text-sm text-gray-600">
-						Μπορείτε να πλοηγηθείτε στις ερωτήσεις για να δείτε τις απαντήσεις
-						σας.
+					<p className="mb-2 text-sm text-gray-600">
+						Δείτε τις σωστές και λάθος απαντήσεις σας παρακάτω.
 					</p>
 					<Button
 						variant="outline"
@@ -331,56 +221,85 @@ function TrainingSession({ data }: { data: TrainingData }) {
 				</div>
 			)}
 
-			<div className="shrink-0 rounded-2xl bg-white p-4 shadow-sm">
-				<div className="mb-2 flex items-center justify-between text-sm text-gray-600">
-					<span>
-						Ερώτηση {currentIndex + 1} από {total}
-					</span>
-					<span className="text-xs uppercase tracking-wide text-gray-400">
-						{data[currentIndex].quiz_type}
-					</span>
-				</div>
-				<div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-					<div
-						className="h-full rounded-full bg-blue-500 transition-all duration-300"
-						style={{
-							width: `${((currentIndex + 1) / total) * 100}%`,
-						}}
-					/>
-				</div>
-			</div>
-
-			<div className="min-h-0 flex-1 py-1">
-				{data.map((item, idx) => (
-					<div
-						key={`${item.quiz_type}-${item.id}`}
-						className={idx !== currentIndex ? "hidden" : "h-full"}
-					>
-						<QuizRenderer
-							item={item}
-							index={idx + 1}
-							forceValidation={validatedSet.has(idx)}
-							onScore={scoreCallbacks[idx]}
+			{!allValidated && (
+				<div className="shrink-0 rounded-2xl bg-white p-4 shadow-sm">
+					<div className="mb-2 flex items-center justify-between text-sm text-gray-600">
+						<span>
+							Ερώτηση {currentIndex + 1} από {total}
+						</span>
+						<span className="text-xs uppercase tracking-wide text-gray-400">
+							{data[currentIndex].quiz_type}
+						</span>
+					</div>
+					<div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+						<div
+							className="h-full rounded-full bg-blue-500 transition-all duration-300"
+							style={{
+								width: `${((currentIndex + 1) / total) * 100}%`,
+							}}
 						/>
 					</div>
-				))}
-			</div>
+				</div>
+			)}
 
-			<div className="sticky bottom-0 flex shrink-0 items-center justify-between rounded-2xl bg-white p-4 shadow-sm">
-				<Button variant="outline" onClick={goPrev} disabled={isFirst}>
-					← Προηγούμενη
-				</Button>
-
-				{!isCurrentValidated ? (
-					<Button onClick={handleValidate}>Έλεγχος</Button>
-				) : isLast ? (
-					allValidated ? null : (
-						<span className="text-sm text-gray-500">✓ Ελεγμένη</span>
+			<div className={`${allValidated ? "space-y-4" : "min-h-0 flex-1"} py-1`}>
+				{data.map((item, idx) => {
+					const score = scoresRef.current.get(idx)
+					const earned =
+						score && score.total > 0
+							? Math.round(
+									(score.correct / score.total) * POINTS_PER_QUESTION * 100,
+								) / 100
+							: 0
+					const ratio = earned / POINTS_PER_QUESTION
+					return (
+						<div
+							key={`${item.quiz_type}-${item.id}`}
+							className={
+								!allValidated && idx !== currentIndex
+									? "hidden"
+									: !allValidated
+										? "h-full"
+										: ""
+							}
+						>
+							<QuizRenderer
+								item={item}
+								index={idx + 1}
+								forceValidation={validatedSet.has(idx)}
+								onScore={scoreCallbacks[idx]}
+								hideScore={allValidated}
+								badge={
+									allValidated && score ? (
+										<span
+											className="text-sm font-bold"
+											style={{ color: getScoreColor(ratio) }}
+										>
+											{earned} / {POINTS_PER_QUESTION}
+										</span>
+									) : undefined
+								}
+							/>
+						</div>
 					)
-				) : (
-					<Button onClick={goNext}>Επόμενη →</Button>
-				)}
+				})}
 			</div>
+
+			{!allValidated && (
+				<div className="sticky bottom-0 flex shrink-0 items-center justify-between rounded-2xl bg-white p-4 shadow-sm">
+					<Button variant="outline" onClick={goPrev} disabled={isFirst}>
+						← Προηγούμενη
+					</Button>
+
+					{!isCurrentValidated ? (
+						<Button onClick={handleValidate}>Έλεγχος</Button>
+					) : isLast ? (
+						<span className="text-sm text-gray-500">✓ Ελεγμένη</span>
+					) : (
+						<Button onClick={goNext}>Επόμενη →</Button>
+					)}
+				</div>
+			)}
 		</section>
 	)
 }
