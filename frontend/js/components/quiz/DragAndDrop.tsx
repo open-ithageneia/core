@@ -81,12 +81,12 @@ export default function DragAndDrop({
 						<TableHeader>
 							<TableRow>
 								{item.content.map((group, index) => (
-								<TableHead
-									key={group.title}
-									className={`w-28 sm:w-48 border-b text-center text-xs sm:text-sm font-semibold p-1 sm:p-2 ${
-										index !== 0 ? "border-l" : ""
-									}`}
-								>
+									<TableHead
+										key={group.title}
+										className={`w-28 sm:w-48 border-b text-center text-xs sm:text-sm font-semibold p-1 sm:p-2 ${
+											index !== 0 ? "border-l" : ""
+										}`}
+									>
 										{group.title}
 									</TableHead>
 								))}

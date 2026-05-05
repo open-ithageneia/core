@@ -47,7 +47,10 @@ export default function DroppableCell({
 		>
 			{value ? (
 				<div className="flex items-center gap-2">
-					<Badge variant="outline" className="rounded-full px-3 py-1 text-sm text-center break-words whitespace-normal">
+					<Badge
+						variant="outline"
+						className="rounded-full px-3 py-1 text-sm text-center break-words whitespace-normal"
+					>
 						{value}
 					</Badge>
 
