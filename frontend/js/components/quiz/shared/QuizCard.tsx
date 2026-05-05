@@ -24,23 +24,23 @@ export default function QuizCard({
 	children,
 }: QuizCardProps) {
 	return (
-		<Card className="flex h-full w-full flex-col rounded-2xl shadow-sm">
-			<CardHeader className="shrink-0">
+		<Card className="flex h-full w-full flex-col rounded-2xl shadow-sm p-1">
+			<CardHeader className="shrink-0 p-2">
 				<CardTitle>{title}</CardTitle>
 				{instruction && (
 					<p className="text-sm text-muted-foreground">{instruction}</p>
 				)}
 				{promptText && <CardDescription>{promptText}</CardDescription>}
+			</CardHeader>
+
+			<CardContent className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2 pt-0">
 				{promptAssetUrl && (
 					<img
 						src={promptAssetUrl}
 						alt={promptText ?? title}
-						className="mt-2 max-h-60 rounded object-contain"
+						className="max-h-40 rounded object-contain object-left sm:max-h-52 md:max-h-64 lg:max-h-80"
 					/>
 				)}
-			</CardHeader>
-
-			<CardContent className="min-h-0 flex-1 space-y-6 overflow-y-auto">
 				{children}
 			</CardContent>
 		</Card>

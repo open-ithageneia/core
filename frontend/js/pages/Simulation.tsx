@@ -198,12 +198,12 @@ function SimulationSession({ data }: { data: TrainingData }) {
 	return (
 		<section className="flex h-full flex-col">
 			{finished && (
-				<div className="rounded-2xl bg-white p-6 text-center shadow-sm">
-					<h1 className="mb-2 text-2xl font-bold">Αποτελέσματα</h1>
-					<p className="mb-2 text-3xl font-bold text-blue-600">
+				<div className="rounded-2xl bg-white p-2 text-center shadow-sm">
+					<h1 className="mb-1 text-2xl font-bold">Αποτελέσματα</h1>
+					<p className="mb-1 text-3xl font-bold text-blue-600">
 						{earnedPoints} / {maxPoints}
 					</p>
-					<p className="mb-4 text-sm text-gray-600">
+					<p className="mb-2 text-sm text-gray-600">
 						Δείτε τις σωστές και λάθος απαντήσεις σας παρακάτω.
 					</p>
 					<Button
@@ -238,7 +238,7 @@ function SimulationSession({ data }: { data: TrainingData }) {
 				</div>
 			)}
 
-			<div className="min-h-0 flex-1 py-4">
+			<div className="min-h-0 flex-1 py-1">
 				{data.map((item, idx) => (
 					<div
 						key={`${item.quiz_type}-${item.id}`}

@@ -350,7 +350,7 @@ function TrainingSession({ data }: { data: TrainingData }) {
 				</div>
 			</div>
 
-			<div className="min-h-0 flex-1 py-4">
+			<div className="min-h-0 flex-1 py-1">
 				{data.map((item, idx) => (
 					<div
 						key={`${item.quiz_type}-${item.id}`}
