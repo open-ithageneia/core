@@ -90,27 +90,31 @@ function TrainingSetup({
 				/>
 			</div>
 
-			<div className="mb-6">
-				<label
-					htmlFor="quiz-type"
-					className="mb-1 block text-sm font-medium text-gray-700"
-				>
-					Τύπος ερώτησης
-				</label>
-				<select
-					id="quiz-type"
-					value={quizType}
-					onChange={(e) => setQuizType(e.target.value)}
-					className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-				>
-					<option value="">Όλοι οι τύποι</option>
-					<option value="Statement">Σωστό / Λάθος & Πολλαπλής επιλογής</option>
-					<option value="DragAndDrop">Κατάταξη</option>
-					<option value="Matching">Αντιστοίχηση</option>
-					<option value="FillInTheBlank">Συμπλήρωση κενού</option>
-					<option value="OpenEnded">Ανοιχτή ερώτηση</option>
-				</select>
-			</div>
+			{import.meta.env.DEV && (
+				<div className="mb-6">
+					<label
+						htmlFor="quiz-type"
+						className="mb-1 block text-sm font-medium text-gray-700"
+					>
+						Τύπος ερώτησης
+					</label>
+					<select
+						id="quiz-type"
+						value={quizType}
+						onChange={(e) => setQuizType(e.target.value)}
+						className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+					>
+						<option value="">Όλοι οι τύποι</option>
+						<option value="Statement">
+							Σωστό / Λάθος & Πολλαπλής επιλογής
+						</option>
+						<option value="DragAndDrop">Κατάταξη</option>
+						<option value="Matching">Αντιστοίχηση</option>
+						<option value="FillInTheBlank">Συμπλήρωση κενού</option>
+						<option value="OpenEnded">Ανοιχτή ερώτηση</option>
+					</select>
+				</div>
+			)}
 
 			<div className="mb-6">
 				<label
