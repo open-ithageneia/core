@@ -2,6 +2,7 @@ import { router } from "@inertiajs/react"
 import { useCallback, useMemo, useRef, useState } from "react"
 import { QuizRenderer } from "@/components/quiz/QuizRenderer"
 import { Button } from "@/components/ui/button"
+import { MultiSelect } from "@/components/ui/multi-select"
 import { getScoreColor } from "@/lib/score-color"
 import { QUIZ_CATEGORY_LABELS, type QuizCategory } from "@/types/enums"
 import type { ExamSession, TrainingData } from "@/types/models"
@@ -24,14 +25,15 @@ function TrainingSetup({
 	categories: CategoryOption[]
 	exam_sessions: ExamSession[]
 }) {
-	const [category, setCategory] = useState("")
+	const [categories_selected, setCategoriesSelected] = useState<string[]>([])
 	const [amount, setAmount] = useState("10")
 	const [examSession, setExamSession] = useState("")
 	const [quizType, setQuizType] = useState("")
 
 	function handleStart() {
 		const params: Record<string, string> = { amount }
-		if (category) params.category = category
+		if (categories_selected.length > 0)
+			params.category = categories_selected.join(",")
 		if (examSession) params.exam_session = examSession
 		if (quizType) params.quiz_type = quizType
 		router.get("/quiz/training", params, { preserveState: false })
@@ -77,19 +79,15 @@ function TrainingSetup({
 				>
 					Κατηγορία
 				</label>
-				<select
-					id="category"
-					value={category}
-					onChange={(e) => setCategory(e.target.value)}
-					className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-				>
-					<option value="">Όλες οι κατηγορίες</option>
-					{categories.map((c) => (
-						<option key={c.value} value={c.value}>
-							{QUIZ_CATEGORY_LABELS[c.value as QuizCategory] ?? c.label}
-						</option>
-					))}
-				</select>
+				<MultiSelect
+					options={categories.map((c) => ({
+						value: c.value,
+						label: QUIZ_CATEGORY_LABELS[c.value as QuizCategory] ?? c.label,
+					}))}
+					selected={categories_selected}
+					onChange={setCategoriesSelected}
+					placeholder="Όλες οι κατηγορίες"
+				/>
 			</div>
 
 			<div className="mb-6">
@@ -159,15 +157,22 @@ function TrainingSession({ data }: { data: TrainingData }) {
 		[data],
 	)
 
-	const { earnedPoints, maxPoints } = useMemo(() => {
+	const { earnedPoints, maxPoints, earnedUpToCurrent } = useMemo(() => {
 		void scoreVersion
 		let earned = 0
+		let earnedUpto = 0
 		const max = data.length * POINTS_PER_QUESTION
-		for (const { correct, total } of scoresRef.current.values()) {
-			earned += total > 0 ? (correct / total) * POINTS_PER_QUESTION : 0
+		for (const [idx, { correct, total }] of scoresRef.current.entries()) {
+			const pts = total > 0 ? (correct / total) * POINTS_PER_QUESTION : 0
+			earned += pts
+			if (idx <= currentIndex) earnedUpto += pts
 		}
-		return { earnedPoints: Math.round(earned * 100) / 100, maxPoints: max }
-	}, [scoreVersion, data.length])
+		return {
+			earnedPoints: Math.round(earned * 100) / 100,
+			maxPoints: max,
+			earnedUpToCurrent: Math.round(earnedUpto * 100) / 100,
+		}
+	}, [scoreVersion, data.length, currentIndex])
 
 	const total = data.length
 	const isFirst = currentIndex === 0
@@ -227,9 +232,9 @@ function TrainingSession({ data }: { data: TrainingData }) {
 						<span>
 							Ερώτηση {currentIndex + 1} από {total}
 						</span>
-						<span className="text-xs uppercase tracking-wide text-gray-400">
-							{data[currentIndex].quiz_type}
-						</span>
+					<span className="text-sm font-medium text-blue-600">
+						Βαθμολογία: {earnedUpToCurrent} / {(currentIndex + 1) * POINTS_PER_QUESTION}
+					</span>
 					</div>
 					<div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
 						<div
@@ -268,7 +273,6 @@ function TrainingSession({ data }: { data: TrainingData }) {
 								index={idx + 1}
 								forceValidation={validatedSet.has(idx)}
 								onScore={scoreCallbacks[idx]}
-								hideScore={allValidated}
 								badge={
 									allValidated && score ? (
 										<span

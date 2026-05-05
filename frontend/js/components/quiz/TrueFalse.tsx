@@ -1,6 +1,5 @@
 import { useEffect } from "react"
 import QuizCard from "@/components/quiz/shared/QuizCard"
-import QuizScore from "@/components/quiz/shared/QuizScore"
 import ValidationButton from "@/components/quiz/shared/ValidationButton"
 import { useTrueFalse } from "@/hooks/useTrueFalse"
 import { cn } from "@/lib/utils"
@@ -114,12 +113,6 @@ export default function TrueFalse({
 					/>
 				</div>
 			)}
-
-			<QuizScore
-				correctAnswersCount={correctAnswersCount}
-				totalSubAnswers={choices.length}
-				showValidation={showValidation}
-			/>
 		</QuizCard>
 	)
 }

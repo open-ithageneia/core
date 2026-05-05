@@ -156,7 +156,6 @@ function SimulationSession({ data }: { data: TrainingData }) {
 								index={idx + 1}
 								forceValidation={finished}
 								onScore={scoreCallbacks[idx]}
-								hideScore={finished}
 								badge={
 									finished && score ? (
 										<span
@@ -196,8 +195,7 @@ export default function Simulation({ data }: SimulationProps) {
 			<section className="mx-auto max-w-md rounded-2xl bg-white p-6 shadow-sm sm:p-8">
 				<h1 className="mb-6 text-2xl font-bold">Προσομοίωση εξέτασης</h1>
 				<p className="mb-4 text-sm text-gray-600">
-					40 τυχαίες ερωτήσεις από όλες τις κατηγορίες. Έχετε 30 λεπτά στη
-					διάθεσή σας.
+					20 τυχαίες ερωτήσεις από όλες τις κατηγορίες. Έχετε 30 λεπτά στη διάθεσή σας.
 				</p>
 
 				<Button

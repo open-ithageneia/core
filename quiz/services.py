@@ -127,7 +127,16 @@ def get_random_quiz_items(
 
 		per_model_amount = amount * 2 if model is Statement else amount
 
-		category_clause = "AND m.category = %s" if category else ""
+		if category:
+			cat_list = [c.strip() for c in category.split(",") if c.strip()]
+		else:
+			cat_list = []
+
+		if cat_list:
+			placeholders = ", ".join(["%s"] * len(cat_list))
+			category_clause = f"AND m.category IN ({placeholders})"
+		else:
+			category_clause = ""
 
 		if exam_session_id:
 			session_clause = "t.examsession_id = %s"
@@ -158,8 +167,8 @@ def get_random_quiz_items(
 
 		if exam_session_id:
 			params.append(exam_session_id)
-		if category:
-			params.append(category)
+		if cat_list:
+			params.extend(cat_list)
 		params.append(per_model_amount)
 
 	sql = f"""

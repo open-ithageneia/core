@@ -15,6 +15,7 @@ type QuizCardProps = {
 	instruction?: string
 	promptText?: string
 	promptAssetUrl?: string
+	headerExtra?: ReactNode
 	children: ReactNode
 }
 
@@ -24,6 +25,7 @@ export default function QuizCard({
 	instruction,
 	promptText,
 	promptAssetUrl,
+	headerExtra,
 	children,
 }: QuizCardProps) {
 	const { badge: contextBadge } = useQuizResults()
@@ -40,6 +42,10 @@ export default function QuizCard({
 				)}
 				{promptText && <CardDescription>{promptText}</CardDescription>}
 			</CardHeader>
+
+			{headerExtra && (
+				<div className="shrink-0 px-2">{headerExtra}</div>
+			)}
 
 			<CardContent className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2 pt-1">
 				{promptAssetUrl && (

@@ -3,7 +3,6 @@ import { useEffect } from "react"
 import DraggableChip from "@/components/quiz/shared/DraggableChip"
 import DroppableCell from "@/components/quiz/shared/DroppableCell"
 import QuizCard from "@/components/quiz/shared/QuizCard"
-import QuizScore from "@/components/quiz/shared/QuizScore"
 import ValidationButton from "@/components/quiz/shared/ValidationButton"
 import {
 	Table,
@@ -134,12 +133,6 @@ export default function DragAndDrop({
 						onValidate={() => setShowValidation(true)}
 					/>
 				)}
-
-				<QuizScore
-					correctAnswersCount={correctAnswersCount}
-					totalSubAnswers={totalScore}
-					showValidation={showValidation}
-				/>
 			</DragDropProvider>
 		</QuizCard>
 	)

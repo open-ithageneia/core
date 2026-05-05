@@ -25,7 +25,7 @@ def training(request):
 	exam_sessions = QuizService.exam_session_list()
 
 	# No query params → show setup form
-	if not request.GET.get("category") and not request.GET.get("amount"):
+	if not request.GET.get("amount"):
 		return render(
 			request,
 			"Training",
@@ -106,7 +106,7 @@ def simulation(request):
 
 	data_by_category = QuizService.get_by_category(
 		category="",
-		amount=40,
+		amount=20,
 	)
 
 	CONTENT_PARSERS = {
