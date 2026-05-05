@@ -162,3 +162,14 @@ class ExerciseQuerySerializer(serializers.Serializer):
 		choices=[("", "All")] + list(AbstractQuiz.QuizCategory.choices),
 	)
 	amount = serializers.ChoiceField(default=10, choices=[5, 10, 20])
+	exam_session = serializers.IntegerField(required=False, default=None)
+	quiz_type = serializers.ChoiceField(
+		default="",
+		choices=[
+			("", "All"),
+			("Statement", "Statement"),
+			("DragAndDrop", "DragAndDrop"),
+			("FillInTheBlank", "FillInTheBlank"),
+			("OpenEnded", "OpenEnded"),
+		],
+	)

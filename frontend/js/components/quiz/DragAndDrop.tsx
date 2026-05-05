@@ -63,8 +63,8 @@ export default function DragAndDrop({
 					)
 				}}
 			>
-				<div className="rounded-xl border bg-muted/30 p-4">
-					<div className="flex flex-wrap gap-2">
+				<div className="rounded-xl border bg-muted/30 p-2">
+					<div className="flex flex-wrap gap-1">
 						{availableValues.map((value) => (
 							<DraggableChip
 								key={value}
@@ -83,7 +83,7 @@ export default function DragAndDrop({
 								{item.content.map((group, index) => (
 									<TableHead
 										key={group.title}
-										className={`w-48 border-b text-center font-semibold ${
+										className={`w-28 sm:w-48 border-b text-center text-xs sm:text-sm font-semibold p-1 sm:p-2 ${
 											index !== 0 ? "border-l" : ""
 										}`}
 									>

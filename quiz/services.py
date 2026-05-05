@@ -95,19 +95,32 @@ def get_random_quiz_items_alt(category: str, amount: int):
 	return [dict(zip(columns, row)) for row in rows]
 
 
-def get_random_quiz_items(category: str, amount: int):
+def get_random_quiz_items(
+	category: str, amount: int, exam_session_id: int | None = None, quiz_type: str = ""
+):
 	"""
-	Return `amount` random quiz items for the given category and latest exam session
+	Return `amount` random quiz items for the given category and exam session
 	using a balanced sampling strategy. Each quiz table first contributes a random
 	subset of rows, the results are UNIONed, shuffled, and the final `amount` items
 	are returned. The Statement table uses `2 * amount` to account for its two
 	question subtypes (True/False and Multiple Choice).
+
+	If `exam_session_id` is not provided, the latest exam session is used.
+	If `quiz_type` is provided, only that model's table is queried.
 	"""
+
+	# Map quiz_type string to model class
+	QUIZ_TYPE_MAP = {model.__name__: model for model in QUIZ_MODELS}
+
+	if quiz_type and quiz_type in QUIZ_TYPE_MAP:
+		models_to_query = [QUIZ_TYPE_MAP[quiz_type]]
+	else:
+		models_to_query = QUIZ_MODELS
 
 	union_parts = []
 	params = []
 
-	for model in QUIZ_MODELS:
+	for model in models_to_query:
 		model_table = model._meta.db_table
 		through_table = model.exam_sessions.through._meta.db_table
 		model_name = model.__name__.lower()
@@ -115,6 +128,16 @@ def get_random_quiz_items(category: str, amount: int):
 		per_model_amount = amount * 2 if model is Statement else amount
 
 		category_clause = "AND m.category = %s" if category else ""
+
+		if exam_session_id:
+			session_clause = "t.examsession_id = %s"
+		else:
+			session_clause = f"""t.examsession_id = (
+                    SELECT id
+                    FROM {ExamSession._meta.db_table}
+                    ORDER BY year DESC, month DESC
+                    LIMIT 1
+                )"""
 
 		union_parts.append(f"""
             SELECT * FROM (
@@ -126,18 +149,15 @@ def get_random_quiz_items(category: str, amount: int):
                 FROM {model_table} m
                 INNER JOIN {through_table} t
                     ON t.{model_name}_id = m.id
-                WHERE t.examsession_id = (
-                    SELECT id
-                    FROM {ExamSession._meta.db_table}
-                    ORDER BY year DESC, month DESC
-                    LIMIT 1
-                )
+                WHERE {session_clause}
                 {category_clause}
                 ORDER BY RANDOM()
                 LIMIT %s
             )
         """)
 
+		if exam_session_id:
+			params.append(exam_session_id)
 		if category:
 			params.append(category)
 		params.append(per_model_amount)
@@ -254,8 +274,13 @@ class QuizService:
 		}
 
 	@staticmethod
-	def get_by_category(category: str, amount: int):
-		return get_random_quiz_items(category, amount)
+	def get_by_category(
+		category: str,
+		amount: int,
+		exam_session_id: int | None = None,
+		quiz_type: str = "",
+	):
+		return get_random_quiz_items(category, amount, exam_session_id, quiz_type)
 
 		# items = []
 

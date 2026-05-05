@@ -1,4 +1,6 @@
-﻿const POINTS_PER_QUESTION = 2
+﻿import { useQuizResults } from "./QuizResultsContext"
+
+const POINTS_PER_QUESTION = 2
 
 type QuizScoreProps = {
 	correctAnswersCount: number
@@ -11,6 +13,8 @@ export default function QuizScore({
 	totalSubAnswers,
 	showValidation,
 }: QuizScoreProps) {
+	const { hideScore } = useQuizResults()
+	if (hideScore) return null
 	if (!showValidation || totalSubAnswers === 0) return null
 
 	const earned =
