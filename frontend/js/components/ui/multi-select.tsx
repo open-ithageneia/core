@@ -57,11 +57,10 @@ export function MultiSelect({
 				className="flex w-full items-center justify-between rounded-lg border border-gray-300 px-3 py-2 text-left text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 			>
 				<span className={selected.length === 0 ? "text-gray-500" : ""}>
-					{selected.length === 0
-						? placeholder
-						: selectedLabels.join(", ")}
+					{selected.length === 0 ? placeholder : selectedLabels.join(", ")}
 				</span>
 				<svg
+					aria-hidden="true"
 					className={cn(
 						"ml-2 h-4 w-4 shrink-0 text-gray-400 transition-transform",
 						open && "rotate-180",
@@ -100,4 +99,3 @@ export function MultiSelect({
 		</div>
 	)
 }
-

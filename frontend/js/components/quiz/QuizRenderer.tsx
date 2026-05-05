@@ -115,9 +115,5 @@ export function QuizRenderer({
 		}
 	})()
 
-	return (
-		<QuizResultsProvider badge={badge}>
-			{content}
-		</QuizResultsProvider>
-	)
+	return <QuizResultsProvider badge={badge}>{content}</QuizResultsProvider>
 }

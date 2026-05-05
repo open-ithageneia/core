@@ -180,4 +180,3 @@ class ExerciseQuerySerializer(serializers.Serializer):
 			if cat and cat not in valid:
 				raise serializers.ValidationError(f"Invalid category: {cat}")
 		return value
-

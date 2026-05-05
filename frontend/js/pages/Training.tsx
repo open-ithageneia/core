@@ -232,9 +232,10 @@ function TrainingSession({ data }: { data: TrainingData }) {
 						<span>
 							Ερώτηση {currentIndex + 1} από {total}
 						</span>
-					<span className="text-sm font-medium text-blue-600">
-						Βαθμολογία: {earnedUpToCurrent} / {(currentIndex + 1) * POINTS_PER_QUESTION}
-					</span>
+						<span className="text-sm font-medium text-blue-600">
+							Βαθμολογία: {earnedUpToCurrent} /{" "}
+							{(currentIndex + 1) * POINTS_PER_QUESTION}
+						</span>
 					</div>
 					<div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
 						<div
