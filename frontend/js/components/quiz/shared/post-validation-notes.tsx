@@ -7,7 +7,9 @@ export default function PostValidationNotes({
 	title,
 	notes,
 }: PostValidationNotesProps) {
-	if (notes.length === 0) return null
+	if (notes.length === 0) {
+		return null
+	}
 
 	return (
 		<div className="rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950">

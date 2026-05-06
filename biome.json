@@ -17,6 +17,9 @@
 		"enabled": true,
 		"rules": {
 			"recommended": true,
+			"style": {
+				"useBlockStatements": "error"
+			},
 			"suspicious": {
 				"noConsole": "warn",
 				"noArrayIndexKey": "off"

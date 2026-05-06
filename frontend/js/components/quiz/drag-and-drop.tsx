@@ -1,9 +1,9 @@
 import { DragDropProvider } from "@dnd-kit/react"
 import { useEffect } from "react"
-import DraggableChip from "@/components/quiz/shared/DraggableChip"
-import DroppableCell from "@/components/quiz/shared/DroppableCell"
-import QuizCard from "@/components/quiz/shared/QuizCard"
-import ValidationButton from "@/components/quiz/shared/ValidationButton"
+import DraggableChip from "@/components/quiz/shared/draggable-chip"
+import DroppableCell from "@/components/quiz/shared/droppable-cell"
+import QuizCard from "@/components/quiz/shared/quiz-card"
+import ValidationButton from "@/components/quiz/shared/validation-button"
 import {
 	Table,
 	TableBody,
@@ -12,7 +12,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table"
-import { useDragAndDrop } from "@/hooks/useDragAndDrop"
+import { useDragAndDrop } from "@/hooks/use-drag-and-drop"
 import { QUIZ_INSTRUCTIONS } from "@/types/enums"
 import type { DragAndDropModel } from "@/types/models"
 
@@ -55,7 +55,9 @@ export default function DragAndDrop({
 		>
 			<DragDropProvider
 				onDragEnd={({ operation }) => {
-					if (!operation.source || !operation.target) return
+					if (!operation.source || !operation.target) {
+						return
+					}
 					handleDragEnd(
 						operation.source.data.value,
 						String(operation.target.id),

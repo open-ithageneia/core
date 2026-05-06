@@ -3,7 +3,7 @@ import { createInertiaApp } from "@inertiajs/react"
 import axios from "axios"
 import type { ComponentType, ReactElement, ReactNode } from "react"
 import { createRoot } from "react-dom/client"
-import Layout from "./components/Layout"
+import Layout from "./components/layout"
 
 import "../css/main.css"
 
@@ -27,7 +27,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	createInertiaApp({
 		resolve: async (name) => {
-			const importPage = pages[`./pages/${name}.tsx`]
+			const kebab = name
+				.replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
+				.replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+				.toLowerCase()
+			const importPage = pages[`./pages/${kebab}.tsx`]
 			if (!importPage) {
 				throw new Error(`Page not found: ${name}`)
 			}
@@ -37,7 +41,9 @@ document.addEventListener("DOMContentLoaded", () => {
 			return Page
 		},
 		setup({ el, App, props }) {
-			if (!el) return
+			if (!el) {
+				return
+			}
 			createRoot(el).render(<App {...props} />)
 		},
 	})

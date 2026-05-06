@@ -1,5 +1,5 @@
 ﻿import { useCallback, useMemo, useState } from "react"
-import { useValidation } from "@/hooks/useValidation"
+import { useValidation } from "@/hooks/use-validation"
 import { normalizeForTextComparison } from "@/lib/utils"
 import { ValidationStatus } from "@/types/enums"
 import type { OpenEndedModel } from "@/types/models"
@@ -18,9 +18,13 @@ function validateAnswers(
 	const matchedGroupIndices = new Set<number>()
 	const states: ValidationState[] = userAnswers.map((answer) => {
 		const norm = normalizeForTextComparison(answer)
-		if (norm.length === 0) return ValidationStatus.Incorrect
+		if (norm.length === 0) {
+			return ValidationStatus.Incorrect
+		}
 		for (let i = 0; i < correctAnswerGroups.length; i++) {
-			if (matchedGroupIndices.has(i)) continue
+			if (matchedGroupIndices.has(i)) {
+				continue
+			}
 			const alternatives = correctAnswerGroups[i]
 			if (
 				alternatives.some((alt) => normalizeForTextComparison(alt) === norm)
@@ -52,11 +56,12 @@ export function useOpenEnded(
 	)
 
 	const { states, matchedGroupIndices } = useMemo(() => {
-		if (!showValidation)
+		if (!showValidation) {
 			return {
 				states: [] as ValidationState[],
 				matchedGroupIndices: new Set<number>(),
 			}
+		}
 		return validateAnswers(answers, item.content.texts)
 	}, [showValidation, answers, item.content.texts])
 
@@ -66,20 +71,26 @@ export function useOpenEnded(
 	)
 
 	const missedAnswers = useMemo(() => {
-		if (!showValidation) return []
+		if (!showValidation) {
+			return []
+		}
 		return item.content.texts
 			.filter((_, i) => !matchedGroupIndices.has(i))
 			.map((alts) => alts[0])
 	}, [showValidation, item.content.texts, matchedGroupIndices])
 
 	const addAnswerField = useCallback(() => {
-		if (showValidation) return
+		if (showValidation) {
+			return
+		}
 		setAnswers((prev) => [...prev, ""])
 	}, [showValidation])
 
 	const removeAnswerField = useCallback(
 		(index: number) => {
-			if (showValidation) return
+			if (showValidation) {
+				return
+			}
 			setAnswers((prev) => prev.filter((_, i) => i !== index))
 		},
 		[showValidation],
@@ -87,7 +98,9 @@ export function useOpenEnded(
 
 	const updateAnswer = useCallback(
 		(index: number, value: string) => {
-			if (showValidation) return
+			if (showValidation) {
+				return
+			}
 			setAnswers((prev) => {
 				const updated = [...prev]
 				updated[index] = value

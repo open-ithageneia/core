@@ -1,5 +1,5 @@
 ﻿import { useCallback, useMemo, useState } from "react"
-import { useValidation } from "@/hooks/useValidation"
+import { useValidation } from "@/hooks/use-validation"
 import { ValidationStatus } from "@/types/enums"
 import type { StatementModel } from "@/types/models"
 import type { ValidationState } from "@/types/quiz"
@@ -28,7 +28,9 @@ export function useMultipleChoice(
 
 	const selectChoice = useCallback(
 		(index: number) => {
-			if (showValidation) return
+			if (showValidation) {
+				return
+			}
 			setSelectedIndices((prev) => {
 				if (isMultiSelect) {
 					const next = new Set(prev)
@@ -46,16 +48,24 @@ export function useMultipleChoice(
 	)
 
 	const choiceStates: ValidationState[] = useMemo(() => {
-		if (!showValidation) return choices.map(() => null)
+		if (!showValidation) {
+			return choices.map(() => null)
+		}
 		return choices.map((choice, index) => {
-			if (choice.is_correct) return ValidationStatus.Correct
-			if (selectedIndices.has(index)) return ValidationStatus.Incorrect
+			if (choice.is_correct) {
+				return ValidationStatus.Correct
+			}
+			if (selectedIndices.has(index)) {
+				return ValidationStatus.Incorrect
+			}
 			return null
 		})
 	}, [showValidation, choices, selectedIndices])
 
 	const correctAnswersCount = useMemo(() => {
-		if (!showValidation) return 0
+		if (!showValidation) {
+			return 0
+		}
 		const selectedCorrect = choices.filter(
 			(c, i) => c.is_correct && selectedIndices.has(i),
 		).length

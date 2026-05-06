@@ -1,8 +1,9 @@
 import { router } from "@inertiajs/react"
 import { useCallback, useMemo, useRef, useState } from "react"
-import { QuizRenderer } from "@/components/quiz/QuizRenderer"
+import { QuizRenderer } from "@/components/quiz/quiz-renderer"
 import { Button } from "@/components/ui/button"
 import { MultiSelect } from "@/components/ui/multi-select"
+import { useExitConfirmation } from "@/hooks/use-exit-confirmation"
 import { getScoreColor } from "@/lib/score-color"
 import { QUIZ_CATEGORY_LABELS, type QuizCategory } from "@/types/enums"
 import type { ExamSession, TrainingData } from "@/types/models"
@@ -32,10 +33,15 @@ function TrainingSetup({
 
 	function handleStart() {
 		const params: Record<string, string> = { amount }
-		if (categories_selected.length > 0)
+		if (categories_selected.length > 0) {
 			params.category = categories_selected.join(",")
-		if (examSession) params.exam_session = examSession
-		if (quizType) params.quiz_type = quizType
+		}
+		if (examSession) {
+			params.exam_session = examSession
+		}
+		if (quizType) {
+			params.quiz_type = quizType
+		}
 		router.get("/quiz/training", params, { preserveState: false })
 	}
 
@@ -145,6 +151,8 @@ function TrainingSetup({
 function TrainingSession({ data }: { data: TrainingData }) {
 	const [currentIndex, setCurrentIndex] = useState(0)
 	const [validatedSet, setValidatedSet] = useState<Set<number>>(new Set())
+	const allValidatedEarly = validatedSet.size === data.length
+	const { exitConfirmDialog } = useExitConfirmation(!allValidatedEarly)
 	const scoresRef = useRef<Map<number, { correct: number; total: number }>>(
 		new Map(),
 	)
@@ -169,7 +177,9 @@ function TrainingSession({ data }: { data: TrainingData }) {
 		for (const [idx, { correct, total }] of scoresRef.current.entries()) {
 			const pts = total > 0 ? (correct / total) * POINTS_PER_QUESTION : 0
 			earned += pts
-			if (idx <= currentIndex) earnedUpto += pts
+			if (idx <= currentIndex) {
+				earnedUpto += pts
+			}
 		}
 		return {
 			earnedPoints: Math.round(earned * 100) / 100,
@@ -189,11 +199,15 @@ function TrainingSession({ data }: { data: TrainingData }) {
 	}, [currentIndex])
 
 	const goNext = useCallback(() => {
-		if (currentIndex < total - 1) setCurrentIndex((i) => i + 1)
+		if (currentIndex < total - 1) {
+			setCurrentIndex((i) => i + 1)
+		}
 	}, [currentIndex, total])
 
 	const goPrev = useCallback(() => {
-		if (currentIndex > 0) setCurrentIndex((i) => i - 1)
+		if (currentIndex > 0) {
+			setCurrentIndex((i) => i - 1)
+		}
 	}, [currentIndex])
 
 	if (total === 0) {
@@ -212,6 +226,7 @@ function TrainingSession({ data }: { data: TrainingData }) {
 
 	return (
 		<section className={`flex ${allValidated ? "" : "h-full"} flex-col`}>
+			{exitConfirmDialog}
 			{allValidated && (
 				<div className="sticky top-0 z-10 rounded-2xl bg-white p-2 text-center shadow-sm">
 					<h1 className="mb-1 text-2xl font-bold">Αποτελέσματα</h1>

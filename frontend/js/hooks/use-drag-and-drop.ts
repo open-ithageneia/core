@@ -1,5 +1,5 @@
 ﻿import { useMemo, useState } from "react"
-import { useValidation } from "@/hooks/useValidation"
+import { useValidation } from "@/hooks/use-validation"
 import { useValuePool } from "@/lib/utils"
 import { ValidationStatus } from "@/types/enums"
 import type { DragAndDropModel } from "@/types/models"
@@ -35,8 +35,12 @@ export function useDragAndDrop(
 	)
 
 	function placeValueInCell(rowIndex: number, colIndex: number, value: string) {
-		if (showValidation) return
-		if (tableValues[rowIndex][colIndex]) return
+		if (showValidation) {
+			return
+		}
+		if (tableValues[rowIndex][colIndex]) {
+			return
+		}
 
 		setTableValues((prevTableValues) => {
 			const newTableValues = prevTableValues.map((row) => [...row])
@@ -48,10 +52,14 @@ export function useDragAndDrop(
 	}
 
 	function clearCell(rowIndex: number, colIndex: number) {
-		if (showValidation) return
+		if (showValidation) {
+			return
+		}
 
 		const value = tableValues[rowIndex][colIndex]
-		if (!value) return
+		if (!value) {
+			return
+		}
 
 		setTableValues((prevTableValues) => {
 			const newTableValues = prevTableValues.map((row) => [...row])
@@ -63,7 +71,9 @@ export function useDragAndDrop(
 	}
 
 	function isValueCorrectForColumn(colIndex: number, value: string | null) {
-		if (!value) return false
+		if (!value) {
+			return false
+		}
 		return item.content[colIndex].values.includes(value)
 	}
 
@@ -72,7 +82,9 @@ export function useDragAndDrop(
 		colIndex: number,
 	): ValidationState {
 		const cellValue = tableValues[rowIndex][colIndex]
-		if (!showValidation || !cellValue) return null
+		if (!showValidation || !cellValue) {
+			return null
+		}
 		return isValueCorrectForColumn(colIndex, cellValue)
 			? ValidationStatus.Correct
 			: ValidationStatus.Incorrect
@@ -94,14 +106,20 @@ export function useDragAndDrop(
 	}, [tableValues, item])
 
 	function handleDragEnd(sourceValue: string, targetId: string) {
-		if (showValidation) return
-		if (!targetId.startsWith("cell-")) return
+		if (showValidation) {
+			return
+		}
+		if (!targetId.startsWith("cell-")) {
+			return
+		}
 
 		const [, rowIndexString, colIndexString] = targetId.split("-")
 		const rowIndex = Number(rowIndexString)
 		const colIndex = Number(colIndexString)
 
-		if (tableValues[rowIndex][colIndex]) return
+		if (tableValues[rowIndex][colIndex]) {
+			return
+		}
 
 		placeValueInCell(rowIndex, colIndex, sourceValue)
 	}

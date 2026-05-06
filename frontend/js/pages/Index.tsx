@@ -1,6 +1,6 @@
 import { Link } from "@inertiajs/react"
 import { Button } from "@/components/ui/button"
-import { useNav } from "@/hooks/useNav"
+import { useNav } from "@/hooks/use-nav"
 
 export default function Home() {
 	const nav = useNav()

@@ -13,7 +13,9 @@ function getCurrentLevel(): number {
 		?.toLowerCase()
 		?.trim() as LogLevel | undefined
 
-	if (env && env in LOG_LEVELS) return LOG_LEVELS[env]
+	if (env && env in LOG_LEVELS) {
+		return LOG_LEVELS[env]
+	}
 
 	// Default: debug in dev, warn in production
 	return import.meta.env.DEV ? LOG_LEVELS.debug : LOG_LEVELS.warn
@@ -31,19 +33,27 @@ function shouldLog(target: LogLevel): boolean {
 
 export const logger = {
 	debug(...args: unknown[]) {
-		// biome-ignore lint/suspicious/noConsole: logger is the approved console wrapper
-		if (shouldLog("debug")) console.log(prefix(), "[DEBUG]", ...args)
+		if (shouldLog("debug")) {
+			// biome-ignore lint/suspicious/noConsole: logger is the approved console wrapper
+			console.log(prefix(), "[DEBUG]", ...args)
+		}
 	},
 	info(...args: unknown[]) {
-		// biome-ignore lint/suspicious/noConsole: logger is the approved console wrapper
-		if (shouldLog("info")) console.log(prefix(), "[INFO]", ...args)
+		if (shouldLog("info")) {
+			// biome-ignore lint/suspicious/noConsole: logger is the approved console wrapper
+			console.log(prefix(), "[INFO]", ...args)
+		}
 	},
 	warn(...args: unknown[]) {
-		// biome-ignore lint/suspicious/noConsole: logger is the approved console wrapper
-		if (shouldLog("warn")) console.warn(prefix(), "[WARN]", ...args)
+		if (shouldLog("warn")) {
+			// biome-ignore lint/suspicious/noConsole: logger is the approved console wrapper
+			console.warn(prefix(), "[WARN]", ...args)
+		}
 	},
 	error(...args: unknown[]) {
-		// biome-ignore lint/suspicious/noConsole: logger is the approved console wrapper
-		if (shouldLog("error")) console.error(prefix(), "[ERROR]", ...args)
+		if (shouldLog("error")) {
+			// biome-ignore lint/suspicious/noConsole: logger is the approved console wrapper
+			console.error(prefix(), "[ERROR]", ...args)
+		}
 	},
 } as const
