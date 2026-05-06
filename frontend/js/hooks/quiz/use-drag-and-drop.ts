@@ -1,5 +1,5 @@
 ﻿import { useMemo, useState } from "react"
-import { useValidation } from "@/hooks/use-validation"
+import { useValidation } from "@/hooks/quiz/use-validation"
 import { useValuePool } from "@/lib/utils"
 import { ValidationStatus } from "@/types/enums"
 import type { DragAndDropModel } from "@/types/models"

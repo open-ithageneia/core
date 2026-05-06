@@ -1,5 +1,5 @@
 ﻿import { useCallback, useMemo, useState } from "react"
-import { useValidation } from "@/hooks/use-validation"
+import { useValidation } from "@/hooks/quiz/use-validation"
 import type { StatementModel } from "@/types/models"
 
 type UseTrueFalseOptions = {

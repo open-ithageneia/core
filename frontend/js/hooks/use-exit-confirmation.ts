@@ -1,22 +1,12 @@
 ﻿import { router } from "@inertiajs/react"
 import { useCallback, useEffect, useRef, useState } from "react"
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 
 /**
  * Hook that prevents accidental navigation away from an active session.
  * - Intercepts browser tab close / refresh via `beforeunload`.
  * - Intercepts Inertia navigations and shows a confirmation dialog.
  *
- * Returns `exitConfirmDialog` — a React element to render in the tree.
+ * Returns state and handlers to wire up an `ExitConfirmDialog` component.
  */
 export function useExitConfirmation(active: boolean) {
 	const [pendingVisit, setPendingVisit] = useState<{ url: string } | null>(null)
@@ -72,25 +62,9 @@ export function useExitConfirmation(active: boolean) {
 		setPendingVisit(null)
 	}, [])
 
-	const exitConfirmDialog = (
-		<AlertDialog
-			open={!!pendingVisit}
-			onOpenChange={(o) => !o && handleCancel()}
-		>
-			<AlertDialogContent>
-				<AlertDialogHeader>
-					<AlertDialogTitle>Έξοδος από την εξέταση;</AlertDialogTitle>
-					<AlertDialogDescription>
-						Αν φύγετε τώρα, η πρόοδός σας θα χαθεί. Είστε σίγουροι;
-					</AlertDialogDescription>
-				</AlertDialogHeader>
-				<AlertDialogFooter>
-					<AlertDialogCancel>Ακύρωση</AlertDialogCancel>
-					<AlertDialogAction onClick={handleConfirm}>Έξοδος</AlertDialogAction>
-				</AlertDialogFooter>
-			</AlertDialogContent>
-		</AlertDialog>
-	)
-
-	return { exitConfirmDialog }
+	return {
+		exitConfirmOpen: !!pendingVisit,
+		exitConfirmCancel: handleCancel,
+		exitConfirmConfirm: handleConfirm,
+	}
 }

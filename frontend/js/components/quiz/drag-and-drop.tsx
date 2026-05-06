@@ -12,7 +12,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table"
-import { useDragAndDrop } from "@/hooks/use-drag-and-drop"
+import { useDragAndDrop } from "@/hooks/quiz/use-drag-and-drop"
 import { QUIZ_INSTRUCTIONS } from "@/types/enums"
 import type { DragAndDropModel } from "@/types/models"
 

@@ -1,5 +1,5 @@
 ﻿import { useCallback, useMemo, useState } from "react"
-import { useValidation } from "@/hooks/use-validation"
+import { useValidation } from "@/hooks/quiz/use-validation"
 import { normalizeForTextComparison } from "@/lib/utils"
 import { ValidationStatus } from "@/types/enums"
 import type { OpenEndedModel } from "@/types/models"
