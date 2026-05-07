@@ -2,6 +2,7 @@ import { router } from "@inertiajs/react"
 import { useCallback, useMemo, useRef, useState } from "react"
 import { ExitConfirmDialog } from "@/components/exit-confirm-dialog"
 import { QuizRenderer } from "@/components/quiz/quiz-renderer"
+import { ResultsBanner } from "@/components/quiz/shared/results-banner"
 import { Button } from "@/components/ui/button"
 import { MultiSelect } from "@/components/ui/multi-select"
 import { useExitConfirmation } from "@/hooks/use-exit-confirmation"
@@ -234,21 +235,12 @@ function TrainingSession({ data }: { data: TrainingData }) {
 				onConfirm={exitConfirmConfirm}
 			/>
 			{allValidated && (
-				<div className="sticky top-0 z-10 rounded-2xl bg-white p-2 text-center shadow-sm">
-					<h1 className="mb-1 text-2xl font-bold">Αποτελέσματα</h1>
-					<p className="mb-1 text-3xl font-bold text-blue-600">
-						{earnedPoints} / {maxPoints}
-					</p>
-					<p className="mb-2 text-sm text-gray-600">
-						Δείτε τις σωστές και λάθος απαντήσεις σας παρακάτω.
-					</p>
-					<Button
-						variant="outline"
-						onClick={() => router.get("/quiz/training")}
-					>
-						Νέο τεστ
-					</Button>
-				</div>
+				<ResultsBanner
+					earnedPoints={earnedPoints}
+					maxPoints={maxPoints}
+					buttonLabel="Νέο τεστ"
+					onReset={() => router.get("/quiz/training")}
+				/>
 			)}
 
 			{!allValidated && (

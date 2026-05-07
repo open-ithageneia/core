@@ -43,8 +43,10 @@ export default function QuizCard({
 					</div>
 					{badge}
 				</div>
+
+				<hr className="border-border" />
 				{instruction && (
-					<p className="text-sm text-muted-foreground">{instruction}</p>
+					<p className="text-sm text-muted-foreground">{instruction}.</p>
 				)}
 				{promptText && <CardDescription>{promptText}</CardDescription>}
 			</CardHeader>
