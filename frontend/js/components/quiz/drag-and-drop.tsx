@@ -1,4 +1,5 @@
-import { DragDropProvider } from "@dnd-kit/react"
+import { PointerActivationConstraints } from "@dnd-kit/dom"
+import { DragDropProvider, PointerSensor } from "@dnd-kit/react"
 import { useEffect } from "react"
 import DraggableChip from "@/components/quiz/shared/draggable-chip"
 import DroppableCell from "@/components/quiz/shared/droppable-cell"
@@ -54,6 +55,16 @@ export default function DragAndDrop({
 			instruction={QUIZ_INSTRUCTIONS.DRAG_AND_DROP}
 		>
 			<DragDropProvider
+				sensors={() => [
+					PointerSensor.configure({
+						activationConstraints: [
+							new PointerActivationConstraints.Delay({
+								value: 300,
+								tolerance: 10,
+							}),
+						],
+					}),
+				]}
 				onDragEnd={({ operation }) => {
 					if (!operation.source || !operation.target) {
 						return
