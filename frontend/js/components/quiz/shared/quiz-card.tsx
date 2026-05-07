@@ -7,10 +7,12 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card"
+import { QUIZ_CATEGORY_LABELS, type QuizCategory } from "@/types/enums"
 import { useQuizResults } from "./quiz-results-context"
 
 type QuizCardProps = {
 	title: string
+	category: QuizCategory
 	badge?: ReactNode
 	instruction?: string
 	promptText?: string
@@ -21,6 +23,7 @@ type QuizCardProps = {
 
 export default function QuizCard({
 	title,
+	category,
 	badge: badgeProp,
 	instruction,
 	promptText,
@@ -33,10 +36,13 @@ export default function QuizCard({
 	return (
 		<Card className="flex h-full w-full flex-col rounded-2xl shadow-sm p-1">
 			<CardHeader className="shrink-0 p-2">
-				<CardTitle className="flex items-center justify-between">
-					{title}
+				<div className="flex items-center justify-between">
+					<div className="flex items-center gap-2">
+						<CardTitle>{title}</CardTitle>
+						<CardDescription>{QUIZ_CATEGORY_LABELS[category]}</CardDescription>
+					</div>
 					{badge}
-				</CardTitle>
+				</div>
 				{instruction && (
 					<p className="text-sm text-muted-foreground">{instruction}</p>
 				)}

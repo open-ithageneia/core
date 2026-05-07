@@ -235,6 +235,7 @@ export default function FillInTheBlank({
 			>
 				<QuizCard
 					title={`Ερώτηση ${item_index}`}
+					category={item.category}
 					instruction={QUIZ_INSTRUCTIONS.FILL_IN_THE_BLANK}
 					promptAssetUrl={content.prompt_asset_url}
 					headerExtra={choicesBank}
@@ -248,6 +249,7 @@ export default function FillInTheBlank({
 	return (
 		<QuizCard
 			title={`Ερώτηση ${item_index}`}
+			category={item.category}
 			instruction={QUIZ_INSTRUCTIONS.FILL_IN_THE_BLANK}
 			promptAssetUrl={content.prompt_asset_url}
 		>

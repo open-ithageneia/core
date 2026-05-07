@@ -71,6 +71,7 @@ export function QuizRenderer({
 				return (
 					<DragAndDrop
 						item={dndItem}
+						item_index={index}
 						forceValidation={forceValidation}
 						onScore={onScore}
 					/>

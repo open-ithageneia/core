@@ -19,12 +19,14 @@ import type { DragAndDropModel } from "@/types/models"
 
 type DragNDropProps = {
 	item: DragAndDropModel
+	item_index: number
 	forceValidation?: boolean
 	onScore?: (correct: number, total: number) => void
 }
 
 export default function DragAndDrop({
 	item,
+	item_index,
 	forceValidation,
 	onScore,
 }: DragNDropProps) {
@@ -51,7 +53,8 @@ export default function DragAndDrop({
 
 	return (
 		<QuizCard
-			title="Drag and Drop"
+			title={`Ερώτηση ${item_index}`}
+			category={item.category}
 			instruction={QUIZ_INSTRUCTIONS.DRAG_AND_DROP}
 		>
 			<DragDropProvider

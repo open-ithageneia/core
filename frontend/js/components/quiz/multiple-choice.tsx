@@ -42,6 +42,7 @@ export default function MultipleChoice({
 	return (
 		<QuizCard
 			title={`Ερώτηση ${item_index}`}
+			category={item.category}
 			instruction={
 				isMultiSelect
 					? QUIZ_INSTRUCTIONS.MULTIPLE_CHOICE_MULTI
