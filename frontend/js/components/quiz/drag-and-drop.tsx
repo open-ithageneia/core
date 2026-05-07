@@ -1,9 +1,8 @@
-import { PointerActivationConstraints } from "@dnd-kit/dom"
-import { DragDropProvider, PointerSensor } from "@dnd-kit/react"
 import { useEffect } from "react"
 import DraggableChip from "@/components/quiz/shared/draggable-chip"
 import DroppableCell from "@/components/quiz/shared/droppable-cell"
 import QuizCard from "@/components/quiz/shared/quiz-card"
+import QuizDndProvider from "@/components/quiz/shared/quiz-dnd-provider"
 import ValidationButton from "@/components/quiz/shared/validation-button"
 import {
 	Table,
@@ -57,26 +56,10 @@ export default function DragAndDrop({
 			category={item.category}
 			instruction={QUIZ_INSTRUCTIONS.DRAG_AND_DROP}
 		>
-			<DragDropProvider
-				sensors={() => [
-					PointerSensor.configure({
-						activationConstraints: [
-							new PointerActivationConstraints.Delay({
-								value: 300,
-								tolerance: 10,
-							}),
-						],
-					}),
-				]}
-				onDragEnd={({ operation }) => {
-					if (!operation.source || !operation.target) {
-						return
-					}
-					handleDragEnd(
-						operation.source.data.value,
-						String(operation.target.id),
-					)
-				}}
+			<QuizDndProvider
+				onDragEnd={(sourceValue, targetId) =>
+					handleDragEnd(sourceValue, targetId)
+				}
 			>
 				<div className="rounded-xl border bg-muted/30 p-2">
 					<div className="flex flex-wrap gap-1">
@@ -149,7 +132,7 @@ export default function DragAndDrop({
 						onValidate={() => setShowValidation(true)}
 					/>
 				)}
-			</DragDropProvider>
+			</QuizDndProvider>
 		</QuizCard>
 	)
 }

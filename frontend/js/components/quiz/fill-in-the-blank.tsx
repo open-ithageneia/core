@@ -1,8 +1,8 @@
-﻿import { DragDropProvider } from "@dnd-kit/react"
-import { useEffect } from "react"
+﻿import { useEffect } from "react"
 import DraggableChip from "@/components/quiz/shared/draggable-chip"
 import DroppableCell from "@/components/quiz/shared/droppable-cell"
 import QuizCard from "@/components/quiz/shared/quiz-card"
+import QuizDndProvider from "@/components/quiz/shared/quiz-dnd-provider"
 import ValidationButton from "@/components/quiz/shared/validation-button"
 import { Input } from "@/components/ui/input"
 import { useFillInTheBlank } from "@/hooks/quiz/use-fill-in-the-blank"
@@ -222,16 +222,10 @@ export default function FillInTheBlank({
 		)
 
 		return (
-			<DragDropProvider
-				onDragEnd={({ operation }) => {
-					if (!operation.source || !operation.target) {
-						return
-					}
-					handleDragEnd(
-						operation.source.data.value,
-						String(operation.target.id),
-					)
-				}}
+			<QuizDndProvider
+				onDragEnd={(sourceValue, targetId) =>
+					handleDragEnd(sourceValue, targetId)
+				}
 			>
 				<QuizCard
 					title={`Ερώτηση ${item_index}`}
@@ -242,7 +236,7 @@ export default function FillInTheBlank({
 				>
 					{body}
 				</QuizCard>
-			</DragDropProvider>
+			</QuizDndProvider>
 		)
 	}
 
