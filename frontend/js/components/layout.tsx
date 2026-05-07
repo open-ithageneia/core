@@ -10,7 +10,7 @@ const Layout = ({ children }: PropsWithChildren) => {
 	const isActive = (key: string) => nav.current === key
 
 	return (
-		<div className="flex h-dvh flex-col bg-gray-50 text-gray-900">
+		<div className="flex h-dvh flex-col overflow-y-auto bg-gray-50 text-gray-900">
 			<header className="shrink-0 border-b bg-white">
 				<div className="mx-auto flex max-w-6xl items-center justify-between px-2 py-2">
 					<Link href={nav.items.home.href} className="text-lg font-semibold">
@@ -73,28 +73,26 @@ const Layout = ({ children }: PropsWithChildren) => {
 				</div>
 			</header>
 
-			<main className="mx-auto w-full flex-1 overflow-y-auto px-1 py-1 md:py-2">
-				<div className="mx-auto max-w-6xl h-full">
-					{children}
-				</div>
-
-				{nav.current === "home" && (
-					<footer className="mt-8 border-t bg-white py-4">
-						<div className="mx-auto max-w-6xl px-4 text-center text-sm text-gray-500">
-							<p>
-								Για περισσότερες πληροφορίες σχετικά με τα αλληλέγγυα μαθήματα
-								ιθαγένειας μπορείτε να απευθυνθείτε στο mail:{" "}
-								<a
-									href="mailto:ithageneia.stekimetanaston@gmail.com"
-									className="underline hover:text-gray-700"
-								>
-									ithageneia.stekimetanaston@gmail.com
-								</a>
-							</p>
-						</div>
-					</footer>
-				)}
+			<main className="mx-auto w-full max-w-6xl flex-1 px-1 py-1 md:py-2">
+				{children}
 			</main>
+
+			{nav.current === "home" && (
+				<footer className="mt-8 border-t bg-white py-4">
+					<div className="mx-auto max-w-6xl px-4 text-center text-sm text-gray-500">
+						<p>
+							Για περισσότερες πληροφορίες σχετικά με τα αλληλέγγυα μαθήματα
+							ιθαγένειας μπορείτε να απευθυνθείτε στο mail:{" "}
+							<a
+								href="mailto:ithageneia.stekimetanaston@gmail.com"
+								className="underline hover:text-gray-700"
+							>
+								ithageneia.stekimetanaston@gmail.com
+							</a>
+						</p>
+					</div>
+				</footer>
+			)}
 		</div>
 	)
 }
