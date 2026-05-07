@@ -30,7 +30,9 @@ export function useValuePool(values: string[]) {
 	function removeValueFromAvailable(value: string) {
 		setAvailableValues((prev) => {
 			const idx = prev.indexOf(value)
-			if (idx === -1) return prev
+			if (idx === -1) {
+				return prev
+			}
 			return [...prev.slice(0, idx), ...prev.slice(idx + 1)]
 		})
 	}

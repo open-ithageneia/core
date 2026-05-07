@@ -1,5 +1,5 @@
 ﻿import { useCallback, useMemo, useState } from "react"
-import { useValidation } from "@/hooks/useValidation"
+import { useValidation } from "@/hooks/quiz/use-validation"
 import { normalizeForTextComparison, useValuePool } from "@/lib/utils"
 import { ValidationStatus } from "@/types/enums"
 import type { FillInTheBlankModel } from "@/types/models"
@@ -45,12 +45,15 @@ export function useFillInTheBlank(
 	// 2. "inline_choices" — has_multiple_choices is true (each blank has its own dropdown)
 	// 3. "hidden" — no choices shown at all, user must type (normalized comparison)
 	const variant = useMemo(() => {
-		if (content.has_multiple_choices) return "inline_choices" as const
+		if (content.has_multiple_choices) {
+			return "inline_choices" as const
+		}
 		if (
 			content.prompt_instruction_choices &&
 			content.prompt_instruction_choices.length > 0
-		)
+		) {
 			return "choices_shown" as const
+		}
 		return "hidden" as const
 	}, [content.has_multiple_choices, content.prompt_instruction_choices])
 
@@ -69,7 +72,9 @@ export function useFillInTheBlank(
 
 	const dropValue = useCallback(
 		(blankIndex: number, value: string) => {
-			if (showValidation) return
+			if (showValidation) {
+				return
+			}
 			setDroppedValues((prev) => {
 				const next = [...prev]
 				next[blankIndex] = value
@@ -82,9 +87,13 @@ export function useFillInTheBlank(
 
 	const clearDroppedValue = useCallback(
 		(blankIndex: number) => {
-			if (showValidation) return
+			if (showValidation) {
+				return
+			}
 			const val = droppedValues[blankIndex]
-			if (!val) return
+			if (!val) {
+				return
+			}
 			setDroppedValues((prev) => {
 				const next = [...prev]
 				next[blankIndex] = null
@@ -96,10 +105,16 @@ export function useFillInTheBlank(
 	)
 
 	function handleDragEnd(sourceValue: string, targetId: string) {
-		if (showValidation) return
-		if (!targetId.startsWith("blank-")) return
+		if (showValidation) {
+			return
+		}
+		if (!targetId.startsWith("blank-")) {
+			return
+		}
 		const blankIndex = Number(targetId.replace("blank-", ""))
-		if (droppedValues[blankIndex] !== null) return
+		if (droppedValues[blankIndex] !== null) {
+			return
+		}
 		dropValue(blankIndex, sourceValue)
 	}
 
@@ -110,7 +125,9 @@ export function useFillInTheBlank(
 
 	const updateAnswer = useCallback(
 		(blankIndex: number, value: string) => {
-			if (showValidation) return
+			if (showValidation) {
+				return
+			}
 			setTextAnswers((prev) => {
 				const next = [...prev]
 				next[blankIndex] = value
@@ -122,7 +139,9 @@ export function useFillInTheBlank(
 
 	// --- Unified answers (for display / validation) ---
 	const answers = useMemo(() => {
-		if (variant === "choices_shown") return droppedValues.map((v) => v ?? "")
+		if (variant === "choices_shown") {
+			return droppedValues.map((v) => v ?? "")
+		}
 		return textAnswers
 	}, [variant, droppedValues, textAnswers])
 
@@ -136,7 +155,9 @@ export function useFillInTheBlank(
 
 	// --- Validation ---
 	const states: ValidationState[] = useMemo(() => {
-		if (!showValidation) return blanks.map(() => null)
+		if (!showValidation) {
+			return blanks.map(() => null)
+		}
 		return blanks.map((blank, i) => {
 			const userAnswer = answers[i]
 			if (variant === "hidden") {

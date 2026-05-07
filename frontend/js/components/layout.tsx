@@ -3,7 +3,7 @@ import { Menu } from "lucide-react"
 import type { PropsWithChildren, ReactElement } from "react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { useNav } from "@/hooks/useNav"
+import { useNav } from "@/hooks/use-nav"
 
 const Layout = ({ children }: PropsWithChildren) => {
 	const nav = useNav()

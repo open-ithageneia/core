@@ -1,7 +1,9 @@
 ﻿import { router } from "@inertiajs/react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { QuizRenderer } from "@/components/quiz/QuizRenderer"
+import { ExitConfirmDialog } from "@/components/exit-confirm-dialog"
+import { QuizRenderer } from "@/components/quiz/quiz-renderer"
 import { Button } from "@/components/ui/button"
+import { useExitConfirmation } from "@/hooks/use-exit-confirmation"
 import { getScoreColor } from "@/lib/score-color"
 import type { TrainingData } from "@/types/models"
 
@@ -20,6 +22,8 @@ function formatTime(seconds: number): string {
 function SimulationSession({ data }: { data: TrainingData }) {
 	const [currentIndex, setCurrentIndex] = useState(0)
 	const [finished, setFinished] = useState(false)
+	const { exitConfirmOpen, exitConfirmCancel, exitConfirmConfirm } =
+		useExitConfirmation(!finished)
 	const [timeLeft, setTimeLeft] = useState(SIMULATION_DURATION)
 	const scoresRef = useRef<Map<number, { correct: number; total: number }>>(
 		new Map(),
@@ -30,7 +34,9 @@ function SimulationSession({ data }: { data: TrainingData }) {
 
 	// Timer
 	useEffect(() => {
-		if (finished) return
+		if (finished) {
+			return
+		}
 		const interval = setInterval(() => {
 			setTimeLeft((prev) => {
 				if (prev <= 1) {
@@ -68,11 +74,15 @@ function SimulationSession({ data }: { data: TrainingData }) {
 	const isLast = currentIndex === total - 1
 
 	const goNext = useCallback(() => {
-		if (currentIndex < total - 1) setCurrentIndex((i) => i + 1)
+		if (currentIndex < total - 1) {
+			setCurrentIndex((i) => i + 1)
+		}
 	}, [currentIndex, total])
 
 	const goPrev = useCallback(() => {
-		if (currentIndex > 0) setCurrentIndex((i) => i - 1)
+		if (currentIndex > 0) {
+			setCurrentIndex((i) => i - 1)
+		}
 	}, [currentIndex])
 
 	if (total === 0) {
@@ -89,6 +99,11 @@ function SimulationSession({ data }: { data: TrainingData }) {
 
 	return (
 		<section className={`flex ${finished ? "" : "h-full"} flex-col`}>
+			<ExitConfirmDialog
+				open={exitConfirmOpen}
+				onCancel={exitConfirmCancel}
+				onConfirm={exitConfirmConfirm}
+			/>
 			{finished && (
 				<div className="sticky top-0 z-10 rounded-2xl bg-white p-2 text-center shadow-sm">
 					<h1 className="mb-1 text-2xl font-bold">Αποτελέσματα</h1>

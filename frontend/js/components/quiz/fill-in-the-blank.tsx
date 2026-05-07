@@ -1,11 +1,11 @@
 ﻿import { DragDropProvider } from "@dnd-kit/react"
 import { useEffect } from "react"
-import DraggableChip from "@/components/quiz/shared/DraggableChip"
-import DroppableCell from "@/components/quiz/shared/DroppableCell"
-import QuizCard from "@/components/quiz/shared/QuizCard"
-import ValidationButton from "@/components/quiz/shared/ValidationButton"
+import DraggableChip from "@/components/quiz/shared/draggable-chip"
+import DroppableCell from "@/components/quiz/shared/droppable-cell"
+import QuizCard from "@/components/quiz/shared/quiz-card"
+import ValidationButton from "@/components/quiz/shared/validation-button"
 import { Input } from "@/components/ui/input"
-import { useFillInTheBlank } from "@/hooks/useFillInTheBlank"
+import { useFillInTheBlank } from "@/hooks/quiz/use-fill-in-the-blank"
 import { cn } from "@/lib/utils"
 import { QUIZ_INSTRUCTIONS, ValidationStatus } from "@/types/enums"
 import type { FillInTheBlankModel } from "@/types/models"
@@ -224,7 +224,9 @@ export default function FillInTheBlank({
 		return (
 			<DragDropProvider
 				onDragEnd={({ operation }) => {
-					if (!operation.source || !operation.target) return
+					if (!operation.source || !operation.target) {
+						return
+					}
 					handleDragEnd(
 						operation.source.data.value,
 						String(operation.target.id),

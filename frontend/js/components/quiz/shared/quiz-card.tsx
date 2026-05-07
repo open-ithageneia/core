@@ -7,7 +7,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card"
-import { useQuizResults } from "./QuizResultsContext"
+import { useQuizResults } from "./quiz-results-context"
 
 type QuizCardProps = {
 	title: string

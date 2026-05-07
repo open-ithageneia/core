@@ -1,10 +1,10 @@
 ﻿import type { ReactNode } from "react"
-import DragAndDrop from "@/components/quiz/DragAndDrop"
-import FillInTheBlank from "@/components/quiz/FillInTheBlank"
-import MultipleChoice from "@/components/quiz/MultipleChoice"
-import OpenEnded from "@/components/quiz/OpenEnded"
-import { QuizResultsProvider } from "@/components/quiz/shared/QuizResultsContext"
-import TrueFalse from "@/components/quiz/TrueFalse"
+import DragAndDrop from "@/components/quiz/drag-and-drop"
+import FillInTheBlank from "@/components/quiz/fill-in-the-blank"
+import MultipleChoice from "@/components/quiz/multiple-choice"
+import OpenEnded from "@/components/quiz/open-ended"
+import { QuizResultsProvider } from "@/components/quiz/shared/quiz-results-context"
+import TrueFalse from "@/components/quiz/true-false"
 import type {
 	DragAndDropContent,
 	DragAndDropModel,

@@ -1,5 +1,5 @@
 ﻿import { useCallback, useMemo, useState } from "react"
-import { useValidation } from "@/hooks/useValidation"
+import { useValidation } from "@/hooks/quiz/use-validation"
 import type { StatementModel } from "@/types/models"
 
 type UseTrueFalseOptions = {
@@ -21,7 +21,9 @@ export function useTrueFalse(
 
 	const selectAnswer = useCallback(
 		(index: number, value: boolean) => {
-			if (showValidation) return
+			if (showValidation) {
+				return
+			}
 			setAnswers((prev) => {
 				const next = [...prev]
 				next[index] = value
@@ -32,12 +34,16 @@ export function useTrueFalse(
 	)
 
 	const results = useMemo(() => {
-		if (!showValidation) return choices.map(() => null)
+		if (!showValidation) {
+			return choices.map(() => null)
+		}
 		return choices.map((choice, i) => answers[i] === choice.is_correct)
 	}, [showValidation, choices, answers])
 
 	const correctAnswersCount = useMemo(() => {
-		if (!showValidation) return 0
+		if (!showValidation) {
+			return 0
+		}
 		return results.filter((r) => r === true).length
 	}, [showValidation, results])
 
