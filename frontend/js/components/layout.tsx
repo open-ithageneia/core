@@ -73,8 +73,10 @@ const Layout = ({ children }: PropsWithChildren) => {
 				</div>
 			</header>
 
-			<main className="mx-auto w-full max-w-6xl flex-1 overflow-y-auto px-1 py-1 md:py-2">
-				{children}
+			<main className="mx-auto w-full flex-1 overflow-y-auto px-1 py-1 md:py-2">
+				<div className="mx-auto max-w-6xl h-full">
+					{children}
+				</div>
 
 				{nav.current === "home" && (
 					<footer className="mt-8 border-t bg-white py-4">
