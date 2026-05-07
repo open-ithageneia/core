@@ -6,11 +6,11 @@ export default function Home() {
 	const nav = useNav()
 
 	return (
-		<div className="space-y-8">
+		<div className="space-y-4">
 			{/* Hero Section */}
 			<section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-12 text-white shadow-xl sm:px-12 sm:py-16">
 				<div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDJ2LTJoMzR6bTAtMzBWMkgydjJoMzR6TTIgMmgzNHYySDJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
-				<div className="relative z-10 max-w-2xl">
+				<div className="relative z-10 max-w-4xl">
 					<h1 className="mb-4 text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
 						Open Ithageneia
 					</h1>
