@@ -75,6 +75,23 @@ const Layout = ({ children }: PropsWithChildren) => {
 
 			<main className="mx-auto w-full max-w-6xl flex-1 overflow-y-auto px-1 py-1 md:py-2">
 				{children}
+
+				{nav.current === "home" && (
+					<footer className="mt-8 border-t bg-white py-4">
+						<div className="mx-auto max-w-6xl px-4 text-center text-sm text-gray-500">
+							<p>
+								Για περισσότερες πληροφορίες σχετικά με τα αλληλέγγυα μαθήματα ιθαγένειας μπορείτε
+								να απευθυνθείτε στο mail:{" "}
+								<a
+									href="mailto:ithageneia.stekimetanaston@gmail.com"
+									className="underline hover:text-gray-700"
+								>
+									ithageneia.stekimetanaston@gmail.com
+								</a>
+							</p>
+						</div>
+					</footer>
+				)}
 			</main>
 		</div>
 	)
