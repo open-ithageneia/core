@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ExitConfirmDialog } from "@/components/exit-confirm-dialog"
 import { QuizRenderer } from "@/components/quiz/quiz-renderer"
+import { ResultsBanner } from "@/components/quiz/shared/results-banner"
 import { Button } from "@/components/ui/button"
 import { useExitConfirmation } from "@/hooks/use-exit-confirmation"
 import { getScoreColor } from "@/lib/score-color"
@@ -105,21 +106,12 @@ function SimulationSession({ data }: { data: TrainingData }) {
 				onConfirm={exitConfirmConfirm}
 			/>
 			{finished && (
-				<div className="sticky top-0 z-10 rounded-2xl bg-white p-2 text-center shadow-sm">
-					<h1 className="mb-1 text-2xl font-bold">Αποτελέσματα</h1>
-					<p className="mb-1 text-3xl font-bold text-blue-600">
-						{earnedPoints} / {maxPoints}
-					</p>
-					<p className="mb-2 text-sm text-gray-600">
-						Δείτε τις σωστές και λάθος απαντήσεις σας παρακάτω.
-					</p>
-					<Button
-						variant="outline"
-						onClick={() => router.get("/quiz/simulation")}
-					>
-						Νέα προσομοίωση
-					</Button>
-				</div>
+				<ResultsBanner
+					earnedPoints={earnedPoints}
+					maxPoints={maxPoints}
+					buttonLabel="Νέα προσομοίωση"
+					onReset={() => router.get("/quiz/simulation")}
+				/>
 			)}
 
 			{!finished && (

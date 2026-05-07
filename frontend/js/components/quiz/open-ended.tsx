@@ -48,6 +48,7 @@ export default function OpenEnded({
 	return (
 		<QuizCard
 			title={`Ερώτηση ${item_index}`}
+			category={item.category}
 			promptText={item.content.prompt_text}
 			promptAssetUrl={item.content.prompt_asset_url}
 		>

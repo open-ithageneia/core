@@ -1,8 +1,8 @@
-﻿import { DragDropProvider } from "@dnd-kit/react"
-import { useEffect } from "react"
+﻿import { useEffect } from "react"
 import DraggableChip from "@/components/quiz/shared/draggable-chip"
 import DroppableCell from "@/components/quiz/shared/droppable-cell"
 import QuizCard from "@/components/quiz/shared/quiz-card"
+import QuizDndProvider from "@/components/quiz/shared/quiz-dnd-provider"
 import ValidationButton from "@/components/quiz/shared/validation-button"
 import { Input } from "@/components/ui/input"
 import { useFillInTheBlank } from "@/hooks/quiz/use-fill-in-the-blank"
@@ -222,32 +222,28 @@ export default function FillInTheBlank({
 		)
 
 		return (
-			<DragDropProvider
-				onDragEnd={({ operation }) => {
-					if (!operation.source || !operation.target) {
-						return
-					}
-					handleDragEnd(
-						operation.source.data.value,
-						String(operation.target.id),
-					)
-				}}
+			<QuizDndProvider
+				onDragEnd={(sourceValue, targetId) =>
+					handleDragEnd(sourceValue, targetId)
+				}
 			>
 				<QuizCard
 					title={`Ερώτηση ${item_index}`}
+					category={item.category}
 					instruction={QUIZ_INSTRUCTIONS.FILL_IN_THE_BLANK}
 					promptAssetUrl={content.prompt_asset_url}
 					headerExtra={choicesBank}
 				>
 					{body}
 				</QuizCard>
-			</DragDropProvider>
+			</QuizDndProvider>
 		)
 	}
 
 	return (
 		<QuizCard
 			title={`Ερώτηση ${item_index}`}
+			category={item.category}
 			instruction={QUIZ_INSTRUCTIONS.FILL_IN_THE_BLANK}
 			promptAssetUrl={content.prompt_asset_url}
 		>

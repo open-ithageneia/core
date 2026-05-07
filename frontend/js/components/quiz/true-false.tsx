@@ -40,6 +40,7 @@ export default function TrueFalse({
 	return (
 		<QuizCard
 			title={`Ερώτηση ${item_index}`}
+			category={item.category}
 			instruction={QUIZ_INSTRUCTIONS.TRUE_FALSE}
 			promptText={item.content.prompt_text}
 			promptAssetUrl={item.content.prompt_asset_url}
