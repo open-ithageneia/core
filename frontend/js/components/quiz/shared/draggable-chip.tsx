@@ -2,17 +2,19 @@
 
 import { Badge } from "@/components/ui/badge"
 
-type DraggableChipProps = {
+type DraggableChipProps<T> = {
 	id: string
-	value: string
+	value: T
+	displayValue?: (value: T) => string | null
 	disabled: boolean
 }
 
-export default function DraggableChip({
+export default function DraggableChip<T>({
 	id,
 	value,
+	displayValue = (v: T) => String(v),
 	disabled,
-}: DraggableChipProps) {
+}: DraggableChipProps<T>) {
 	const { ref, isDragging } = useDraggable({
 		id,
 		disabled,
@@ -31,7 +33,7 @@ export default function DraggableChip({
 				variant="secondary"
 				className="pointer-events-none cursor-inherit rounded-full px-3 py-1 text-sm font-medium"
 			>
-				{value}
+				{displayValue(value)}
 			</Badge>
 		</button>
 	)

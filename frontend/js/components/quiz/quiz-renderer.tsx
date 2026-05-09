@@ -1,6 +1,7 @@
 ﻿import type { ReactNode } from "react"
 import DragAndDrop from "@/components/quiz/drag-and-drop"
 import FillInTheBlank from "@/components/quiz/fill-in-the-blank"
+import Matching from "@/components/quiz/matching"
 import MultipleChoice from "@/components/quiz/multiple-choice"
 import OpenEnded from "@/components/quiz/open-ended"
 import { QuizResultsProvider } from "@/components/quiz/shared/quiz-results-context"
@@ -10,6 +11,8 @@ import type {
 	DragAndDropModel,
 	FillInTheBlankContent,
 	FillInTheBlankModel,
+	MatchingContent,
+	MatchingModel,
 	OpenEndedContent,
 	OpenEndedModel,
 	StatementModel,
@@ -101,6 +104,21 @@ export function QuizRenderer({
 				return (
 					<FillInTheBlank
 						item={fitbItem}
+						item_index={index}
+						forceValidation={forceValidation}
+						onScore={onScore}
+					/>
+				)
+			}
+			case "Matching": {
+				const matchingItem = {
+					id: item.id,
+					category: item.category,
+					content: item.content as MatchingContent,
+				} as MatchingModel
+				return (
+					<Matching
+						item={matchingItem}
 						item_index={index}
 						forceValidation={forceValidation}
 						onScore={onScore}

@@ -5,23 +5,25 @@ import { Badge } from "@/components/ui/badge"
 import { ValidationStatus } from "@/types/enums"
 import type { ValidationState } from "@/types/quiz"
 
-type DroppableCellProps = {
+type DroppableCellProps<T> = {
 	id: string
-	value: string | null
+	value: T | null
+	displayValue?: (value: T) => string | null
 	onRemove: () => void
 	disabled: boolean
 	validationState: ValidationState
 	isLocked: boolean
 }
 
-export default function DroppableCell({
+export default function DroppableCell<T>({
 	id,
 	value,
+	displayValue = (v: T) => String(v),
 	onRemove,
 	disabled,
 	validationState,
 	isLocked,
-}: DroppableCellProps) {
+}: DroppableCellProps<T>) {
 	const { ref, isDropTarget } = useDroppable({
 		id,
 		disabled: disabled || isLocked,
@@ -51,7 +53,7 @@ export default function DroppableCell({
 						variant="outline"
 						className="rounded-full px-3 py-1 text-sm text-center break-words whitespace-normal"
 					>
-						{value}
+						{displayValue(value)}
 					</Badge>
 
 					{!isLocked ? (
