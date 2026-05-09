@@ -1,13 +1,20 @@
-﻿import {useEffect} from "react"
+﻿import { useEffect } from "react"
 import DraggableChip from "@/components/quiz/shared/draggable-chip"
 import DroppableCell from "@/components/quiz/shared/droppable-cell"
 import QuizCard from "@/components/quiz/shared/quiz-card"
 import QuizDndProvider from "@/components/quiz/shared/quiz-dnd-provider"
 import ValidationButton from "@/components/quiz/shared/validation-button"
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@/components/ui/table"
-import {useMatching} from "@/hooks/quiz/use-matching"
-import {QUIZ_INSTRUCTIONS, ValidationStatus} from "@/types/enums"
-import type {MatchingItem, MatchingModel} from "@/types/models"
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table"
+import { useMatching } from "@/hooks/quiz/use-matching"
+import { QUIZ_INSTRUCTIONS, ValidationStatus } from "@/types/enums"
+import type { MatchingItem, MatchingModel } from "@/types/models"
 
 type DragNDropProps = {
 	item: MatchingModel
@@ -92,10 +99,13 @@ export default function Matching({
 									key={`row-${rowIndex}`}
 									className={rowIndex % 2 === 0 ? "bg-muted/20" : ""}
 								>
-									{item.content.map((column, colIndex) => {
+									{item.content.map((_column, colIndex) => {
 										const cellValue = tableValues[rowIndex][colIndex]
 
-										const validationState = getCellValidationState(rowIndex, colIndex)
+										const validationState = getCellValidationState(
+											rowIndex,
+											colIndex,
+										)
 
 										const correctValue =
 											colIndex === 1 ? getCorrectValue(rowIndex) : null
@@ -115,17 +125,18 @@ export default function Matching({
 														isLocked={showValidation || colIndex === 0}
 														onRemove={() => clearCell(rowIndex, colIndex)}
 													/>
-													{validationState === ValidationStatus.Incorrect && correctValue && (
-														<DroppableCell
-															id={`correctCell-${rowIndex}-${colIndex}`}
-															value={correctValue}
-															displayValue={(value) => value.text}
-															disabled={true}
-															validationState={ValidationStatus.Correct}
-															isLocked={true}
-															onRemove={() => {}}
-														/>
-													)}
+													{validationState === ValidationStatus.Incorrect &&
+														correctValue && (
+															<DroppableCell
+																id={`correctCell-${rowIndex}-${colIndex}`}
+																value={correctValue}
+																displayValue={(value) => value.text}
+																disabled={true}
+																validationState={ValidationStatus.Correct}
+																isLocked={true}
+																onRemove={() => {}}
+															/>
+														)}
 												</div>
 											</TableCell>
 										)

@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react"
+﻿import { useCallback, useMemo, useState } from "react"
 import { useValidation } from "@/hooks/quiz/use-validation"
 import { useValuePool } from "@/lib/utils"
 import { ValidationStatus } from "@/types/enums"
@@ -73,15 +73,15 @@ export function useMatching(item: MatchingModel, options?: UseMatchingOptions) {
 		returnValueToAvailable(value)
 	}
 
-	function isValueCorrect(
-		leftItem: CellValue<MatchingItem>,
-		rightItem: CellValue<MatchingItem>,
-	) {
-		if (!rightItem) {
-			return false
-		}
-		return leftItem!.matched_id === rightItem.id
-	}
+	const isValueCorrect = useCallback(
+		(leftItem: CellValue<MatchingItem>, rightItem: CellValue<MatchingItem>) => {
+			if (!rightItem) {
+				return false
+			}
+			return leftItem?.matched_id === rightItem.id
+		},
+		[],
+	)
 
 	function getCellValidationState(
 		rowIndex: number,
@@ -126,7 +126,7 @@ export function useMatching(item: MatchingModel, options?: UseMatchingOptions) {
 			const rightItem = row[1]
 			return count + (isValueCorrect(leftItem, rightItem) ? 1 : 0)
 		}, 0)
-	}, [tableValues])
+	}, [tableValues, isValueCorrect])
 
 	function handleDragEnd(sourceValue: MatchingItem, targetId: string) {
 		if (showValidation) {
