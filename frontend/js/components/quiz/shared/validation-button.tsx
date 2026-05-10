@@ -10,7 +10,7 @@ export default function ValidationButton({
 	onValidate,
 }: ValidationButtonProps) {
 	return (
-		<div className="flex flex-col items-center justify-center gap-2">
+		<div className="flex flex-col items-center justify-center gap-1">
 			<Button type="button" onClick={onValidate} disabled={showValidation}>
 				{showValidation ? "Οι απαντήσεις ελέγχθηκαν" : "Έλεγχος απαντήσεων"}
 			</Button>

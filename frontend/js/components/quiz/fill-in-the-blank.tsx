@@ -203,7 +203,7 @@ export default function FillInTheBlank({
 	if (variant === "choices_shown") {
 		const choicesBank = (
 			<div className="rounded-xl border bg-muted/30 p-4">
-				<div className="flex flex-wrap gap-2">
+				<div className="flex flex-wrap gap-1">
 					{availableValues.map((value) => (
 						<DraggableChip
 							key={value}

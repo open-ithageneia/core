@@ -50,30 +50,33 @@ export default function DragAndDrop({
 		}
 	}, [showValidation, onScore, correctAnswersCount, totalScore])
 
-	return (
-		<QuizCard
-			title={`Ερώτηση ${item_index}`}
-			category={item.category}
-			instruction={QUIZ_INSTRUCTIONS.DRAG_AND_DROP}
-		>
-			<QuizDndProvider
-				onDragEnd={(sourceValue, targetId) =>
-					handleDragEnd(sourceValue, targetId)
-				}
-			>
-				<div className="rounded-xl border bg-muted/30 p-2">
-					<div className="flex flex-wrap gap-1">
-						{availableValues.map((value) => (
-							<DraggableChip
-								key={value}
-								id={`chip-${value}`}
-								value={value}
-								disabled={showValidation}
-							/>
-						))}
-					</div>
-				</div>
+	const choicesBank = (
+		<div className="rounded-xl border bg-muted/30 p-2">
+			<div className="flex flex-wrap gap-1">
+				{availableValues.map((value) => (
+					<DraggableChip
+						key={value}
+						id={`chip-${value}`}
+						value={value}
+						disabled={showValidation}
+					/>
+				))}
+			</div>
+		</div>
+	)
 
+	return (
+		<QuizDndProvider
+			onDragEnd={(sourceValue, targetId) =>
+				handleDragEnd(sourceValue, targetId)
+			}
+		>
+			<QuizCard
+				title={`Ερώτηση ${item_index}`}
+				category={item.category}
+				instruction={QUIZ_INSTRUCTIONS.DRAG_AND_DROP}
+				headerExtra={choicesBank}
+			>
 				<div className="overflow-x-auto rounded-xl border">
 					<Table className="table-fixed w-full">
 						<TableHeader>
@@ -132,7 +135,7 @@ export default function DragAndDrop({
 						onValidate={() => setShowValidation(true)}
 					/>
 				)}
-			</QuizDndProvider>
-		</QuizCard>
+			</QuizCard>
+		</QuizDndProvider>
 	)
 }

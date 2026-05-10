@@ -80,28 +80,29 @@ const Layout = ({ children }: PropsWithChildren) => {
 				className="flex min-h-0 flex-1 flex-col overflow-y-auto"
 				data-scroll-container
 			>
-				<main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-1 py-1 md:py-2">
+				<main
+					className={`mx-auto flex w-full max-w-6xl flex-1 flex-col px-1 py-1 md:py-2${nav.current !== "home" ? " min-h-0" : ""}`}
+				>
 					{children}
-
-					{nav.current === "home" && (
-						<footer className="mt-8 border-t bg-white py-4">
-							<div className="mx-auto max-w-6xl px-4 text-center text-sm text-gray-500">
-								<p>
-									Για περισσότερες πληροφορίες σχετικά με τα αλληλέγγυα μαθήματα
-									ιθαγένειας μπορείτε να απευθυνθείτε στο mail:{" "}
-									<a
-										href="mailto:ithageneia.stekimetanaston@gmail.com"
-										className="underline hover:text-gray-700"
-									>
-										ithageneia.stekimetanaston@gmail.com
-									</a>
-								</p>
-							</div>
-						</footer>
-					)}
 				</main>
-
+				{nav.current === "home" && (
+					<footer className="mt-8 border-t bg-white py-4">
+						<div className="mx-auto max-w-6xl px-4 text-center text-sm text-gray-500">
+							<p>
+								Για περισσότερες πληροφορίες σχετικά με τα αλληλέγγυα μαθήματα
+								ιθαγένειας μπορείτε να απευθυνθείτε στο mail:{" "}
+								<a
+									href="mailto:ithageneia.stekimetanaston@gmail.com"
+									className="underline hover:text-gray-700"
+								>
+									ithageneia.stekimetanaston@gmail.com
+								</a>
+							</p>
+						</div>
+					</footer>
+				)}
 			</div>
+
 			<ScrollToTop />
 		</div>
 	)

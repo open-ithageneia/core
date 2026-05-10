@@ -51,32 +51,35 @@ export default function Matching({
 		}
 	}, [showValidation, onScore, correctAnswersCount, totalScore])
 
-	return (
-		<QuizCard
-			title={`Ερώτηση ${item_index}`}
-			category={item.category}
-			instruction={QUIZ_INSTRUCTIONS.DRAG_AND_DROP}
-		>
-			<QuizDndProvider<MatchingItem>
-				onDragEnd={(sourceValue, targetId) =>
-					handleDragEnd(sourceValue, targetId)
-				}
-			>
-				<div className="rounded-xl border bg-muted/30 p-2">
-					<div className="flex flex-wrap gap-1">
-						{availableValues.map((item) => (
-							<DraggableChip
-								key={item.id}
-								id={`chip-${item.id}`}
-								imageUrl={item.asset_url}
-								value={item}
-								displayValue={(value) => value.text}
-								disabled={showValidation}
-							/>
-						))}
-					</div>
-				</div>
+	const choicesBank = (
+		<div className="rounded-xl border bg-muted/30 p-2">
+			<div className="flex flex-wrap gap-1">
+				{availableValues.map((item) => (
+					<DraggableChip
+						key={item.id}
+						id={`chip-${item.id}`}
+						imageUrl={item.asset_url}
+						value={item}
+						displayValue={(value) => value.text}
+						disabled={showValidation}
+					/>
+				))}
+			</div>
+		</div>
+	)
 
+	return (
+		<QuizDndProvider<MatchingItem>
+			onDragEnd={(sourceValue, targetId) =>
+				handleDragEnd(sourceValue, targetId)
+			}
+		>
+			<QuizCard
+				title={`Ερώτηση ${item_index}`}
+				category={item.category}
+				instruction={QUIZ_INSTRUCTIONS.DRAG_AND_DROP}
+				headerExtra={choicesBank}
+			>
 				<div className="overflow-x-auto rounded-xl border">
 					<Table className="table-fixed w-full">
 						<TableHeader>
@@ -156,7 +159,7 @@ export default function Matching({
 						onValidate={() => setShowValidation(true)}
 					/>
 				)}
-			</QuizDndProvider>
-		</QuizCard>
+			</QuizCard>
+		</QuizDndProvider>
 	)
 }

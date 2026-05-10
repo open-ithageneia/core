@@ -70,7 +70,7 @@ export default function TrueFalse({
 							)}
 						</span>
 
-						<div className="flex shrink-0 gap-2">
+						<div className="flex shrink-0 gap-1">
 							<button
 								type="button"
 								disabled={showValidation}
