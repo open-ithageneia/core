@@ -68,6 +68,7 @@ export default function Matching({
 							<DraggableChip
 								key={item.id}
 								id={`chip-${item.id}`}
+								imageUrl={item.asset_url}
 								value={item}
 								displayValue={(value) => value.text}
 								disabled={showValidation}
@@ -118,6 +119,7 @@ export default function Matching({
 												<div className="flex flex-col gap-1">
 													<DroppableCell
 														id={`droppableCell-${rowIndex}-${colIndex}`}
+														imageUrl={cellValue?.asset_url}
 														value={cellValue}
 														displayValue={(value) => value.text}
 														disabled={Boolean(cellValue)}
@@ -129,6 +131,7 @@ export default function Matching({
 														correctValue && (
 															<DroppableCell
 																id={`correctCell-${rowIndex}-${colIndex}`}
+																imageUrl={correctValue.asset_url}
 																value={correctValue}
 																displayValue={(value) => value.text}
 																disabled={true}

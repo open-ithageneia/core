@@ -9,6 +9,7 @@ type DroppableCellProps<T> = {
 	id: string
 	value: T | null
 	displayValue?: (value: T) => string | null
+	imageUrl?: string | null
 	onRemove: () => void
 	disabled: boolean
 	validationState: ValidationState
@@ -19,6 +20,7 @@ export default function DroppableCell<T>({
 	id,
 	value,
 	displayValue = (v: T) => String(v),
+	imageUrl,
 	onRemove,
 	disabled,
 	validationState,
@@ -51,9 +53,13 @@ export default function DroppableCell<T>({
 				<div className="flex items-center gap-2">
 					<Badge
 						variant="outline"
-						className="rounded-full px-3 py-1 text-sm text-center break-words whitespace-normal"
+						className="rounded-2xl px-3 py-1 text-sm text-center break-words whitespace-normal"
 					>
-						{displayValue(value)}
+						{imageUrl ? (
+							<img src={imageUrl} alt={`Επιλογή ${id}`} className="rounded" />
+						) : (
+							displayValue(value)
+						)}
 					</Badge>
 
 					{!isLocked ? (

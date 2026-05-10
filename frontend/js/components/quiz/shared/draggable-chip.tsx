@@ -6,6 +6,7 @@ type DraggableChipProps<T> = {
 	id: string
 	value: T
 	displayValue?: (value: T) => string | null
+	imageUrl?: string | null
 	disabled: boolean
 }
 
@@ -13,6 +14,7 @@ export default function DraggableChip<T>({
 	id,
 	value,
 	displayValue = (v: T) => String(v),
+	imageUrl,
 	disabled,
 }: DraggableChipProps<T>) {
 	const { ref, isDragging } = useDraggable({
@@ -31,9 +33,13 @@ export default function DraggableChip<T>({
 		>
 			<Badge
 				variant="secondary"
-				className="pointer-events-none cursor-inherit rounded-full px-3 py-1 text-sm font-medium"
+				className="pointer-events-none cursor-inherit rounded-2xl px-3 py-1 text-sm font-medium"
 			>
-				{displayValue(value)}
+				{imageUrl ? (
+					<img src={imageUrl} alt={`Επιλογή ${id}`} className="rounded" />
+				) : (
+					displayValue(value)
+				)}
 			</Badge>
 		</button>
 	)

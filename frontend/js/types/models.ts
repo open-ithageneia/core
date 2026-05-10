@@ -67,6 +67,7 @@ export interface MatchingItem {
 	id?: number
 	matched_id?: number
 	text: string
+	asset_url?: string
 }
 
 interface MatchingColumn {
