@@ -1,9 +1,9 @@
-﻿import { useMemo, useState } from "react"
-import { useValidation } from "@/hooks/quiz/use-validation"
-import { useValuePool } from "@/lib/utils"
-import { ValidationStatus } from "@/types/enums"
-import type { DragAndDropModel } from "@/types/models"
-import type { CellValue, ValidationState } from "@/types/quiz"
+﻿import {useMemo, useState} from "react"
+import {useValidation} from "@/hooks/quiz/use-validation"
+import {useValuePool} from "@/lib/utils"
+import {ValidationStatus} from "@/types/enums"
+import type {DragAndDropModel} from "@/types/models"
+import type {CellValue, ValidationState} from "@/types/quiz"
 
 type UseDragAndDropOptions = {
 	forceValidation?: boolean
@@ -82,9 +82,14 @@ export function useDragAndDrop(
 		colIndex: number,
 	): ValidationState {
 		const cellValue = tableValues[rowIndex][colIndex]
-		if (!showValidation || !cellValue) {
+		if (!showValidation) {
 			return null
 		}
+
+		if (!cellValue) {
+			return ValidationStatus.Incorrect
+		}
+
 		return isValueCorrectForColumn(colIndex, cellValue)
 			? ValidationStatus.Correct
 			: ValidationStatus.Incorrect
@@ -104,6 +109,19 @@ export function useDragAndDrop(
 			)
 		}, 0)
 	}, [tableValues, item])
+
+	function getCorrectValue(rowIndex: number, colIndex: number): string | null {
+		if (!showValidation){
+			return null
+		}
+
+		const cellValue = tableValues[rowIndex][colIndex]
+		if (isValueCorrectForColumn(colIndex, cellValue)) {
+			return null
+		}
+
+		return item.content[colIndex].values[rowIndex] ?? null
+	}
 
 	function handleDragEnd(sourceValue: string, targetId: string) {
 		if (showValidation) {
@@ -136,6 +154,7 @@ export function useDragAndDrop(
 		correctAnswersCount,
 		clearCell,
 		getCellValidationState,
+		getCorrectValue,
 		handleDragEnd,
 	}
 }
