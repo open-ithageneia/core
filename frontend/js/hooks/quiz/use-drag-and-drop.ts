@@ -1,9 +1,9 @@
-﻿import {useMemo, useState} from "react"
-import {useValidation} from "@/hooks/quiz/use-validation"
-import {useValuePool} from "@/lib/utils"
-import {ValidationStatus} from "@/types/enums"
-import type {DragAndDropModel} from "@/types/models"
-import type {CellValue, ValidationState} from "@/types/quiz"
+﻿import { useMemo, useState } from "react"
+import { useValidation } from "@/hooks/quiz/use-validation"
+import { useValuePool } from "@/lib/utils"
+import { ValidationStatus } from "@/types/enums"
+import type { DragAndDropModel } from "@/types/models"
+import type { CellValue, ValidationState } from "@/types/quiz"
 
 type UseDragAndDropOptions = {
 	forceValidation?: boolean
@@ -111,7 +111,7 @@ export function useDragAndDrop(
 	}, [tableValues, item])
 
 	function getCorrectValue(rowIndex: number, colIndex: number): string | null {
-		if (!showValidation){
+		if (!showValidation) {
 			return null
 		}
 
