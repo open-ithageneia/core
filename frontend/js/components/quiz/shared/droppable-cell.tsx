@@ -5,23 +5,27 @@ import { Badge } from "@/components/ui/badge"
 import { ValidationStatus } from "@/types/enums"
 import type { ValidationState } from "@/types/quiz"
 
-type DroppableCellProps = {
+type DroppableCellProps<T> = {
 	id: string
-	value: string | null
+	value: T | null
+	displayValue?: (value: T) => string | null
+	imageUrl?: string | null
 	onRemove: () => void
 	disabled: boolean
 	validationState: ValidationState
 	isLocked: boolean
 }
 
-export default function DroppableCell({
+export default function DroppableCell<T>({
 	id,
 	value,
+	displayValue = (v: T) => String(v),
+	imageUrl,
 	onRemove,
 	disabled,
 	validationState,
 	isLocked,
-}: DroppableCellProps) {
+}: DroppableCellProps<T>) {
 	const { ref, isDropTarget } = useDroppable({
 		id,
 		disabled: disabled || isLocked,
@@ -46,12 +50,16 @@ export default function DroppableCell({
 			className={`flex min-w-16 sm:min-w-30 min-h-8 sm:min-h-14 items-center justify-center rounded-lg border-2 border-dashed p-1 sm:p-2 transition-colors ${stateClasses}`}
 		>
 			{value ? (
-				<div className="flex items-center gap-2">
+				<div className="flex items-center gap-1">
 					<Badge
 						variant="outline"
-						className="rounded-full px-3 py-1 text-sm text-center break-words whitespace-normal"
+						className="rounded-2xl px-2 py-1 text-sm text-center break-words whitespace-normal"
 					>
-						{value}
+						{imageUrl ? (
+							<img src={imageUrl} alt={`Επιλογή ${id}`} className="rounded" />
+						) : (
+							displayValue(value)
+						)}
 					</Badge>
 
 					{!isLocked ? (

@@ -77,13 +77,14 @@ const Layout = ({ children }: PropsWithChildren) => {
 			</header>
 
 			<div
-				className="flex flex-1 flex-col overflow-y-auto"
+				className="flex min-h-0 flex-1 flex-col overflow-y-auto"
 				data-scroll-container
 			>
-				<main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-1 py-1 md:py-2">
+				<main
+					className={`mx-auto flex w-full max-w-6xl flex-1 flex-col px-1 py-1 md:py-2${nav.current !== "home" ? " min-h-0" : ""}`}
+				>
 					{children}
 				</main>
-
 				{nav.current === "home" && (
 					<footer className="mt-8 border-t bg-white py-4">
 						<div className="mx-auto max-w-6xl px-4 text-center text-sm text-gray-500">
@@ -101,6 +102,7 @@ const Layout = ({ children }: PropsWithChildren) => {
 					</footer>
 				)}
 			</div>
+
 			<ScrollToTop />
 		</div>
 	)

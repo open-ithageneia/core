@@ -2,15 +2,15 @@
 import { DragDropProvider, PointerSensor } from "@dnd-kit/react"
 import type { ReactNode } from "react"
 
-type QuizDndProviderProps = {
-	onDragEnd: (sourceValue: string, targetId: string) => void
+type QuizDndProviderProps<T> = {
+	onDragEnd: (sourceValue: T, targetId: string) => void
 	children: ReactNode
 }
 
-export default function QuizDndProvider({
+export default function QuizDndProvider<T = string>({
 	onDragEnd,
 	children,
-}: QuizDndProviderProps) {
+}: QuizDndProviderProps<T>) {
 	return (
 		<DragDropProvider
 			sensors={() => [

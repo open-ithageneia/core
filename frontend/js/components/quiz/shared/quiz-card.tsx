@@ -37,7 +37,7 @@ export default function QuizCard({
 		<Card className="flex h-full w-full flex-col rounded-2xl shadow-sm p-1">
 			<CardHeader className="shrink-0 p-2">
 				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-2">
+					<div className="flex items-center gap-1">
 						<CardTitle>{title}</CardTitle>
 						<CardDescription>{QUIZ_CATEGORY_LABELS[category]}</CardDescription>
 					</div>

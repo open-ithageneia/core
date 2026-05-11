@@ -63,10 +63,11 @@ export interface DragAndDropModel extends QuizBase {
 	content: DragAndDropContent
 }
 
-interface MatchingItem {
+export interface MatchingItem {
 	id?: number
 	matched_id?: number
 	text: string
+	asset_url?: string
 }
 
 interface MatchingColumn {

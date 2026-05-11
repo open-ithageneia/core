@@ -54,7 +54,7 @@ export default function OpenEnded({
 		>
 			<div className="space-y-3">
 				{answers.map((answer, index) => (
-					<div key={index} className="flex items-center gap-2">
+					<div key={index} className="flex items-center gap-1">
 						<Input
 							type="text"
 							placeholder={`Απάντηση ${index + 1}`}

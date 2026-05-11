@@ -137,7 +137,9 @@ function SimulationSession({ data }: { data: TrainingData }) {
 				</div>
 			)}
 
-			<div className={`${finished ? "space-y-4" : "min-h-0 flex-1"} py-1`}>
+			<div
+				className={`${finished ? "space-y-4" : "min-h-0 flex-1 overflow-hidden"} py-1`}
+			>
 				{data.map((item, idx) => {
 					const score = scoresRef.current.get(idx)
 					const earned =

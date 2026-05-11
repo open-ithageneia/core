@@ -17,17 +17,16 @@ export function shuffleArray<T>(array: T[]): T[] {
 	return newArray
 }
 
-export function useValuePool(values: string[]) {
+export function useValuePool<T>(values: T[]) {
 	const initialValues = useMemo(() => shuffleArray(values), [values])
 
-	const [availableValues, setAvailableValues] =
-		useState<string[]>(initialValues)
+	const [availableValues, setAvailableValues] = useState<T[]>(initialValues)
 
-	function returnValueToAvailable(value: string) {
+	function returnValueToAvailable(value: T) {
 		setAvailableValues((prev) => [...prev, value])
 	}
 
-	function removeValueFromAvailable(value: string) {
+	function removeValueFromAvailable(value: T) {
 		setAvailableValues((prev) => {
 			const idx = prev.indexOf(value)
 			if (idx === -1) {

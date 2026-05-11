@@ -83,7 +83,7 @@ export function MultiSelect({
 					{options.map((option) => (
 						<label
 							key={option.value}
-							className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50"
+							className="flex cursor-pointer items-center gap-1 px-3 py-2 text-sm hover:bg-gray-50"
 						>
 							<input
 								type="checkbox"

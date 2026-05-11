@@ -1,20 +1,17 @@
-﻿import { useMemo, useState } from "react"
+﻿import { useCallback, useMemo, useState } from "react"
 import { useValidation } from "@/hooks/quiz/use-validation"
 import { useValuePool } from "@/lib/utils"
 import { ValidationStatus } from "@/types/enums"
-import type { DragAndDropModel } from "@/types/models"
+import type { MatchingItem, MatchingModel } from "@/types/models"
 import type { CellValue, ValidationState } from "@/types/quiz"
 
-type UseDragAndDropOptions = {
+type UseMatchingOptions = {
 	forceValidation?: boolean
 }
 
-export function useDragAndDrop(
-	item: DragAndDropModel,
-	options?: UseDragAndDropOptions,
-) {
+export function useMatching(item: MatchingModel, options?: UseMatchingOptions) {
 	const allValues = useMemo(
-		() => item.content.flatMap((group) => group.values),
+		() => item.content[1].items, // use only 2nd column values
 		[item],
 	)
 
@@ -24,17 +21,23 @@ export function useDragAndDrop(
 	const { showValidation, setShowValidation, showValidationButton } =
 		useValidation(options)
 
-	const maxRows = Math.max(...item.content.map((group) => group.values.length))
+	const maxRows = Math.max(...item.content.map((group) => group.items.length))
 	const columnCount = item.content.length
 	const totalScore = maxRows * columnCount
 
-	const [tableValues, setTableValues] = useState<CellValue[][]>(
-		Array.from({ length: maxRows }, () =>
-			Array.from({ length: columnCount }, () => null),
+	const [tableValues, setTableValues] = useState<CellValue<MatchingItem>[][]>(
+		Array.from({ length: maxRows }, (_, rowIndex) =>
+			Array.from({ length: columnCount }, (_, colIndex) =>
+				colIndex === 0 ? (item.content[0].items[rowIndex] ?? null) : null,
+			),
 		),
 	)
 
-	function placeValueInCell(rowIndex: number, colIndex: number, value: string) {
+	function placeValueInCell(
+		rowIndex: number,
+		colIndex: number,
+		value: MatchingItem,
+	) {
 		if (showValidation) {
 			return
 		}
@@ -70,29 +73,47 @@ export function useDragAndDrop(
 		returnValueToAvailable(value)
 	}
 
-	function isValueCorrectForColumn(colIndex: number, value: string | null) {
-		if (!value) {
-			return false
-		}
-		return item.content[colIndex].values.includes(value)
-	}
+	const isValueCorrect = useCallback(
+		(leftItem: CellValue<MatchingItem>, rightItem: CellValue<MatchingItem>) => {
+			if (!rightItem) {
+				return false
+			}
+			return leftItem?.matched_id === rightItem.id
+		},
+		[],
+	)
 
 	function getCellValidationState(
 		rowIndex: number,
 		colIndex: number,
 	): ValidationState {
-		const cellValue = tableValues[rowIndex][colIndex]
+		const leftItem = tableValues[rowIndex][0]
+		const rightItem = tableValues[rowIndex][1] // the answer
+		if (colIndex === 0 || !showValidation) {
+			return null
+		}
+
+		if (!rightItem) {
+			return ValidationStatus.Incorrect
+		}
+
+		return isValueCorrect(leftItem, rightItem)
+			? ValidationStatus.Correct
+			: ValidationStatus.Incorrect
+	}
+
+	function getCorrectValue(rowIndex: number): MatchingItem | null {
 		if (!showValidation) {
 			return null
 		}
 
-		if (!cellValue) {
-			return ValidationStatus.Incorrect
+		const leftItem = tableValues[rowIndex][0]
+		const rightItem = tableValues[rowIndex][1]
+		if (!leftItem || isValueCorrect(leftItem, rightItem)) {
+			return null
 		}
 
-		return isValueCorrectForColumn(colIndex, cellValue)
-			? ValidationStatus.Correct
-			: ValidationStatus.Incorrect
+		return allValues.find((v) => v.id === leftItem.matched_id) ?? null
 	}
 
 	const isTableComplete = useMemo(() => {
@@ -101,33 +122,17 @@ export function useDragAndDrop(
 
 	const correctAnswersCount = useMemo(() => {
 		return tableValues.reduce((count, row) => {
-			return (
-				count +
-				row.filter((cellValue, colIndex) =>
-					cellValue ? item.content[colIndex].values.includes(cellValue) : false,
-				).length
-			)
+			const leftItem = row[0]
+			const rightItem = row[1]
+			return count + (isValueCorrect(leftItem, rightItem) ? 1 : 0)
 		}, 0)
-	}, [tableValues, item])
+	}, [tableValues, isValueCorrect])
 
-	function getCorrectValue(rowIndex: number, colIndex: number): string | null {
-		if (!showValidation) {
-			return null
-		}
-
-		const cellValue = tableValues[rowIndex][colIndex]
-		if (isValueCorrectForColumn(colIndex, cellValue)) {
-			return null
-		}
-
-		return item.content[colIndex].values[rowIndex] ?? null
-	}
-
-	function handleDragEnd(sourceValue: string, targetId: string) {
+	function handleDragEnd(sourceValue: MatchingItem, targetId: string) {
 		if (showValidation) {
 			return
 		}
-		if (!targetId.startsWith("cell-")) {
+		if (!targetId.startsWith("droppableCell-")) {
 			return
 		}
 

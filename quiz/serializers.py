@@ -168,6 +168,7 @@ class ExerciseQuerySerializer(serializers.Serializer):
 			("DragAndDrop", "DragAndDrop"),
 			("FillInTheBlank", "FillInTheBlank"),
 			("OpenEnded", "OpenEnded"),
+			("Matching", "Matching"),
 		],
 	)
 
