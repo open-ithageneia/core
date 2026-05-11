@@ -76,7 +76,7 @@ export default function DragAndDrop({
 				title={`Ερώτηση ${item_index}`}
 				category={item.category}
 				instruction={QUIZ_INSTRUCTIONS.DRAG_AND_DROP}
-				headerExtra={choicesBank}
+				headerExtra={!showValidation ? choicesBank : null}
 			>
 				<div className="overflow-x-auto rounded-xl border">
 					<Table className="table-fixed w-full">

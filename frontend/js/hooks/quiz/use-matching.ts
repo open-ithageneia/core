@@ -124,7 +124,7 @@ export function useMatching(item: MatchingModel, options?: UseMatchingOptions) {
 		return tableValues.reduce((count, row) => {
 			const leftItem = row[0]
 			const rightItem = row[1]
-			return count + (isValueCorrect(leftItem, rightItem) ? 1 : 0)
+			return count + (isValueCorrect(leftItem, rightItem) ? 1 : 0) * 2
 		}, 0)
 	}, [tableValues, isValueCorrect])
 

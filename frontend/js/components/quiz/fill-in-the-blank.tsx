@@ -232,7 +232,7 @@ export default function FillInTheBlank({
 					category={item.category}
 					instruction={QUIZ_INSTRUCTIONS.FILL_IN_THE_BLANK}
 					promptAssetUrl={content.prompt_asset_url}
-					headerExtra={choicesBank}
+					headerExtra={!showValidation ? choicesBank : null}
 				>
 					{body}
 				</QuizCard>
