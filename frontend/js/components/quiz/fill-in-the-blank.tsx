@@ -204,10 +204,10 @@ export default function FillInTheBlank({
 		const choicesBank = (
 			<div className="rounded-xl border bg-muted/30 p-4">
 				<div className="flex flex-wrap gap-1">
-					{availableValues.map((value) => (
+					{availableValues.map((value, index) => (
 						<DraggableChip
-							key={value}
-							id={`fitb-chip-${value}`}
+							key={`${value}-${index}`}
+							id={`fitb-chip-${value}-${index}`}
 							value={value}
 							disabled={showValidation}
 						/>

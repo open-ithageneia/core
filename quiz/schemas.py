@@ -363,13 +363,7 @@ class FillInTheBlankContent:
 			"extra_choices": {
 				"type": "array",
 				"items": {
-					"type": "object",
-					"required": ["text"],
-					"properties": {
-						"text": {
-							"type": "string",
-						}
-					},
+					"type": "string",
 				},
 			},
 		},
