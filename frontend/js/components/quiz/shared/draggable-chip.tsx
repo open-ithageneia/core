@@ -31,10 +31,9 @@ export default function DraggableChip<T>({
 			disabled={disabled}
 			className={cn(
 				"draggable-chip-hold shrink-0 touch-manipulation select-none rounded-2xl",
-				disabled
-					? "cursor-not-allowed opacity-60"
-					: "cursor-pointer",
-				isDragging && "scale-108 shadow-[0_0_0_3px_color-mix(in_oklch,var(--primary)_40%,transparent)]",
+				disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+				isDragging &&
+					"scale-108 shadow-[0_0_0_3px_color-mix(in_oklch,var(--primary)_40%,transparent)]",
 			)}
 			style={{ opacity: isDragging ? 0.45 : 1 }}
 		>
