@@ -53,7 +53,7 @@ export default function Matching({
 
 	const choicesBank = (
 		<div className="rounded-xl border bg-muted/30 p-2">
-			<div className="flex flex-wrap gap-1">
+			<div className="flex h-12 items-center gap-1 overflow-x-auto">
 				{availableValues.map((item) => (
 					<DraggableChip
 						key={item.id}

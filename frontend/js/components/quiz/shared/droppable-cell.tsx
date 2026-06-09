@@ -56,7 +56,11 @@ export default function DroppableCell<T>({
 						className="rounded-2xl px-2 py-1 text-sm text-center break-words whitespace-normal"
 					>
 						{imageUrl ? (
-							<img src={imageUrl} alt={`Επιλογή ${id}`} className="rounded" />
+							<img
+								src={imageUrl}
+								alt={`Επιλογή ${id}`}
+								className="max-h-16 rounded"
+							/>
 						) : (
 							displayValue(value)
 						)}
