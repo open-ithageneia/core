@@ -28,7 +28,7 @@ export default function DraggableChip<T>({
 			ref={ref}
 			type="button"
 			disabled={disabled}
-			className={`shrink-0 touch-none ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+			className={`shrink-0 ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
 			style={{ opacity: isDragging ? 0.45 : 1 }}
 		>
 			<Badge

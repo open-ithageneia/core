@@ -53,7 +53,7 @@ export default function DragAndDrop({
 
 	const choicesBank = (
 		<div className="rounded-xl border bg-muted/30 p-2">
-			<div className="flex h-12 items-center gap-1 overflow-x-auto">
+			<div className="flex h-20 items-center gap-1 overflow-x-auto">
 				{availableValues.map((value) => (
 					<DraggableChip
 						key={value}
