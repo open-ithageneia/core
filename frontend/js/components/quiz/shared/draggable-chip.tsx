@@ -1,6 +1,7 @@
 ﻿import { useDraggable } from "@dnd-kit/react"
 
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 type DraggableChipProps<T> = {
 	id: string
@@ -28,7 +29,12 @@ export default function DraggableChip<T>({
 			ref={ref}
 			type="button"
 			disabled={disabled}
-			className={`shrink-0 ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+			className={cn(
+				"draggable-chip-hold shrink-0 touch-manipulation select-none rounded-2xl",
+				disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+				isDragging &&
+					"scale-108 shadow-[0_0_0_3px_color-mix(in_oklch,var(--primary)_40%,transparent)]",
+			)}
 			style={{ opacity: isDragging ? 0.45 : 1 }}
 		>
 			<Badge
