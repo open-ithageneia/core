@@ -134,3 +134,41 @@
 		cursor: pointer;
 	}
 }
+
+@keyframes chip-hold-activate {
+	0% {
+		transform: scale(1);
+		box-shadow: 0 0 0 0 transparent;
+	}
+	100% {
+		transform: scale(1.08);
+		box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 40%, transparent);
+	}
+}
+
+.draggable-chip-hold:not(:disabled):active {
+	animation: chip-hold-activate 150ms ease-out 200ms both;
+}
+
+/* Larger scrollbar for chip bank containers on touch devices */
+.chips-scrollable {
+	scrollbar-width: thin;
+	scrollbar-color: var(--muted-foreground) transparent;
+}
+
+.chips-scrollable::-webkit-scrollbar {
+	height: 12px;
+}
+
+.chips-scrollable::-webkit-scrollbar-track {
+	background: transparent;
+	border-radius: 6px;
+}
+
+.chips-scrollable::-webkit-scrollbar-thumb {
+	background-color: var(--muted-foreground);
+	border-radius: 6px;
+	border: 2px solid transparent;
+	background-clip: content-box;
+}
+
