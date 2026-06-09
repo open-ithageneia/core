@@ -17,8 +17,11 @@ export default function QuizDndProvider<T = string>({
 				PointerSensor.configure({
 					activationConstraints: [
 						new PointerActivationConstraints.Delay({
-							value: 30,
-							tolerance: 10,
+							value: 150,
+							tolerance: 5,
+						}),
+						new PointerActivationConstraints.Distance({
+							value: 5,
 						}),
 					],
 				}),
