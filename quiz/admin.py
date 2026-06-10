@@ -182,6 +182,8 @@ class QuizAssetAdmin(ImportExportModelAdmin):
 
 
 class AbstractQuizAdmin(ExamSessionImportMixin, ZipImportMixin, ImportExportModelAdmin):
+	skip_export_form = True
+
 	list_display = [
 		"id",
 		"category",
