@@ -201,7 +201,6 @@ class AbstractQuizResource(resources.ModelResource):
 
 
 class StatementResource(AbstractQuizResource):
-
 	EXPORT_HEADERS = [
 		"id",
 		"type",
@@ -586,4 +585,3 @@ class OpenEndedResource(AbstractQuizResource):
 			", ".join(text_parts),
 			content.get("min_correct_answers", ""),
 		]
-
