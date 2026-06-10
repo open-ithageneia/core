@@ -146,9 +146,15 @@ class AbstractQuizResource(resources.ModelResource):
 	  Since ``exam_sessions`` is an M2M field it is set *after* the
 	  instance is saved via ``after_save_instance``.
 	- Common Meta defaults (``fields``, ``skip_unchanged``).
+	- A custom ``export()`` that produces flat spreadsheet columns matching
+	  the import format (round-trip fidelity).
 
 	Subclasses must set ``Meta.model`` and may extend ``Meta.fields``.
+	They should also define ``EXPORT_HEADERS`` (list of column names) and
+	override ``get_export_row(instance)`` → list of cell values.
 	"""
+
+	EXPORT_HEADERS: list[str] = []
 
 	def __init__(self, *, exam_session=None, **kwargs):
 		self.exam_session = exam_session
@@ -159,6 +165,35 @@ class AbstractQuizResource(resources.ModelResource):
 		if self.exam_session is not None:
 			instance.exam_sessions.add(self.exam_session)
 
+	# ------------------------------------------------------------------
+	# Export: flatten JSON content back into the same columns used by import
+	# ------------------------------------------------------------------
+
+	def get_export_row(self, instance) -> list:
+		"""Return a flat list of cell values for *instance*.
+
+		Subclasses MUST override this.
+		"""
+		raise NotImplementedError
+
+	def export(self, *args, queryset=None, **kwargs):
+		"""Build a tablib Dataset with flat import-compatible columns."""
+		import tablib
+
+		if queryset is None:
+			queryset = self.get_queryset()
+
+		headers = self.EXPORT_HEADERS
+		if not headers:
+			# Fallback to default behaviour if subclass doesn't define headers
+			return super().export(*args, queryset=queryset, **kwargs)
+
+		dataset = tablib.Dataset(headers=headers)
+		for instance in queryset.iterator():
+			dataset.append(self.get_export_row(instance))
+
+		return dataset
+
 	class Meta:
 		fields = ("id", "category", "content")
 		skip_unchanged = False
@@ -166,6 +201,20 @@ class AbstractQuizResource(resources.ModelResource):
 
 
 class StatementResource(AbstractQuizResource):
+
+	EXPORT_HEADERS = [
+		"id",
+		"type",
+		"category",
+		"prompt_text",
+		"prompt_image",
+		*[
+			col
+			for i in range(1, 5)
+			for col in (f"choice{i}_text", f"choice{i}_image", f"choice{i}_is_correct")
+		],
+	]
+
 	class Meta(AbstractQuizResource.Meta):
 		model = Statement
 		fields = (
@@ -223,8 +272,40 @@ class StatementResource(AbstractQuizResource):
 			"choices": choices,
 		}
 
+	# ------------------------------------------------------------------
+	# Export
+	# ------------------------------------------------------------------
+
+	def get_export_row(self, instance):
+		content = instance.content or {}
+		choices = content.get("choices", [])
+
+		row = [
+			instance.id,
+			instance.type,
+			instance.category,
+			content.get("prompt_text", ""),
+			content.get("prompt_asset_id", "") or "",
+		]
+
+		for choice in choices:
+			row.append(choice.get("text", ""))
+			row.append(choice.get("asset_id", "") or "")
+			row.append("true" if choice.get("is_correct") else "false")
+
+		return row
+
 
 class DragAndDropResource(AbstractQuizResource):
+	EXPORT_HEADERS = [
+		"id",
+		"category",
+		"left_title",
+		"right_title",
+		"left_values",
+		"right_values",
+	]
+
 	class Meta(AbstractQuizResource.Meta):
 		model = DragAndDrop
 
@@ -247,11 +328,37 @@ class DragAndDropResource(AbstractQuizResource):
 			},
 		]
 
+	# ------------------------------------------------------------------
+	# Export
+	# ------------------------------------------------------------------
+
+	def get_export_row(self, instance):
+		content = instance.content or []
+		left = content[0] if len(content) > 0 else {}
+		right = content[1] if len(content) > 1 else {}
+
+		return [
+			instance.id,
+			instance.category,
+			left.get("title", ""),
+			right.get("title", ""),
+			", ".join(left.get("values", [])),
+			", ".join(right.get("values", [])),
+		]
+
 
 class MatchingResource(AbstractQuizResource):
 	ITEM_SEPARATOR = "|"
 	ITEM_PAIR_SEPARATOR = "_"
 	ASSET_PREFIX = "$"
+
+	EXPORT_HEADERS = [
+		"id",
+		"category",
+		"left_title",
+		"right_title",
+		"items",
+	]
 
 	class Meta(AbstractQuizResource.Meta):
 		model = Matching
@@ -320,8 +427,55 @@ class MatchingResource(AbstractQuizResource):
 			},
 		]
 
+	# ------------------------------------------------------------------
+	# Export
+	# ------------------------------------------------------------------
+
+	def _serialize_item(self, item: dict) -> str:
+		"""Convert a single item dict back to its string representation."""
+		if "asset_id" in item:
+			return f"{self.ASSET_PREFIX}{item['asset_id']}"
+		return item.get("text", "")
+
+	def get_export_row(self, instance):
+		content = instance.content or []
+		left = content[0] if len(content) > 0 else {}
+		right = content[1] if len(content) > 1 else {}
+
+		left_items = left.get("items", [])
+		right_items = right.get("items", [])
+
+		# Build a mapping from left item id → right item (via matched_id)
+		right_by_matched = {item.get("matched_id"): item for item in right_items}
+
+		pairs = []
+		for left_item in left_items:
+			left_str = self._serialize_item(left_item)
+			right_item = right_by_matched.get(left_item.get("id"), {})
+			right_str = self._serialize_item(right_item)
+			pairs.append(f"{left_str}{self.ITEM_PAIR_SEPARATOR}{right_str}")
+
+		return [
+			instance.id,
+			instance.category,
+			left.get("title", ""),
+			right.get("title", ""),
+			f" {self.ITEM_SEPARATOR} ".join(pairs),
+		]
+
 
 class FillInTheBlankResource(AbstractQuizResource):
+	# Maximum number of text columns to export
+	MAX_EXPORT_TEXTS = 5
+
+	EXPORT_HEADERS = [
+		"id",
+		"category",
+		"show_answers_as_choices",
+		"prompt_image",
+		*[f"text_{i}" for i in range(1, 6)],
+	]
+
 	class Meta(AbstractQuizResource.Meta):
 		model = FillInTheBlank
 
@@ -342,8 +496,40 @@ class FillInTheBlankResource(AbstractQuizResource):
 			"texts": texts,
 		}
 
+	# ------------------------------------------------------------------
+	# Export
+	# ------------------------------------------------------------------
+
+	def get_export_row(self, instance):
+		content = instance.content or {}
+		texts = content.get("texts", [])
+
+		row = [
+			instance.id,
+			instance.category,
+			"true" if content.get("show_answers_as_choices") else "false",
+			content.get("prompt_asset_id", "") or "",
+		]
+
+		for i in range(self.MAX_EXPORT_TEXTS):
+			if i < len(texts):
+				row.append(texts[i].get("text", ""))
+			else:
+				row.append("")
+
+		return row
+
 
 class OpenEndedResource(AbstractQuizResource):
+	EXPORT_HEADERS = [
+		"id",
+		"category",
+		"prompt_text",
+		"prompt_image",
+		"texts",
+		"min_correct_answers",
+	]
+
 	class Meta(AbstractQuizResource.Meta):
 		model = OpenEnded
 
@@ -370,3 +556,34 @@ class OpenEndedResource(AbstractQuizResource):
 			"texts": texts,
 			"min_correct_answers": int(min_correct_answers),
 		}
+
+	# ------------------------------------------------------------------
+	# Export
+	# ------------------------------------------------------------------
+
+	def get_export_row(self, instance):
+		content = instance.content or {}
+		texts = content.get("texts", [])
+
+		# Serialize texts back to comma-separated, with pipe for alternatives
+		text_parts = []
+		for t in texts:
+			if isinstance(t, dict):
+				alternatives = t.get("alternatives", [])
+				if alternatives:
+					text_parts.append("|".join(alternatives))
+				else:
+					# Fallback for old format with "text" key
+					text_parts.append(t.get("text", ""))
+			else:
+				text_parts.append(str(t))
+
+		return [
+			instance.id,
+			instance.category,
+			content.get("prompt_text", ""),
+			content.get("prompt_asset_id", "") or "",
+			", ".join(text_parts),
+			content.get("min_correct_answers", ""),
+		]
+
