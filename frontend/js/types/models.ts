@@ -75,7 +75,10 @@ interface MatchingColumn {
 	items: MatchingItem[]
 }
 
-export type MatchingContent = [MatchingColumn, MatchingColumn]
+export interface MatchingContent {
+	prompt_text?: string
+	columns: [MatchingColumn, MatchingColumn]
+}
 
 export interface MatchingModel extends QuizBase {
 	content: MatchingContent

@@ -10,9 +10,11 @@ type UseMatchingOptions = {
 }
 
 export function useMatching(item: MatchingModel, options?: UseMatchingOptions) {
+	const columns = item.content.columns
+
 	const allValues = useMemo(
-		() => item.content[1].items, // use only 2nd column values
-		[item],
+		() => columns[1].items, // use only 2nd column values
+		[columns],
 	)
 
 	const { availableValues, removeValueFromAvailable, returnValueToAvailable } =
@@ -21,14 +23,14 @@ export function useMatching(item: MatchingModel, options?: UseMatchingOptions) {
 	const { showValidation, setShowValidation, showValidationButton } =
 		useValidation(options)
 
-	const maxRows = Math.max(...item.content.map((group) => group.items.length))
-	const columnCount = item.content.length
+	const maxRows = Math.max(...columns.map((group) => group.items.length))
+	const columnCount = columns.length
 	const totalScore = maxRows * columnCount
 
 	const [tableValues, setTableValues] = useState<CellValue<MatchingItem>[][]>(
 		Array.from({ length: maxRows }, (_, rowIndex) =>
 			Array.from({ length: columnCount }, (_, colIndex) =>
-				colIndex === 0 ? (item.content[0].items[rowIndex] ?? null) : null,
+				colIndex === 0 ? (columns[0].items[rowIndex] ?? null) : null,
 			),
 		),
 	)

@@ -229,7 +229,7 @@ class Matching(AbstractQuiz):
 	INSTRUCTION_TEXT = "Αντιστοιχίστε τα σωστά ζεύγη"
 
 	content = JSONField(
-		blank=True, default=list, schema=MatchingContent.MATCHING_CONTENT_SCHEMA
+		blank=True, default=dict, schema=MatchingContent.MATCHING_CONTENT_SCHEMA
 	)
 
 	def _parse_content(self):

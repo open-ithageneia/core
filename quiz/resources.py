@@ -415,16 +415,18 @@ class MatchingResource(AbstractQuizResource):
 
 		left_objects, right_objects = self.extract_pairs(pairs)
 
-		instance.content = [
-			{
-				"title": row.get("left_title", ""),
-				"items": left_objects,
-			},
-			{
-				"title": row.get("right_title", ""),
-				"items": right_objects,
-			},
-		]
+		instance.content = {
+			"columns": [
+				{
+					"title": row.get("left_title", ""),
+					"items": left_objects,
+				},
+				{
+					"title": row.get("right_title", ""),
+					"items": right_objects,
+				},
+			],
+		}
 
 	# ------------------------------------------------------------------
 	# Export
@@ -437,9 +439,10 @@ class MatchingResource(AbstractQuizResource):
 		return item.get("text", "")
 
 	def get_export_row(self, instance):
-		content = instance.content or []
-		left = content[0] if len(content) > 0 else {}
-		right = content[1] if len(content) > 1 else {}
+		content = instance.content or {}
+		columns = content.get("columns", []) if isinstance(content, dict) else content
+		left = columns[0] if len(columns) > 0 else {}
+		right = columns[1] if len(columns) > 1 else {}
 
 		left_items = left.get("items", [])
 		right_items = right.get("items", [])

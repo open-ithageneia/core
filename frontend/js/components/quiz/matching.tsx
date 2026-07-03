@@ -80,11 +80,14 @@ export default function Matching({
 				instruction={QUIZ_INSTRUCTIONS.DRAG_AND_DROP}
 				headerExtra={!showValidation ? choicesBank : null}
 			>
+				{item.content.prompt_text && (
+					<p className="mb-3 text-sm font-medium">{item.content.prompt_text}</p>
+				)}
 				<div className="overflow-x-auto rounded-xl border">
 					<Table className="table-fixed w-full">
 						<TableHeader>
 							<TableRow>
-								{item.content.map((column, index) => (
+								{item.content.columns.map((column, index) => (
 									<TableHead
 										key={`column-${index}-${column.title}`}
 										className={`w-28 sm:w-48 border-b text-center text-xs sm:text-sm font-semibold p-1 sm:p-2 ${
@@ -103,7 +106,7 @@ export default function Matching({
 									key={`row-${rowIndex}`}
 									className={rowIndex % 2 === 0 ? "bg-muted/20" : ""}
 								>
-									{item.content.map((_column, colIndex) => {
+									{item.content.columns.map((_column, colIndex) => {
 										const cellValue = tableValues[rowIndex][colIndex]
 
 										const validationState = getCellValidationState(

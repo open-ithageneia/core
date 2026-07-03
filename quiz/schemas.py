@@ -190,47 +190,72 @@ class MatchingColumn:
 @dataclass
 class MatchingContent:
 	MATCHING_CONTENT_SCHEMA = {
-		"type": "array",
-		"minItems": 2,
-		"maxItems": 2,
-		"items": {
-			"type": "object",
-			"required": ["title", "items"],
-			"properties": {
-				"title": {"type": "string"},
+		"type": "object",
+		"required": ["columns"],
+		"properties": {
+			"prompt_text": {"type": "string", "title": "Question"},
+			"columns": {
+				"type": "array",
+				"minItems": 2,
+				"maxItems": 2,
 				"items": {
-					"type": "array",
-					"items": {
-						"type": "object",
-						"required": ["id", "matched_id"],
-						"properties": {
-							"id": {"type": "integer"},
-							"matched_id": {"type": "integer"},
-							"text": {"type": "string"},
-							"asset_id": {
-								"type": "integer",
-								"title": "Image asset ID",
+					"type": "object",
+					"required": ["title", "items"],
+					"properties": {
+						"title": {"type": "string"},
+						"items": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"required": ["id", "matched_id"],
+								"properties": {
+									"id": {"type": "integer"},
+									"matched_id": {"type": "integer"},
+									"text": {"type": "string"},
+									"asset_id": {
+										"type": "integer",
+										"title": "Image asset ID",
+									},
+								},
+								"additionalProperties": False,
 							},
 						},
-						"additionalProperties": False,
 					},
 				},
 			},
 		},
+		"additionalProperties": False,
 	}
 
 	columns: list[MatchingColumn]
+	prompt_text: str | None = None
 
 	def to_dict(self):
-		return [c.to_dict() for c in self.columns]
+		return {
+			"prompt_text": self.prompt_text,
+			"columns": [c.to_dict() for c in self.columns],
+		}
 
 	@classmethod
-	def from_json(cls, data: list):
-		if not isinstance(data, list) or len(data) != 2:
+	def from_json(cls, data):
+		if isinstance(data, list):
+			# Legacy format: bare list of 2 columns
+			columns_data = data
+			prompt_text = None
+		elif isinstance(data, dict):
+			columns_data = _require(data, "columns", "MatchingContent")
+			prompt_text = data.get("prompt_text")
+		else:
 			raise ValidationError(
-				"Matching content must be a list of exactly 2 columns."
+				"Matching content must be an object with 'columns' or a list of 2 columns."
 			)
-		return cls(columns=[MatchingColumn.from_json(col) for col in data])
+
+		if not isinstance(columns_data, list) or len(columns_data) != 2:
+			raise ValidationError("Matching content must have exactly 2 columns.")
+		return cls(
+			columns=[MatchingColumn.from_json(col) for col in columns_data],
+			prompt_text=prompt_text,
+		)
 
 
 @dataclass
