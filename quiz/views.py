@@ -1,16 +1,8 @@
-import json
 import logging
 
 from inertia import render
 
 from quiz.models import AbstractQuiz
-from quiz.schemas import (
-	DragAndDropContent,
-	FillInTheBlankContent,
-	MatchingContent,
-	OpenEndedContent,
-	StatementChoiceContent,
-)
 from quiz.services import QuizService
 
 from .serializers import ExerciseQuerySerializer
@@ -67,23 +59,6 @@ def training(request):
 		quiz_type=validated_data.get("quiz_type", ""),
 	)
 
-	CONTENT_PARSERS = {
-		"Statement": StatementChoiceContent,
-		"DragAndDrop": DragAndDropContent,
-		"Matching": MatchingContent,
-		"FillInTheBlank": FillInTheBlankContent,
-		"OpenEnded": OpenEndedContent,
-	}
-
-	# content comes as JSON string from raw SQL — parse and normalize
-	# through schema dataclasses so output matches serializer format
-	for item in data_by_category:
-		if isinstance(item["content"], str):
-			item["content"] = json.loads(item["content"])
-		parser = CONTENT_PARSERS.get(item["quiz_type"])
-		if parser:
-			item["content"] = parser.from_json(item["content"]).to_dict()
-
 	return render(
 		request,
 		"Training",
@@ -108,21 +83,6 @@ def simulation(request):
 		category="",
 		amount=20,
 	)
-
-	CONTENT_PARSERS = {
-		"Statement": StatementChoiceContent,
-		"DragAndDrop": DragAndDropContent,
-		"Matching": MatchingContent,
-		"FillInTheBlank": FillInTheBlankContent,
-		"OpenEnded": OpenEndedContent,
-	}
-
-	for item in data_by_category:
-		if isinstance(item["content"], str):
-			item["content"] = json.loads(item["content"])
-		parser = CONTENT_PARSERS.get(item["quiz_type"])
-		if parser:
-			item["content"] = parser.from_json(item["content"]).to_dict()
 
 	return render(
 		request,

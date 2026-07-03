@@ -6,12 +6,12 @@ import { ResultsBanner } from "@/components/quiz/shared/results-banner"
 import { Button } from "@/components/ui/button"
 import { useExitConfirmation } from "@/hooks/use-exit-confirmation"
 import { getScoreColor } from "@/lib/score-color"
-import type { TrainingData } from "@/types/models"
+import type { QuizData } from "@/types/models"
 
 const SIMULATION_DURATION = 30 * 60 // 30 minutes in seconds
 
 type SimulationProps = {
-	data: TrainingData | null
+	data: QuizData | null
 }
 
 function formatTime(seconds: number): string {
@@ -20,7 +20,7 @@ function formatTime(seconds: number): string {
 	return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
 }
 
-function SimulationSession({ data }: { data: TrainingData }) {
+function SimulationSession({ data }: { data: QuizData }) {
 	const [currentIndex, setCurrentIndex] = useState(0)
 	const [finished, setFinished] = useState(false)
 	const { exitConfirmOpen, exitConfirmCancel, exitConfirmConfirm } =

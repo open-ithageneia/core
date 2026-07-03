@@ -6,18 +6,7 @@ import MultipleChoice from "@/components/quiz/multiple-choice"
 import OpenEnded from "@/components/quiz/open-ended"
 import { QuizResultsProvider } from "@/components/quiz/shared/quiz-results-context"
 import TrueFalse from "@/components/quiz/true-false"
-import type {
-	DragAndDropContent,
-	DragAndDropModel,
-	FillInTheBlankContent,
-	FillInTheBlankModel,
-	MatchingContent,
-	MatchingModel,
-	OpenEndedContent,
-	OpenEndedModel,
-	StatementModel,
-	TrainingData,
-} from "@/types/models"
+import type { QuizData } from "@/types/models"
 
 export function QuizRenderer({
 	item,
@@ -26,7 +15,7 @@ export function QuizRenderer({
 	onScore,
 	badge,
 }: {
-	item: TrainingData[number]
+	item: QuizData[number]
 	index: number
 	forceValidation?: boolean
 	onScore?: (correct: number, total: number) => void
@@ -35,21 +24,10 @@ export function QuizRenderer({
 	const content = (() => {
 		switch (item.quiz_type) {
 			case "Statement": {
-				const statementItem = {
-					id: item.id,
-					category: item.category,
-					content: item.content,
-					type:
-						"choices" in item.content &&
-						Array.isArray(item.content.choices) &&
-						item.content.choices.length === 2
-							? "TRUE_FALSE"
-							: "MULTIPLE_CHOICE",
-				} as StatementModel
-				if (statementItem.type === "TRUE_FALSE") {
+				if (item.type === "TRUE_FALSE") {
 					return (
 						<TrueFalse
-							item={statementItem}
+							item={item}
 							item_index={index}
 							forceValidation={forceValidation}
 							onScore={onScore}
@@ -58,7 +36,7 @@ export function QuizRenderer({
 				}
 				return (
 					<MultipleChoice
-						item={statementItem}
+						item={item}
 						item_index={index}
 						forceValidation={forceValidation}
 						onScore={onScore}
@@ -66,14 +44,9 @@ export function QuizRenderer({
 				)
 			}
 			case "DragAndDrop": {
-				const dndItem = {
-					id: item.id,
-					category: item.category,
-					content: item.content as DragAndDropContent,
-				} as DragAndDropModel
 				return (
 					<DragAndDrop
-						item={dndItem}
+						item={item}
 						item_index={index}
 						forceValidation={forceValidation}
 						onScore={onScore}
@@ -81,14 +54,9 @@ export function QuizRenderer({
 				)
 			}
 			case "OpenEnded": {
-				const openEndedItem = {
-					id: item.id,
-					category: item.category,
-					content: item.content as OpenEndedContent,
-				} as OpenEndedModel
 				return (
 					<OpenEnded
-						item={openEndedItem}
+						item={item}
 						item_index={index}
 						forceValidation={forceValidation}
 						onScore={onScore}
@@ -96,14 +64,9 @@ export function QuizRenderer({
 				)
 			}
 			case "FillInTheBlank": {
-				const fitbItem = {
-					id: item.id,
-					category: item.category,
-					content: item.content as FillInTheBlankContent,
-				} as FillInTheBlankModel
 				return (
 					<FillInTheBlank
-						item={fitbItem}
+						item={item}
 						item_index={index}
 						forceValidation={forceValidation}
 						onScore={onScore}
@@ -111,14 +74,9 @@ export function QuizRenderer({
 				)
 			}
 			case "Matching": {
-				const matchingItem = {
-					id: item.id,
-					category: item.category,
-					content: item.content as MatchingContent,
-				} as MatchingModel
 				return (
 					<Matching
-						item={matchingItem}
+						item={item}
 						item_index={index}
 						forceValidation={forceValidation}
 						onScore={onScore}
@@ -128,7 +86,8 @@ export function QuizRenderer({
 			default:
 				return (
 					<div className="rounded-lg border p-4 text-sm text-gray-500">
-						Μη υποστηριζόμενος τύπος ερώτησης: {item.quiz_type}
+						Μη υποστηριζόμενος τύπος ερώτησης:{" "}
+						{(item as { quiz_type: string }).quiz_type}
 					</div>
 				)
 		}
