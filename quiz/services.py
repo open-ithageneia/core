@@ -1,4 +1,5 @@
 import logging
+import random
 
 from django.db import connection
 
@@ -289,31 +290,59 @@ class QuizService:
 		exam_session_id: int | None = None,
 		quiz_type: str = "",
 	):
-		return get_random_quiz_items(category, amount, exam_session_id, quiz_type)
+		"""
+		Return `amount` random serialized quiz items for the given category
+		and exam session, using ORM queries and DRF serializers.
+		"""
+		QUIZ_CONFIG = [
+			(Statement, StatementFilter, StatementSerializer),
+			(Matching, MatchingFilter, MatchingSerializer),
+			(DragAndDrop, DragAndDropFilter, DragAndDropSerializer),
+			(FillInTheBlank, FillInTheBlankFilter, FillInTheBlankSerializer),
+			(OpenEnded, OpenEndedFilter, OpenEndedSerializer),
+		]
 
-		# items = []
+		QUIZ_TYPE_MAP = {
+			model.__name__: config
+			for model, *_ in QUIZ_CONFIG
+			for config in [(model, *_[0:])]
+		}
+		# Simpler map:
+		QUIZ_TYPE_MAP = {
+			model.__name__: (model, filt, ser) for model, filt, ser in QUIZ_CONFIG
+		}
 
-		# DB hit for every iteration
-		# for model in QUIZ_MODELS:
-		#     # This increases the probability that each model contributes at least one item,
-		#     # compared to queryset = model.objects.filter(category=category), but did it for performance reasons
-		#     queryset = (
-		#         model.objects.filter(
-		#             category=category,
-		#             exam_sessions=ExamSession.objects.first(),  # no need to add latest() in managers.py since we have ordering = ["-year", "-month"] in model Meta
-		#         )
-		#         .annotate(quiz_type=Value(model.__name__, output_field=CharField()))
-		#         .values("id", "category", "content", "quiz_type")
-		#         .distinct()
-		#         .order_by("?")[:amount]
-		#     )
+		if quiz_type and quiz_type in QUIZ_TYPE_MAP:
+			configs_to_query = [QUIZ_TYPE_MAP[quiz_type]]
+		else:
+			configs_to_query = QUIZ_CONFIG
 
-		#     for instance in queryset:
-		#         items.append(instance)
+		# Build filter params
+		filter_params = {}
+		if category:
+			filter_params["category"] = category
+		if exam_session_id:
+			filter_params["exam_session"] = exam_session_id
+		else:
+			latest_session = ExamSession.objects.first()
+			if latest_session:
+				filter_params["exam_session"] = latest_session.id
 
-		# random.shuffle(items)
+		items = []
+		for model, filterset_class, serializer_class in configs_to_query:
+			per_model_amount = amount * 2 if model is Statement else amount
+			qs = filterset_class(
+				filter_params, queryset=model.objects.all().distinct()
+			).qs
+			sampled = qs.order_by("?")[:per_model_amount]
+			serialized = serializer_class(sampled, many=True).data
+			quiz_type_name = model.__name__
+			for entry in serialized:
+				entry["quiz_type"] = quiz_type_name
+			items.extend(serialized)
 
-		# return items[:amount]
+		random.shuffle(items)
+		return items[:amount]
 
 
 class AssetService:

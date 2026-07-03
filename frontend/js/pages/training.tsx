@@ -8,7 +8,7 @@ import { MultiSelect } from "@/components/ui/multi-select"
 import { useExitConfirmation } from "@/hooks/use-exit-confirmation"
 import { getScoreColor } from "@/lib/score-color"
 import { QUIZ_CATEGORY_LABELS, type QuizCategory } from "@/types/enums"
-import type { ExamSession, TrainingData } from "@/types/models"
+import type { ExamSession, QuizData } from "@/types/models"
 
 type CategoryOption = {
 	value: string
@@ -18,7 +18,7 @@ type CategoryOption = {
 type TrainingProps = {
 	categories: CategoryOption[]
 	exam_sessions: ExamSession[]
-	data: TrainingData | null
+	data: QuizData | null
 }
 
 function TrainingSetup({
@@ -150,7 +150,7 @@ function TrainingSetup({
 	)
 }
 
-function TrainingSession({ data }: { data: TrainingData }) {
+function TrainingSession({ data }: { data: QuizData }) {
 	const [currentIndex, setCurrentIndex] = useState(0)
 	const [validatedSet, setValidatedSet] = useState<Set<number>>(new Set())
 	const allValidatedEarly = validatedSet.size === data.length

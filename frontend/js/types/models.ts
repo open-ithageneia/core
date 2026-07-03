@@ -1,15 +1,15 @@
 ﻿import type { QuizCategory, StatementType } from "@/types/enums"
 
 interface TimeStamped {
-	created: string
-	modified: string
+	created_at: string
+	updated_at: string
 }
 
 interface Activatable {
 	is_active: boolean
 }
 
-export interface ExamSession extends TimeStamped {
+export interface ExamSession {
 	id: number
 	year: number
 	month: number
@@ -25,7 +25,6 @@ export interface QuizAsset extends TimeStamped {
 interface QuizBase extends TimeStamped, Activatable {
 	id: number
 	exam_sessions: ExamSession[]
-	exam_sessions_preview: string
 	category: QuizCategory
 }
 
@@ -122,24 +121,11 @@ export interface OpenEndedModel extends QuizBase {
 	content: OpenEndedContent
 }
 
-export interface Exam {
-	true_false: [StatementModel]
-	multiple_choice: [StatementModel]
-	fill_in_the_blank: [FillInTheBlankModel]
-	drag_and_drop: [DragAndDropModel]
-	matching: [MatchingModel]
-	open_ended: [OpenEndedModel]
-}
+export type QuizDataItem =
+	| (StatementModel & { quiz_type: "Statement" })
+	| (DragAndDropModel & { quiz_type: "DragAndDrop" })
+	| (MatchingModel & { quiz_type: "Matching" })
+	| (FillInTheBlankModel & { quiz_type: "FillInTheBlank" })
+	| (OpenEndedModel & { quiz_type: "OpenEnded" })
 
-export type TrainingData = {
-	id: number
-	category: QuizCategory
-	content:
-		| FillInTheBlankContent
-		| TrueFalseContent
-		| MultipleChoiceContent
-		| MatchingContent
-		| DragAndDropContent
-		| OpenEndedContent
-	quiz_type: string
-}[]
+export type QuizData = QuizDataItem[]
