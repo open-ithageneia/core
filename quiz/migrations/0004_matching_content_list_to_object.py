@@ -26,7 +26,6 @@ def backwards(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
 	dependencies = [
 		("quiz", "0003_openended_texts_to_alternatives"),
 	]
@@ -34,4 +33,3 @@ class Migration(migrations.Migration):
 	operations = [
 		migrations.RunPython(forwards, backwards),
 	]
-

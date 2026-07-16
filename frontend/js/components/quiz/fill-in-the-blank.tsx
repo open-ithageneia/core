@@ -1,5 +1,5 @@
 ﻿import { useEffect } from "react"
-import DraggableChip from "@/components/quiz/shared/draggable-chip"
+import ChoicesBank from "@/components/quiz/shared/choices-bank"
 import DroppableCell from "@/components/quiz/shared/droppable-cell"
 import QuizCard from "@/components/quiz/shared/quiz-card"
 import QuizDndProvider from "@/components/quiz/shared/quiz-dnd-provider"
@@ -202,23 +202,13 @@ export default function FillInTheBlank({
 	// Wrap in DragDropProvider only for choices_shown variant
 	if (variant === "choices_shown") {
 		const choicesBank = (
-			<div className="rounded-xl border bg-muted/30 p-2">
-				<div className="chips-scrollable flex h-12 items-center gap-1 overflow-x-auto">
-					{availableValues.map((value, index) => (
-						<DraggableChip
-							key={`${value}-${index}`}
-							id={`fitb-chip-${value}-${index}`}
-							value={value}
-							disabled={showValidation}
-						/>
-					))}
-					{availableValues.length === 0 && !showValidation && (
-						<span className="text-sm text-muted-foreground">
-							Όλες οι λέξεις έχουν τοποθετηθεί
-						</span>
-					)}
-				</div>
-			</div>
+			<ChoicesBank
+				values={availableValues}
+				disabled={showValidation}
+				chipId={(value, index) => `fitb-chip-${value}-${index}`}
+				chipKey={(value, index) => `${value}-${index}`}
+				emptyMessage="Όλες οι λέξεις έχουν τοποθετηθεί"
+			/>
 		)
 
 		return (

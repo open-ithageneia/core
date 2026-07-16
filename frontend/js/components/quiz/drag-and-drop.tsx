@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import DraggableChip from "@/components/quiz/shared/draggable-chip"
+import ChoicesBank from "@/components/quiz/shared/choices-bank"
 import DroppableCell from "@/components/quiz/shared/droppable-cell"
 import QuizCard from "@/components/quiz/shared/quiz-card"
 import QuizDndProvider from "@/components/quiz/shared/quiz-dnd-provider"
@@ -52,18 +52,11 @@ export default function DragAndDrop({
 	}, [showValidation, onScore, correctAnswersCount, totalScore])
 
 	const choicesBank = (
-		<div className="rounded-xl border bg-muted/30 p-2">
-			<div className="chips-scrollable flex max-h-40 items-center gap-1 overflow-x-auto">
-				{availableValues.map((value) => (
-					<DraggableChip
-						key={value}
-						id={`chip-${value}`}
-						value={value}
-						disabled={showValidation}
-					/>
-				))}
-			</div>
-		</div>
+		<ChoicesBank
+			values={availableValues}
+			disabled={showValidation}
+			chipId={(value) => `chip-${value}`}
+		/>
 	)
 
 	return (
