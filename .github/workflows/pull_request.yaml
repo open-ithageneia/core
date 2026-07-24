@@ -20,6 +20,7 @@ jobs:
       uses: astral-sh/ruff-action@v3
       with:
         src: .
+        version: 0.14.14
 
     - name: Setup Node
       uses: actions/setup-node@v6
