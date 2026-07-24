@@ -7,7 +7,7 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"includes": ["**", "!!**/templates"]
+		"includes": ["**", "!!**/templates", "!!**/geo/data"]
 	},
 	"formatter": {
 		"enabled": true,
