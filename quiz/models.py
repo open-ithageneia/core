@@ -18,7 +18,17 @@ from .schemas import (
 	MatchingContent,
 	FillInTheBlankContent,
 	OpenEndedContent,
+	MapPointerContent,
+	AREA_NAME_CHOICES_BY_LEVEL,
 )
+
+
+def _map_pointer_content_schema(instance=None):
+	"""Dynamic django-jsonform schema: scope the ``area`` enum to the map
+	level of the instance being edited (falls back to the default level on
+	the admin "add" form where no instance is bound)."""
+	level = getattr(instance, "level", None)
+	return MapPointerContent.build_schema(level)
 
 
 class ExamSession(TimeStampedModel):
@@ -277,3 +287,48 @@ class OpenEnded(AbstractQuiz):
 				f"min_correct_answers ({data.min_correct_answers}) cannot exceed "
 				f"the number of available answers ({len(data.texts)})."
 			)
+
+
+class MapPointer(AbstractQuiz):
+	INSTRUCTION_TEXT = "Τοποθετήστε κάθε επιλογή στη σωστή περιοχή του χάρτη"
+
+	class MapLevel(models.IntegerChoices):
+		DECENTRALIZED_ADMIN = 1, "Decentralized administration (Αποκεντρωμένη διοίκηση)"
+		REGION = 2, "Region (Περιφέρεια)"
+		PREFECTURE_UNIT = 3, "Prefecture unit (Νομός / Νησί)"
+		MUNICIPALITY = 4, "Municipality (Δήμος)"
+		GEOGRAPHIC_DEPARTMENT = 5, "Geographic department (Γεωγραφικό διαμέρισμα)"
+
+	level = models.PositiveSmallIntegerField(
+		choices=MapLevel.choices,
+		default=MapLevel.MUNICIPALITY,
+		help_text="Administrative division level used for the map.",
+	)
+
+	content = JSONField(
+		blank=True,
+		default=dict,
+		schema=_map_pointer_content_schema,
+	)
+
+	class Meta:
+		verbose_name_plural = "Map Pointer"
+
+	def _parse_content(self):
+		return MapPointerContent.from_json(self.content)
+
+	def _validate_content(self):
+		data = self.content_model
+		if data.min_correct_answers < 1:
+			raise ValidationError("min_correct_answers must be at least 1.")
+		if data.min_correct_answers > len(data.texts):
+			raise ValidationError(
+				f"min_correct_answers ({data.min_correct_answers}) cannot exceed "
+				f"the number of available answers ({len(data.texts)})."
+			)
+		valid_areas = set(AREA_NAME_CHOICES_BY_LEVEL[int(self.level)])
+		for group in data.texts:
+			if group.area and group.area not in valid_areas:
+				raise ValidationError(
+					f"Area '{group.area}' is not a valid level-{self.level} area."
+				)

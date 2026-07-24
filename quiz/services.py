@@ -6,6 +6,7 @@ from django.db import connection
 from .filters import (
 	DragAndDropFilter,
 	FillInTheBlankFilter,
+	MapPointerFilter,
 	MatchingFilter,
 	OpenEndedFilter,
 	StatementFilter,
@@ -15,6 +16,7 @@ from .models import (
 	DragAndDrop,
 	ExamSession,
 	FillInTheBlank,
+	MapPointer,
 	Matching,
 	OpenEnded,
 	QuizAsset,
@@ -24,6 +26,7 @@ from .serializers import (
 	DragAndDropSerializer,
 	ExamSessionSerializer,
 	FillInTheBlankSerializer,
+	MapPointerSerializer,
 	MatchingSerializer,
 	OpenEndedSerializer,
 	StatementSerializer,
@@ -31,7 +34,7 @@ from .serializers import (
 
 logger = logging.getLogger(__name__)
 
-QUIZ_MODELS = [Statement, Matching, DragAndDrop, FillInTheBlank, OpenEnded]
+QUIZ_MODELS = [Statement, Matching, DragAndDrop, FillInTheBlank, OpenEnded, MapPointer]
 
 
 def get_random_quiz_items_alt(category: str, amount: int):
@@ -252,6 +255,12 @@ class QuizService:
 		)
 
 	@staticmethod
+	def map_pointer_list(params=None):
+		return QuizService._list(
+			MapPointer, MapPointerFilter, MapPointerSerializer, params
+		)
+
+	@staticmethod
 	def random_quiz(params, n=20):
 		def sample(model, filterset_class, serializer_class, extra_params=None):
 			p = params.copy()
@@ -281,6 +290,7 @@ class QuizService:
 			),
 			"matching": sample(Matching, MatchingFilter, MatchingSerializer),
 			"open_ended": sample(OpenEnded, OpenEndedFilter, OpenEndedSerializer),
+			"map_pointer": sample(MapPointer, MapPointerFilter, MapPointerSerializer),
 		}
 
 	@staticmethod
@@ -300,6 +310,7 @@ class QuizService:
 			(DragAndDrop, DragAndDropFilter, DragAndDropSerializer),
 			(FillInTheBlank, FillInTheBlankFilter, FillInTheBlankSerializer),
 			(OpenEnded, OpenEndedFilter, OpenEndedSerializer),
+			(MapPointer, MapPointerFilter, MapPointerSerializer),
 		]
 
 		QUIZ_TYPE_MAP = {
