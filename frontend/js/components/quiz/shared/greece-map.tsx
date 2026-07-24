@@ -1,6 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react"
 import L from "leaflet"
-import { DEFAULT_MAP_LEVEL, getGeoJson, type RegionProperties } from "@/geo/util"
+import { useCallback, useEffect, useRef, useState } from "react"
+import {
+	DEFAULT_MAP_LEVEL,
+	getGeoJson,
+	type RegionProperties,
+} from "@/geo/util"
 
 type GreeceMapProps = {
 	/** GADM administrative level to render (2 = regions, 3 = municipalities) */
@@ -25,16 +29,36 @@ function getRegionStyle(
 ): L.PathOptions {
 	const validation = validationMap?.get(id)
 	if (validation === "correct") {
-		return { fillColor: "#86efac", fillOpacity: 0.7, color: "#16a34a", weight: 2 }
+		return {
+			fillColor: "#86efac",
+			fillOpacity: 0.7,
+			color: "#16a34a",
+			weight: 2,
+		}
 	}
 	if (validation === "incorrect") {
-		return { fillColor: "#fca5a5", fillOpacity: 0.7, color: "#dc2626", weight: 2 }
+		return {
+			fillColor: "#fca5a5",
+			fillOpacity: 0.7,
+			color: "#dc2626",
+			weight: 2,
+		}
 	}
 	if (highlightedRegions?.has(id)) {
-		return { fillColor: "#93c5fd", fillOpacity: 0.5, color: "#2563eb", weight: 2 }
+		return {
+			fillColor: "#93c5fd",
+			fillOpacity: 0.5,
+			color: "#2563eb",
+			weight: 2,
+		}
 	}
 	if (activeRegionIds?.has(id)) {
-		return { fillColor: "#e0f2fe", fillOpacity: 0.4, color: "#64748b", weight: 1 }
+		return {
+			fillColor: "#e0f2fe",
+			fillOpacity: 0.4,
+			color: "#64748b",
+			weight: 1,
+		}
 	}
 	return { fillColor: "#f1f5f9", fillOpacity: 0.6, color: "#94a3b8", weight: 1 }
 }
@@ -51,8 +75,22 @@ export default function GreeceMap({
 	const containerRef = useRef<HTMLDivElement>(null)
 	const mapRef = useRef<L.Map | null>(null)
 	const geoLayerRef = useRef<L.GeoJSON | null>(null)
-	const propsRef = useRef({ highlightedRegions, activeRegionIds, validationMap, correctAnswers, disabled, onRegionClick })
-	propsRef.current = { highlightedRegions, activeRegionIds, validationMap, correctAnswers, disabled, onRegionClick }
+	const propsRef = useRef({
+		highlightedRegions,
+		activeRegionIds,
+		validationMap,
+		correctAnswers,
+		disabled,
+		onRegionClick,
+	})
+	propsRef.current = {
+		highlightedRegions,
+		activeRegionIds,
+		validationMap,
+		correctAnswers,
+		disabled,
+		onRegionClick,
+	}
 
 	const [hasBeenVisible, setHasBeenVisible] = useState(false)
 
@@ -97,7 +135,11 @@ export default function GreeceMap({
 		const geoLayer = L.geoJSON(getGeoJson(level) as any, {
 			style: (feature) => {
 				const id = feature?.properties?.id ?? ""
-				const { highlightedRegions: hl, activeRegionIds: active, validationMap: vm } = propsRef.current
+				const {
+					highlightedRegions: hl,
+					activeRegionIds: active,
+					validationMap: vm,
+				} = propsRef.current
 				return getRegionStyle(id, hl, active, vm)
 			},
 			onEachFeature: (feature, layer) => {
@@ -113,7 +155,11 @@ export default function GreeceMap({
 				})
 
 				layer.on("mouseover", (e) => {
-					const { disabled: d, activeRegionIds: active, onRegionClick: onClick } = propsRef.current
+					const {
+						disabled: d,
+						activeRegionIds: active,
+						onRegionClick: onClick,
+					} = propsRef.current
 					if (d) return
 					if (active?.has(id) || (!active && onClick)) {
 						;(e.target as L.Path).setStyle({
@@ -125,7 +171,11 @@ export default function GreeceMap({
 				})
 
 				layer.on("mouseout", (e) => {
-					const { highlightedRegions: hl, activeRegionIds: active, validationMap: vm } = propsRef.current
+					const {
+						highlightedRegions: hl,
+						activeRegionIds: active,
+						validationMap: vm,
+					} = propsRef.current
 					const style = getRegionStyle(id, hl, active, vm)
 					;(e.target as L.Path).setStyle(style)
 				})
@@ -163,7 +213,12 @@ export default function GreeceMap({
 			if (!feature?.properties?.id) return
 
 			const id = feature.properties.id as string
-			const style = getRegionStyle(id, highlightedRegions, activeRegionIds, validationMap)
+			const style = getRegionStyle(
+				id,
+				highlightedRegions,
+				activeRegionIds,
+				validationMap,
+			)
 			;(layer as L.Path).setStyle(style)
 
 			// Show placed label or correct answer on the region
@@ -197,7 +252,11 @@ export default function GreeceMap({
 			}
 
 			// Bind/unbind permanent tooltip as label
-			const typedLayer = layer as L.Path & { getTooltip: () => L.Tooltip | undefined; unbindTooltip: () => void; bindTooltip: (content: string, options?: L.TooltipOptions) => void }
+			const typedLayer = layer as L.Path & {
+				getTooltip: () => L.Tooltip | undefined
+				unbindTooltip: () => void
+				bindTooltip: (content: string, options?: L.TooltipOptions) => void
+			}
 			if (labelText) {
 				// Always rebind so the CSS className is applied to the DOM element
 				// (Leaflet ignores options.className changes on existing tooltips)

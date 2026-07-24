@@ -1,11 +1,11 @@
+import type { FeatureCollection, Geometry } from "geojson"
 import { useCallback, useMemo, useRef, useState } from "react"
+import { getGeoJson, type RegionProperties } from "@/geo/util"
 import { useValidation } from "@/hooks/quiz/use-validation"
 import { normalizeForTextComparison, shuffleArray } from "@/lib/utils"
 import { ValidationStatus } from "@/types/enums"
 import type { MapPointerModel, MapPointerTextGroup } from "@/types/models"
 import type { ValidationState } from "@/types/quiz"
-import { getGeoJson, type RegionProperties } from "@/geo/util"
-import type { FeatureCollection, Geometry } from "geojson"
 
 type UseMapPointerOptions = {
 	forceValidation?: boolean
@@ -206,7 +206,14 @@ export function useMapPointer(
 			}
 		}
 		return map
-	}, [showValidation, dropValidationMap, placements, regionToAnswer, answerToRegion, texts])
+	}, [
+		showValidation,
+		dropValidationMap,
+		placements,
+		regionToAnswer,
+		answerToRegion,
+		texts,
+	])
 
 	const dropCorrectCount = useMemo(() => {
 		let count = 0
@@ -234,7 +241,9 @@ export function useMapPointer(
 	// ─── Mode 2: Type mode (show_answers=false) ─────────────────────────
 
 	/** The region the user clicked on to type an answer */
-	const [selectedTypeRegion, setSelectedTypeRegion] = useState<string | null>(null)
+	const [selectedTypeRegion, setSelectedTypeRegion] = useState<string | null>(
+		null,
+	)
 	/** Map: region_id → typed answer */
 	const [typeAnswers, setTypeAnswers] = useState<Map<string, string>>(new Map())
 
@@ -282,7 +291,10 @@ export function useMapPointer(
 
 	const typeValidation = useMemo(() => {
 		if (!showValidation) {
-			return { regionStates: new Map<string, ValidationState>(), matchedGroupIndices: new Set<number>() }
+			return {
+				regionStates: new Map<string, ValidationState>(),
+				matchedGroupIndices: new Set<number>(),
+			}
 		}
 		const matchedGroupIndices = new Set<number>()
 		const regionStates = new Map<string, ValidationState>()
@@ -295,7 +307,11 @@ export function useMapPointer(
 			// Find which answer group corresponds to this region
 			const answerIdx = regionToAnswer.get(regionId)
 			if (answerIdx !== undefined && !matchedGroupIndices.has(answerIdx)) {
-				if (texts[answerIdx].alternatives.some((alt) => normalizeForTextComparison(alt) === norm)) {
+				if (
+					texts[answerIdx].alternatives.some(
+						(alt) => normalizeForTextComparison(alt) === norm,
+					)
+				) {
 					matchedGroupIndices.add(answerIdx)
 					regionStates.set(regionId, ValidationStatus.Correct)
 					continue
@@ -305,7 +321,11 @@ export function useMapPointer(
 			let found = false
 			for (let i = 0; i < texts.length; i++) {
 				if (matchedGroupIndices.has(i)) continue
-				if (texts[i].alternatives.some((alt) => normalizeForTextComparison(alt) === norm)) {
+				if (
+					texts[i].alternatives.some(
+						(alt) => normalizeForTextComparison(alt) === norm,
+					)
+				) {
 					matchedGroupIndices.add(i)
 					regionStates.set(regionId, ValidationStatus.Incorrect)
 					found = true
@@ -345,7 +365,10 @@ export function useMapPointer(
 		if (!showValidation) return undefined
 		const map = new Map<string, "correct" | "incorrect">()
 		for (const [regionId, state] of typeValidation.regionStates.entries()) {
-			map.set(regionId, state === ValidationStatus.Correct ? "correct" : "incorrect")
+			map.set(
+				regionId,
+				state === ValidationStatus.Correct ? "correct" : "incorrect",
+			)
 		}
 		return map
 	}, [showValidation, typeValidation.regionStates])

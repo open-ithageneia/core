@@ -128,16 +128,14 @@ export default function MapPointer({
 						onRegionClick={handleRegionClick}
 					/>
 
-
-				{isDropComplete && showValidationButton && (
-					<ValidationButton
-						showValidation={showValidation}
-						onValidate={() => setShowValidation(true)}
-					/>
-				)}
-
-			</>
-		) : (
+					{isDropComplete && showValidationButton && (
+						<ValidationButton
+							showValidation={showValidation}
+							onValidate={() => setShowValidation(true)}
+						/>
+					)}
+				</>
+			) : (
 				<>
 					{/* Interactive map — click any region to type your answer */}
 					<GreeceMap
@@ -169,18 +167,17 @@ export default function MapPointer({
 
 					{!selectedTypeRegion && !showValidation && (
 						<p className="text-sm text-muted-foreground">
-							Πατήστε σε οποιαδήποτε περιοχή του χάρτη για να
-							πληκτρολογήσετε την απάντησή σας
+							Πατήστε σε οποιαδήποτε περιοχή του χάρτη για να πληκτρολογήσετε
+							την απάντησή σας
 						</p>
 					)}
 
-				{hasAtLeastOneAnswer && showValidationButton && (
-					<ValidationButton
-						showValidation={showValidation}
-						onValidate={() => setShowValidation(true)}
-					/>
-				)}
-
+					{hasAtLeastOneAnswer && showValidationButton && (
+						<ValidationButton
+							showValidation={showValidation}
+							onValidate={() => setShowValidation(true)}
+						/>
+					)}
 				</>
 			)}
 		</QuizCard>

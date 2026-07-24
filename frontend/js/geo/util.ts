@@ -12,12 +12,12 @@
  * properties into a small, stable shape and serves the right level on demand.
  */
 
+import type { Feature, FeatureCollection, Geometry } from "geojson"
 import gadmLevel1 from "@/geo/data/gadm41_GRC_1.json"
 import gadmLevel2 from "@/geo/data/gadm41_GRC_2.json"
 import gadmLevel3 from "@/geo/data/gadm41_GRC_3.json"
 import geographicDepartments from "@/geo/data/greece_geographic_departments.json"
 import prefectureUnits from "@/geo/data/greece_prefecture_units.json"
-import type { FeatureCollection, Feature, Geometry } from "geojson"
 
 // ── Types ────────────────────────────────────────────────────────────────────
 export interface RegionProperties {

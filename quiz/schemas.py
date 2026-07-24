@@ -30,7 +30,11 @@ def _load_area_names(level: int) -> list[str]:
 	filename, name_key = MAP_LEVEL_SOURCES[level]
 	geo_path = (
 		Path(__file__).resolve().parent.parent
-		/ "frontend" / "js" / "geo" / "data" / filename
+		/ "frontend"
+		/ "js"
+		/ "geo"
+		/ "data"
+		/ filename
 	)
 	with open(geo_path, encoding="utf-8") as f:
 		data = json.load(f)
@@ -658,4 +662,3 @@ class MapPointerContent:
 			min_correct_answers=data.get("min_correct_answers", 0),
 			show_answers=data.get("show_answers", True),
 		)
-
