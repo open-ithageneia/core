@@ -38,21 +38,17 @@ export default function MapPointer({
 		isDropComplete,
 		dropValidationMap,
 		dropCorrectAnswersMap,
-		dropMissedAnswers,
 		handleRegionClick,
 		toggleLabelSelection,
-		removeLabel,
 		// Type mode
 		selectedTypeRegion,
 		typeAnswers,
 		hasAtLeastOneAnswer,
-		missedAnswers,
 		typeValidationMap,
 		typeCorrectAnswersMap,
 		handleTypeRegionClick,
 		updateTypeAnswer,
 		clearTypeAnswer,
-		minCorrectAnswers,
 	} = useMapPointer(item, { forceValidation })
 
 	useEffect(() => {

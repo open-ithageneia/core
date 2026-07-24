@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import {
 	DEFAULT_MAP_LEVEL,
 	getGeoJson,
+	type RegionFeature,
 	type RegionProperties,
 } from "@/geo/util"
 
@@ -96,8 +97,12 @@ export default function GreeceMap({
 
 	// Track when the container first becomes visible
 	useEffect(() => {
-		if (hasBeenVisible) return
-		if (!containerRef.current) return
+		if (hasBeenVisible) {
+			return
+		}
+		if (!containerRef.current) {
+			return
+		}
 		const el = containerRef.current
 
 		// Check if already visible (for the first/active question)
@@ -121,8 +126,12 @@ export default function GreeceMap({
 
 	// Initialize Leaflet map only after container is visible
 	const initMap = useCallback(() => {
-		if (!containerRef.current) return
-		if (mapRef.current) return
+		if (!containerRef.current) {
+			return
+		}
+		if (mapRef.current) {
+			return
+		}
 
 		const map = L.map(containerRef.current, {
 			center: [38.5, 24.0],
@@ -132,7 +141,7 @@ export default function GreeceMap({
 			dragging: true,
 		})
 
-		const geoLayer = L.geoJSON(getGeoJson(level) as any, {
+		const geoLayer = L.geoJSON(getGeoJson(level), {
 			style: (feature) => {
 				const id = feature?.properties?.id ?? ""
 				const {
@@ -148,7 +157,9 @@ export default function GreeceMap({
 
 				layer.on("click", () => {
 					const { disabled: d, onRegionClick: onClick } = propsRef.current
-					if (d) return
+					if (d) {
+						return
+					}
 					if (onClick) {
 						onClick(id)
 					}
@@ -160,7 +171,9 @@ export default function GreeceMap({
 						activeRegionIds: active,
 						onRegionClick: onClick,
 					} = propsRef.current
-					if (d) return
+					if (d) {
+						return
+					}
 					if (active?.has(id) || (!active && onClick)) {
 						;(e.target as L.Path).setStyle({
 							fillColor: "#bfdbfe",
@@ -193,7 +206,9 @@ export default function GreeceMap({
 	}, [level])
 
 	useEffect(() => {
-		if (!hasBeenVisible) return
+		if (!hasBeenVisible) {
+			return
+		}
 		initMap()
 		return () => {
 			if (mapRef.current) {
@@ -206,11 +221,15 @@ export default function GreeceMap({
 
 	// Update styles and labels when state changes
 	useEffect(() => {
-		if (!geoLayerRef.current) return
+		if (!geoLayerRef.current) {
+			return
+		}
 
 		geoLayerRef.current.eachLayer((layer) => {
-			const feature = (layer as any).feature
-			if (!feature?.properties?.id) return
+			const feature = (layer as { feature?: RegionFeature }).feature
+			if (!feature?.properties?.id) {
+				return
+			}
 
 			const id = feature.properties.id as string
 			const style = getRegionStyle(

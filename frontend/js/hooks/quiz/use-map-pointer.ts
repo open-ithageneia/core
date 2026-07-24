@@ -25,10 +25,11 @@ function resolveRegionIds(
 		const group = texts[i]
 		// Prefer explicit area reference
 		if (group.area) {
+			const area = group.area
 			const match = geojson.features.find(
 				(f) =>
 					normalizeForTextComparison(f.properties.name) ===
-					normalizeForTextComparison(group.area!),
+					normalizeForTextComparison(area),
 			)
 			if (match) {
 				map.set(i, match.properties.id)
@@ -107,8 +108,12 @@ export function useMapPointer(
 
 	const placeLabel = useCallback(
 		(regionId: string, label: string) => {
-			if (showValidation) return
-			if (placements.has(regionId)) return
+			if (showValidation) {
+				return
+			}
+			if (placements.has(regionId)) {
+				return
+			}
 			setPlacements((prev) => {
 				const next = new Map(prev)
 				next.set(regionId, label)
@@ -116,7 +121,9 @@ export function useMapPointer(
 			})
 			setAvailableLabels((prev) => {
 				const idx = prev.indexOf(label)
-				if (idx === -1) return prev
+				if (idx === -1) {
+					return prev
+				}
 				return [...prev.slice(0, idx), ...prev.slice(idx + 1)]
 			})
 			setSelectedLabel(null)
@@ -126,9 +133,13 @@ export function useMapPointer(
 
 	const removeLabel = useCallback(
 		(regionId: string) => {
-			if (showValidation) return
+			if (showValidation) {
+				return
+			}
 			const label = placements.get(regionId)
-			if (!label) return
+			if (!label) {
+				return
+			}
 			setPlacements((prev) => {
 				const next = new Map(prev)
 				next.delete(regionId)
@@ -141,7 +152,9 @@ export function useMapPointer(
 
 	const handleRegionClick = useCallback(
 		(regionId: string) => {
-			if (showValidation) return
+			if (showValidation) {
+				return
+			}
 			// If region already has a placement, remove it (acts as X button)
 			if (placements.has(regionId)) {
 				removeLabel(regionId)
@@ -149,7 +162,9 @@ export function useMapPointer(
 			}
 			// Read latest selectedLabel from ref (avoids stale closure)
 			const label = selectedLabelRef.current
-			if (!label) return
+			if (!label) {
+				return
+			}
 			placeLabel(regionId, label)
 		},
 		[showValidation, placements, placeLabel, removeLabel],
@@ -157,7 +172,9 @@ export function useMapPointer(
 
 	const toggleLabelSelection = useCallback(
 		(label: string) => {
-			if (showValidation) return
+			if (showValidation) {
+				return
+			}
 			setSelectedLabel((prev) => (prev === label ? null : label))
 		},
 		[showValidation],
@@ -165,7 +182,9 @@ export function useMapPointer(
 
 	/** Validate drop mode: check if each placed label's answer group matches the region */
 	const dropValidationMap = useMemo(() => {
-		if (!showValidation) return new Map<string, "correct" | "incorrect">()
+		if (!showValidation) {
+			return new Map<string, "correct" | "incorrect">()
+		}
 		const map = new Map<string, "correct" | "incorrect">()
 		for (const [regionId, label] of placements.entries()) {
 			// Find which answer group this label belongs to
@@ -188,7 +207,9 @@ export function useMapPointer(
 	}, [showValidation, placements, texts, answerToRegion, validRegionIds])
 
 	const dropCorrectAnswersMap = useMemo(() => {
-		if (!showValidation) return new Map<string, string>()
+		if (!showValidation) {
+			return new Map<string, string>()
+		}
 		const map = new Map<string, string>()
 		// Show correct label for wrongly-assigned regions
 		for (const [regionId, result] of dropValidationMap.entries()) {
@@ -218,14 +239,18 @@ export function useMapPointer(
 	const dropCorrectCount = useMemo(() => {
 		let count = 0
 		for (const v of dropValidationMap.values()) {
-			if (v === "correct") count++
+			if (v === "correct") {
+				count++
+			}
 		}
 		return count
 	}, [dropValidationMap])
 
 	/** Labels that were not placed on their correct region */
 	const dropMissedAnswers = useMemo(() => {
-		if (!showValidation) return []
+		if (!showValidation) {
+			return []
+		}
 		const missed: string[] = []
 		for (const [idx, regionId] of answerToRegion.entries()) {
 			const placement = placements.get(regionId)
@@ -254,7 +279,9 @@ export function useMapPointer(
 
 	const handleTypeRegionClick = useCallback(
 		(regionId: string) => {
-			if (showValidation) return
+			if (showValidation) {
+				return
+			}
 			setSelectedTypeRegion((prev) => (prev === regionId ? null : regionId))
 		},
 		[showValidation],
@@ -262,7 +289,9 @@ export function useMapPointer(
 
 	const updateTypeAnswer = useCallback(
 		(regionId: string, value: string) => {
-			if (showValidation) return
+			if (showValidation) {
+				return
+			}
 			setTypeAnswers((prev) => {
 				const next = new Map(prev)
 				if (value === "") {
@@ -278,7 +307,9 @@ export function useMapPointer(
 
 	const clearTypeAnswer = useCallback(
 		(regionId: string) => {
-			if (showValidation) return
+			if (showValidation) {
+				return
+			}
 			setTypeAnswers((prev) => {
 				const next = new Map(prev)
 				next.delete(regionId)
@@ -320,7 +351,9 @@ export function useMapPointer(
 			// Also check all groups in case user typed a correct answer on the wrong region
 			let found = false
 			for (let i = 0; i < texts.length; i++) {
-				if (matchedGroupIndices.has(i)) continue
+				if (matchedGroupIndices.has(i)) {
+					continue
+				}
 				if (
 					texts[i].alternatives.some(
 						(alt) => normalizeForTextComparison(alt) === norm,
@@ -348,13 +381,17 @@ export function useMapPointer(
 	const typeCorrectCount = useMemo(() => {
 		let count = 0
 		for (const v of typeValidation.regionStates.values()) {
-			if (v === ValidationStatus.Correct) count++
+			if (v === ValidationStatus.Correct) {
+				count++
+			}
 		}
 		return count
 	}, [typeValidation.regionStates])
 
 	const missedAnswers = useMemo(() => {
-		if (!showValidation) return []
+		if (!showValidation) {
+			return []
+		}
 		return texts
 			.filter((_, i) => !typeValidation.matchedGroupIndices.has(i))
 			.map((g) => g.alternatives[0])
@@ -362,7 +399,9 @@ export function useMapPointer(
 
 	/** Validation map for the GreeceMap in type mode */
 	const typeValidationMap = useMemo(() => {
-		if (!showValidation) return undefined
+		if (!showValidation) {
+			return undefined
+		}
 		const map = new Map<string, "correct" | "incorrect">()
 		for (const [regionId, state] of typeValidation.regionStates.entries()) {
 			map.set(
@@ -375,7 +414,9 @@ export function useMapPointer(
 
 	/** Correct answers to show on the map after validation in type mode */
 	const typeCorrectAnswersMap = useMemo(() => {
-		if (!showValidation) return undefined
+		if (!showValidation) {
+			return undefined
+		}
 		const map = new Map<string, string>()
 		for (const [regionId, state] of typeValidation.regionStates.entries()) {
 			if (state === ValidationStatus.Incorrect) {
