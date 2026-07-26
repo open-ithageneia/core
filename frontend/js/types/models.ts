@@ -1,4 +1,4 @@
-﻿import type { QuizCategory, StatementType } from "@/types/enums"
+﻿import type { MapLevel, QuizCategory, StatementType } from "@/types/enums"
 
 interface TimeStamped {
 	created_at: string
@@ -121,11 +121,29 @@ export interface OpenEndedModel extends QuizBase {
 	content: OpenEndedContent
 }
 
+export interface MapPointerTextGroup {
+	alternatives: string[]
+	area?: string
+}
+
+export interface MapPointerContent {
+	prompt_text: string
+	min_correct_answers: number
+	show_answers: boolean
+	texts: MapPointerTextGroup[]
+}
+
+export interface MapPointerModel extends QuizBase {
+	level: MapLevel
+	content: MapPointerContent
+}
+
 export type QuizDataItem =
 	| (StatementModel & { quiz_type: "Statement" })
 	| (DragAndDropModel & { quiz_type: "DragAndDrop" })
 	| (MatchingModel & { quiz_type: "Matching" })
 	| (FillInTheBlankModel & { quiz_type: "FillInTheBlank" })
 	| (OpenEndedModel & { quiz_type: "OpenEnded" })
+	| (MapPointerModel & { quiz_type: "MapPointer" })
 
 export type QuizData = QuizDataItem[]

@@ -1,1 +1,46 @@
 @import "./tailwind.css";
+
+/* Leaflet map labels for MapPointer quiz */
+.map-label {
+	background: rgba(255, 255, 255, 0.92);
+	border: 1px solid #cbd5e1;
+	border-radius: 0.375rem;
+	padding: 0.125rem 0.375rem;
+	font-size: 0.7rem;
+	font-weight: 600;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+	white-space: nowrap;
+	text-align: center;
+	line-height: 1.4;
+}
+
+.map-label::before {
+	display: none;
+}
+
+.map-label--placed {
+	background: rgba(219, 234, 254, 0.95);
+	border-color: #2563eb;
+	color: #1e40af;
+}
+
+.map-label--correct {
+	background: rgba(220, 252, 231, 0.95);
+	border-color: #16a34a;
+	color: #166534;
+}
+
+.map-label--incorrect {
+	background: rgba(254, 226, 226, 0.95);
+	border-color: #dc2626;
+	color: #991b1b;
+}
+
+/* Dual-line incorrect label: struck wrong answer + correct answer below */
+.map-label--incorrect s {
+	opacity: 0.7;
+}
+
+.map-label--incorrect span {
+	color: #166534;
+}

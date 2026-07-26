@@ -120,6 +120,7 @@ function TrainingSetup({
 						<option value="Matching">Αντιστοίχηση</option>
 						<option value="FillInTheBlank">Συμπλήρωση κενού</option>
 						<option value="OpenEnded">Ανοιχτή ερώτηση</option>
+						<option value="MapPointer">Χάρτης</option>
 					</select>
 				</div>
 			)}

@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client"
 import Layout from "./components/layout"
 
 import "../css/main.css"
+import "leaflet/dist/leaflet.css"
 
 type SharedProps = Record<string, unknown>
 

@@ -5,6 +5,7 @@ from .models import (
 	DragAndDrop,
 	ExamSession,
 	FillInTheBlank,
+	MapPointer,
 	Matching,
 	QuizAsset,
 	Statement,
@@ -156,6 +157,30 @@ class OpenEndedSerializer(ParsedContentMixin, serializers.ModelSerializer):
 		]
 
 
+class MapPointerSerializer(ParsedContentMixin, serializers.ModelSerializer):
+	exam_sessions = ExamSessionSerializer(many=True, read_only=True)
+	exam_session_ids = serializers.PrimaryKeyRelatedField(
+		queryset=ExamSession.objects.all(),
+		many=True,
+		write_only=True,
+		source="exam_sessions",
+	)
+
+	class Meta:
+		model = MapPointer
+		fields = [
+			"id",
+			"category",
+			"level",
+			"content",
+			"is_active",
+			"exam_sessions",
+			"exam_session_ids",
+			"created_at",
+			"updated_at",
+		]
+
+
 class ExerciseQuerySerializer(serializers.Serializer):
 	category = serializers.CharField(default="", allow_blank=True)
 	amount = serializers.ChoiceField(default=10, choices=[5, 10, 20])
@@ -169,6 +194,7 @@ class ExerciseQuerySerializer(serializers.Serializer):
 			("FillInTheBlank", "FillInTheBlank"),
 			("OpenEnded", "OpenEnded"),
 			("Matching", "Matching"),
+			("MapPointer", "MapPointer"),
 		],
 	)
 

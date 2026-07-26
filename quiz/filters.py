@@ -5,6 +5,7 @@ from .models import (
 	Matching,
 	FillInTheBlank,
 	OpenEnded,
+	MapPointer,
 	ExamSession,
 	AbstractQuiz,
 )
@@ -54,4 +55,10 @@ class FillInTheBlankFilter(AbstractQuizFilter):
 class OpenEndedFilter(AbstractQuizFilter):
 	class Meta:
 		model = OpenEnded
+		fields = ["category", "exam_session_id", "year", "month", "is_active"]
+
+
+class MapPointerFilter(AbstractQuizFilter):
+	class Meta:
+		model = MapPointer
 		fields = ["category", "exam_session_id", "year", "month", "is_active"]

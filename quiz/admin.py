@@ -2,6 +2,7 @@ import logging
 import re
 import zipfile
 
+from django import forms
 from django.contrib import admin
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.html import format_html, format_html_join
@@ -15,6 +16,7 @@ from .models import (
 	DragAndDrop,
 	ExamSession,
 	FillInTheBlank,
+	MapPointer,
 	Matching,
 	Statement,
 	QuizAsset,
@@ -29,7 +31,7 @@ from .resources import (
 	load_images_from_zip,
 	OpenEndedResource,
 )
-from .schemas import FillBlankText
+from .schemas import AREA_NAME_CHOICES_BY_LEVEL, FillBlankText
 
 logger = logging.getLogger(__name__)
 
@@ -557,4 +559,101 @@ class OpenEndedAdmin(AbstractQuizAdmin):
 			""",
 			min_correct,
 			answers_html,
+		)
+
+
+class MapPointerAdminForm(forms.ModelForm):
+	class Meta:
+		model = MapPointer
+		fields = "__all__"
+
+	class Media:
+		# Ordering matters: our script must load *after* react-json-form.js
+		# (which defines `reactJsonForm`) and *before* index.js (which mounts
+		# the widget), so it can wrap `createForm` and capture the instance.
+		js = [
+			"django_jsonform/react-json-form.js",
+			"quiz/map_pointer_level.js",
+			"django_jsonform/index.js",
+		]
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		# On a bound submission the dynamic `content` schema (and thus the
+		# `area` enum it validates against) must reflect the level the user
+		# just selected — not the saved/default level of the instance.
+		# Otherwise every non-default level fails jsonform's enum validation.
+		if self.is_bound and "content" in self.fields:
+			raw_level = self.data.get(self.add_prefix("level"))
+			if raw_level:
+				try:
+					self.instance.level = int(raw_level)
+				except (TypeError, ValueError):
+					pass
+			self.fields["content"].widget.instance = self.instance
+
+
+@admin.register(MapPointer)
+class MapPointerAdmin(AbstractQuizAdmin):
+	form = MapPointerAdminForm
+	list_display = [
+		"id",
+		"category",
+		"level",
+		"get_exam_sessions_preview",
+		"prompt_preview",
+		"answer_preview",
+		"created_at",
+		"updated_at",
+	]
+	list_filter = ["level"] + AbstractQuizAdmin.list_filter
+	search_fields = AbstractQuizAdmin.search_fields + [
+		"content__prompt_text",
+	]
+	fieldsets = (
+		(
+			AbstractQuizAdmin.fieldsets[0][0],
+			{"fields": ("level", *AbstractQuizAdmin.fieldsets[0][1]["fields"])},
+		),
+		AbstractQuizAdmin.fieldsets[1],
+	)
+
+	def get_form(self, request, obj=None, **kwargs):
+		"""Bind the instance so the dynamic ``content`` schema can scope the
+		area enum to the selected map level (see _map_pointer_content_schema).
+		This sets the schema for the *saved* level on initial render; live
+		switching is handled client-side by map_pointer_level.js."""
+		form = super().get_form(request, obj, **kwargs)
+		if "content" in form.base_fields:
+			form.base_fields["content"].widget.instance = obj
+		return form
+
+	def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+		# Expose the per-level area names so the client-side script can rebuild
+		# the `area` dropdown when the level select changes.
+		extra_context = extra_context or {}
+		extra_context["map_pointer_area_names"] = AREA_NAME_CHOICES_BY_LEVEL
+		return super().changeform_view(request, object_id, form_url, extra_context)
+
+	@admin.display(description="Prompt", ordering="content__prompt_text")
+	def prompt_preview(self, instance):
+		return instance.content.get("prompt_text", "")
+
+	@admin.display(description="Answer")
+	def answer_preview(self, instance):
+		texts = instance.content.get("texts", [])
+		if not texts:
+			return None
+
+		parts = []
+		for t in texts:
+			if isinstance(t, dict):
+				alts = t.get("alternatives", [])
+				area = t.get("area", "")
+				parts.append((", ".join(alts), area))
+
+		return format_html_join(
+			"",
+			'<div style="margin:4px 0;"><strong>{}</strong> → <code>{}</code></div>',
+			parts,
 		)

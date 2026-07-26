@@ -1,6 +1,49 @@
+import json
 import re
+from pathlib import Path
+
 from django.core.exceptions import ValidationError
 from dataclasses import dataclass, field
+
+
+# Map "level" → (GeoJSON filename, property key holding the Greek area name).
+# Filenames/keys must stay in sync with frontend geo/util.ts.
+#   1 = decentralized administrations (αποκεντρωμένες διοικήσεις) — GADM level 1
+#   2 = regions (περιφέρειες)                                     — GADM level 2
+#   3 = prefecture units (νομοί/νησιά)                            — peterdsp greece-prefectures-and-units
+#   4 = municipalities (δήμοι)                                    — GADM level 3
+#   5 = geographic departments (γεωγραφικά διαμερίσματα)          — derived (build_geographic_departments.py)
+MAP_LEVEL_SOURCES: dict[int, tuple[str, str]] = {
+	1: ("gadm41_GRC_1.json", "NL_NAME_1"),
+	2: ("gadm41_GRC_2.json", "NL_NAME_2"),
+	3: ("greece_prefecture_units.json", "name_greek"),
+	4: ("gadm41_GRC_3.json", "NL_NAME_3"),
+	5: ("greece_geographic_departments.json", "name"),
+}
+
+
+def _load_area_names(level: int) -> list[str]:
+	"""Load Greek area names from the GeoJSON file used by the frontend map,
+	so the choices match the region ``name`` the frontend matches answers
+	against in ``geo/util.ts``.
+	"""
+	filename, name_key = MAP_LEVEL_SOURCES[level]
+	geo_path = (
+		Path(__file__).resolve().parent.parent
+		/ "frontend"
+		/ "js"
+		/ "geo"
+		/ "data"
+		/ filename
+	)
+	with open(geo_path, encoding="utf-8") as f:
+		data = json.load(f)
+	return sorted({feat["properties"][name_key] for feat in data["features"]})
+
+
+AREA_NAME_CHOICES_BY_LEVEL: dict[int, list[str]] = {
+	level: _load_area_names(level) for level in MAP_LEVEL_SOURCES
+}
 
 
 def _require(data: dict, key: str, context: str = ""):
@@ -512,4 +555,110 @@ class OpenEndedContent:
 			prompt_text=data.get("prompt_text"),
 			texts=texts,
 			min_correct_answers=data.get("min_correct_answers", 0),
+		)
+
+
+@dataclass
+class MapPointerTextGroup:
+	alternatives: list[str]
+	area: str | None = None
+
+	def to_dict(self):
+		d: dict = {"alternatives": self.alternatives}
+		if self.area:
+			d["area"] = self.area
+		return d
+
+
+@dataclass
+class MapPointerContent:
+	# Default admin level used when no instance level is available (e.g. the
+	# admin "add" form). Matches the MapPointer model's default level.
+	DEFAULT_LEVEL = 4
+
+	@classmethod
+	def build_schema(cls, level: int | None = None) -> dict:
+		"""Build the django-jsonform schema, scoping the ``area`` enum to the
+		valid area names for the given admin level."""
+		level = int(level) if level else cls.DEFAULT_LEVEL
+		return {
+			"type": "object",
+			"required": ["prompt_text", "min_correct_answers", "texts"],
+			"properties": {
+				"prompt_text": {"type": "string", "title": "Question"},
+				"show_answers": {
+					"type": "boolean",
+					"default": True,
+					"title": "Show answers",
+				},
+				"min_correct_answers": {
+					"type": "integer",
+					"title": "Minimum correct answers",
+				},
+				"texts": {
+					"type": "array",
+					"title": "Answer groups",
+					"items": {
+						"type": "object",
+						"required": ["alternatives", "area"],
+						"properties": {
+							"alternatives": {
+								"type": "array",
+								"title": "Alternative spellings / phrasings",
+								"items": {"type": "string"},
+								"minItems": 1,
+							},
+							"area": {
+								"type": "string",
+								"title": "Area",
+								"enum": AREA_NAME_CHOICES_BY_LEVEL[level],
+							},
+						},
+						"additionalProperties": False,
+					},
+				},
+			},
+			"additionalProperties": False,
+		}
+
+	show_answers: bool
+	min_correct_answers: int
+	texts: list[MapPointerTextGroup]
+	prompt_text: str | None = None
+
+	def to_dict(self):
+		return {
+			"show_answers": self.show_answers,
+			"min_correct_answers": self.min_correct_answers,
+			"prompt_text": self.prompt_text,
+			"texts": [t.to_dict() for t in self.texts],
+		}
+
+	@classmethod
+	def from_json(cls, data: dict):
+		raw_texts = data.get("texts", [])
+		texts: list[MapPointerTextGroup] = []
+		for t in raw_texts:
+			if isinstance(t, dict):
+				# New format: {"alternatives": [...], "area": "..."}
+				alts = t.get("alternatives", [])
+				if not alts and "text" in t:
+					# Legacy single-text dict: {"text": "word"}
+					alts = [t["text"]]
+				area = t.get("area")
+				# Handle legacy object format: {"name": "..."}
+				if isinstance(area, dict):
+					area = area.get("name")
+				texts.append(MapPointerTextGroup(alternatives=alts, area=area))
+			elif isinstance(t, list):
+				texts.append(MapPointerTextGroup(alternatives=t))
+			elif isinstance(t, str):
+				texts.append(MapPointerTextGroup(alternatives=[t]))
+			else:
+				texts.append(MapPointerTextGroup(alternatives=[str(t)]))
+		return cls(
+			prompt_text=data.get("prompt_text"),
+			texts=texts,
+			min_correct_answers=data.get("min_correct_answers", 0),
+			show_answers=data.get("show_answers", True),
 		)

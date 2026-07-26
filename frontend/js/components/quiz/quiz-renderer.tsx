@@ -1,6 +1,7 @@
 ﻿import type { ReactNode } from "react"
 import DragAndDrop from "@/components/quiz/drag-and-drop"
 import FillInTheBlank from "@/components/quiz/fill-in-the-blank"
+import MapPointer from "@/components/quiz/map-pointer"
 import Matching from "@/components/quiz/matching"
 import MultipleChoice from "@/components/quiz/multiple-choice"
 import OpenEnded from "@/components/quiz/open-ended"
@@ -76,6 +77,16 @@ export function QuizRenderer({
 			case "Matching": {
 				return (
 					<Matching
+						item={item}
+						item_index={index}
+						forceValidation={forceValidation}
+						onScore={onScore}
+					/>
+				)
+			}
+			case "MapPointer": {
+				return (
+					<MapPointer
 						item={item}
 						item_index={index}
 						forceValidation={forceValidation}

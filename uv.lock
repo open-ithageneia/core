@@ -268,7 +268,7 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [{ name = "ruff", specifier = ">=0.14.14" }]
+dev = [{ name = "ruff", specifier = ">=0.14.14,<0.15" }]
 
 [[package]]
 name = "openpyxl"
