@@ -3,15 +3,13 @@ import uuid
 from abc import abstractmethod, ABCMeta
 
 from django.core.exceptions import ValidationError
-from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models import Q
 from django.db.models.base import ModelBase
 from django_jsonform.models.fields import JSONField
 
 from open_ithageneia.models import ActivatableModel, TimeStampedModel
 
-from .managers import AbstractQuizManager, ExamSessionManager, StatementManager
+from .managers import AbstractQuizManager, StatementManager
 from .schemas import (
 	StatementChoiceContent,
 	DragAndDropContent,
@@ -31,44 +29,6 @@ def _map_pointer_content_schema(instance=None):
 	return MapPointerContent.build_schema(level)
 
 
-class ExamSession(TimeStampedModel):
-	class Month(models.IntegerChoices):
-		JAN = 1, "January"
-		FEB = 2, "February"
-		MAR = 3, "March"
-		APR = 4, "April"
-		MAY = 5, "May"
-		JUN = 6, "June"
-		JUL = 7, "July"
-		AUG = 8, "August"
-		SEP = 9, "September"
-		OCT = 10, "October"
-		NOV = 11, "November"
-		DEC = 12, "December"
-
-	year = models.PositiveSmallIntegerField(
-		validators=[MinValueValidator(2000), MaxValueValidator(2100)]
-	)
-	month = models.PositiveSmallIntegerField(choices=Month.choices)
-
-	class Meta:
-		indexes = [models.Index(fields=["year", "month"])]
-		ordering = ["-year", "-month"]
-		constraints = [
-			models.UniqueConstraint(fields=["year", "month"], name="uniq_exam_session"),
-			models.CheckConstraint(
-				condition=Q(month__gte=1, month__lte=12),
-				name="month_between_1_and_12",
-			),
-		]
-		verbose_name_plural = "Exam Sessions"
-
-	def __str__(self):
-		return f"{self.get_month_display()} - {self.year}"
-
-	objects = ExamSessionManager()
-
-
 def get_quiz_asset_upload_to(instance, filename):
 	_, ext = os.path.splitext(filename)
 
@@ -77,7 +37,8 @@ def get_quiz_asset_upload_to(instance, filename):
 
 class QuizAsset(TimeStampedModel):
 	title = models.CharField(max_length=255, blank=True, default="")
-	image = models.ImageField(upload_to=get_quiz_asset_upload_to)
+	image = models.ImageField(upload_to=get_quiz_asset_upload_to, blank=True, null=True)
+	audio = models.FileField(upload_to=get_quiz_asset_upload_to, blank=True, null=True)
 
 	def __str__(self):
 		return self.title if self.title else str(self.pk)
@@ -86,35 +47,38 @@ class QuizAsset(TimeStampedModel):
 		verbose_name_plural = "Quiz Assets"
 
 
+class QuizCategory(TimeStampedModel):
+	GEOGRAPHY = "GEOGRAPHY"
+	CIVICS = "CIVICS"
+	HISTORY = "HISTORY"
+	CULTURE = "CULTURE"
+
+	code = models.CharField(max_length=32, primary_key=True)
+	name = models.CharField(max_length=64)
+	order = models.PositiveSmallIntegerField(default=0)
+
+	class Meta:
+		verbose_name_plural = "Quiz Categories"
+		ordering = ["order", "code"]
+
+	def __str__(self):
+		return self.name or self.code
+
+
 class ModelABCMeta(ModelBase, ABCMeta):
 	pass
 
 
 class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
-	class QuizCategory(models.TextChoices):
-		GEOGRAPHY = "GEOGRAPHY", "Geography"
-		CIVICS = "CIVICS", "Civics"
-		HISTORY = "HISTORY", "History"
-		CULTURE = "CULTURE", "Culture"
-
-	category = models.CharField(
-		max_length=9,
-		choices=QuizCategory,
+	category = models.ForeignKey(
+		QuizCategory,
+		db_column="category",
+		on_delete=models.PROTECT,
 		default=QuizCategory.GEOGRAPHY,
-	)
-	exam_sessions = models.ManyToManyField(
-		ExamSession,
-		blank=True,
-		related_name="%(class)s_quizzes",
+		related_name="%(class)ss",
 	)
 
 	_cached_content_model = None
-
-	@property
-	def exam_sessions_preview(self):
-		return ", ".join(
-			[str(exam_session) for exam_session in self.exam_sessions.all()]
-		)
 
 	@abstractmethod
 	def _parse_content(self):
@@ -159,18 +123,26 @@ class Statement(AbstractQuiz):
 		"MULTIPLE_CHOICE_MULTI": "Επιλέξτε τις σωστές απαντήσεις",
 	}
 
-	class QuizType(models.TextChoices):
+	class StatementType(models.TextChoices):
 		TRUE_FALSE = "TRUE_FALSE", "True/False"
 		MULTIPLE_CHOICE = "MULTIPLE_CHOICE", "Multiple Choice"
 
 	type = models.CharField(
 		max_length=15,
-		choices=QuizType,
-		default=QuizType.TRUE_FALSE,
+		choices=StatementType,
+		default=StatementType.TRUE_FALSE,
 	)
 
 	content = JSONField(
 		blank=True, default=dict, schema=StatementChoiceContent.STATEMENT_CONTENT_SCHEMA
+	)
+
+	second_part = models.OneToOneField(
+		"self",
+		on_delete=models.SET_NULL,
+		null=True,
+		blank=True,
+		related_name="first_part",
 	)
 
 	def __str__(self):
@@ -188,6 +160,16 @@ class Statement(AbstractQuiz):
 
 		try:
 			return QuizAsset.objects.get(id=asset_id).image
+		except QuizAsset.DoesNotExist:
+			return None
+
+	@staticmethod
+	def get_asset_audio(asset_id):
+		if not asset_id:
+			return None
+
+		try:
+			return QuizAsset.objects.get(id=asset_id).audio
 		except QuizAsset.DoesNotExist:
 			return None
 
@@ -212,9 +194,14 @@ class Statement(AbstractQuiz):
 	def _parse_content(self):
 		return StatementChoiceContent.from_json(self.content)
 
+	def clean(self):
+		super().clean()
+		if self.second_part_id and self.second_part_id == self.id:
+			raise ValidationError({"second_part": "A statement cannot link to itself."})
+
 	def _validate_content(self):
 		data = self.content_model
-		if self.type == self.QuizType.MULTIPLE_CHOICE:
+		if self.type == self.StatementType.MULTIPLE_CHOICE:
 			if not any(choice.is_correct for choice in data.choices):
 				raise ValidationError(
 					"Multiple-choice questions must have at least one correct choice."

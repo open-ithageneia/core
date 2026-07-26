@@ -8,7 +8,7 @@ import { MultiSelect } from "@/components/ui/multi-select"
 import { useExitConfirmation } from "@/hooks/use-exit-confirmation"
 import { getScoreColor } from "@/lib/score-color"
 import { QUIZ_CATEGORY_LABELS, type QuizCategory } from "@/types/enums"
-import type { ExamSession, QuizData } from "@/types/models"
+import type { QuizData } from "@/types/models"
 
 type CategoryOption = {
 	value: string
@@ -17,29 +17,18 @@ type CategoryOption = {
 
 type TrainingProps = {
 	categories: CategoryOption[]
-	exam_sessions: ExamSession[]
 	data: QuizData | null
 }
 
-function TrainingSetup({
-	categories,
-	exam_sessions,
-}: {
-	categories: CategoryOption[]
-	exam_sessions: ExamSession[]
-}) {
+function TrainingSetup({ categories }: { categories: CategoryOption[] }) {
 	const [categories_selected, setCategoriesSelected] = useState<string[]>([])
 	const [amount, setAmount] = useState("10")
-	const [examSession, setExamSession] = useState("")
 	const [quizType, setQuizType] = useState("")
 
 	function handleStart() {
 		const params: Record<string, string> = { amount }
 		if (categories_selected.length > 0) {
 			params.category = categories_selected.join(",")
-		}
-		if (examSession) {
-			params.exam_session = examSession
 		}
 		if (quizType) {
 			params.quiz_type = quizType
@@ -50,35 +39,6 @@ function TrainingSetup({
 	return (
 		<section className="mx-auto max-w-md rounded-2xl bg-white p-6 shadow-sm sm:p-8">
 			<h1 className="mb-6 text-2xl font-bold">Τεστ προσομοίωσης</h1>
-
-			<div className="mb-4">
-				<label
-					htmlFor="exam-session"
-					className="mb-1 block text-sm font-medium text-gray-700"
-				>
-					Εξεταστική περίοδος
-				</label>
-				<select
-					id="exam-session"
-					value={examSession}
-					onChange={(e) => setExamSession(e.target.value)}
-					className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-				>
-					<option value="">Όλες οι περίοδοι</option>
-					{exam_sessions.map((es) => {
-						const monthName = new Date(es.year, es.month - 1).toLocaleString(
-							"el-GR",
-							{ month: "long" },
-						)
-						return (
-							<option key={es.id} value={String(es.id)}>
-								{monthName.charAt(0).toUpperCase() + monthName.slice(1)}{" "}
-								{es.year}
-							</option>
-						)
-					})}
-				</select>
-			</div>
 
 			<div className="mb-4">
 				<label
@@ -329,15 +289,9 @@ function TrainingSession({ data }: { data: QuizData }) {
 	)
 }
 
-export default function Training({
-	categories,
-	exam_sessions,
-	data,
-}: TrainingProps) {
+export default function Training({ categories, data }: TrainingProps) {
 	if (!data) {
-		return (
-			<TrainingSetup categories={categories} exam_sessions={exam_sessions} />
-		)
+		return <TrainingSetup categories={categories} />
 	}
 	return <TrainingSession data={data} />
 }

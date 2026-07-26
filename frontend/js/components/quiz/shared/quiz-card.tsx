@@ -1,4 +1,4 @@
-﻿import type { ReactNode } from "react"
+import type { ReactNode } from "react"
 
 import {
 	Card,
@@ -8,6 +8,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card"
 import { QUIZ_CATEGORY_LABELS, type QuizCategory } from "@/types/enums"
+import AudioPromptButton from "./audio-prompt-button"
 import { useQuizResults } from "./quiz-results-context"
 
 type QuizCardProps = {
@@ -17,6 +18,7 @@ type QuizCardProps = {
 	instruction?: string
 	promptText?: string
 	promptAssetUrl?: string
+	promptAudioUrl?: string
 	headerExtra?: ReactNode
 	children: ReactNode
 }
@@ -28,11 +30,13 @@ export default function QuizCard({
 	instruction,
 	promptText,
 	promptAssetUrl,
+	promptAudioUrl,
 	headerExtra,
 	children,
 }: QuizCardProps) {
 	const { badge: contextBadge } = useQuizResults()
 	const badge = badgeProp ?? contextBadge
+
 	return (
 		<Card className="flex h-full w-full flex-col rounded-2xl shadow-sm p-1">
 			<CardHeader className="shrink-0 p-2">
@@ -48,7 +52,11 @@ export default function QuizCard({
 				{instruction && (
 					<p className="text-sm text-muted-foreground">{instruction}.</p>
 				)}
-				{promptText && <CardDescription>{promptText}</CardDescription>}
+				{promptAudioUrl ? (
+					<AudioPromptButton url={promptAudioUrl} />
+				) : (
+					promptText && <CardDescription>{promptText}</CardDescription>
+				)}
 			</CardHeader>
 
 			{headerExtra && <div className="shrink-0 px-2">{headerExtra}</div>}

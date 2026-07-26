@@ -12,19 +12,17 @@ from .filters import (
 	StatementFilter,
 )
 from .models import (
-	AbstractQuiz,
 	DragAndDrop,
-	ExamSession,
 	FillInTheBlank,
 	MapPointer,
 	Matching,
 	OpenEnded,
 	QuizAsset,
+	QuizCategory,
 	Statement,
 )
 from .serializers import (
 	DragAndDropSerializer,
-	ExamSessionSerializer,
 	FillInTheBlankSerializer,
 	MapPointerSerializer,
 	MatchingSerializer,
@@ -39,10 +37,9 @@ QUIZ_MODELS = [Statement, Matching, DragAndDrop, FillInTheBlank, OpenEnded, MapP
 
 def get_random_quiz_items_alt(category: str, amount: int):
 	"""
-	Return `amount` random quiz items across all quiz models for the given category
-	and the latest exam session. All rows from the different tables are UNIONed and
-	a random sample is taken from the combined result, which favors tables
-	with larger datasets.
+	Return `amount` random active quiz items across all quiz models for the given
+	category. All rows from the different tables are UNIONed and a random sample is
+	taken from the combined result, which favors tables with larger datasets.
 	"""
 
 	union_parts = []
@@ -50,8 +47,6 @@ def get_random_quiz_items_alt(category: str, amount: int):
 
 	for model in QUIZ_MODELS:
 		model_table = model._meta.db_table
-		through_table = model.exam_sessions.through._meta.db_table
-		model_name = model.__name__.lower()
 
 		union_parts.append(f"""
             SELECT
@@ -60,15 +55,8 @@ def get_random_quiz_items_alt(category: str, amount: int):
                 m.content,
                 '{model.__name__}' AS quiz_type
             FROM {model_table} m
-            INNER JOIN {through_table} t
-                ON t.{model_name}_id = m.id
             WHERE m.category = %s
-            AND t.examsession_id = (
-                SELECT id
-                FROM {ExamSession._meta.db_table}
-                ORDER BY year DESC, month DESC
-                LIMIT 1
-            )
+            AND m.is_active = TRUE
         """)
 
 		params.append(category)
@@ -99,17 +87,14 @@ def get_random_quiz_items_alt(category: str, amount: int):
 	return [dict(zip(columns, row)) for row in rows]
 
 
-def get_random_quiz_items(
-	category: str, amount: int, exam_session_id: int | None = None, quiz_type: str = ""
-):
+def get_random_quiz_items(category: str, amount: int, quiz_type: str = ""):
 	"""
-	Return `amount` random quiz items for the given category and exam session
-	using a balanced sampling strategy. Each quiz table first contributes a random
+	Return `amount` random active quiz items for the given category using a
+	balanced sampling strategy. Each quiz table first contributes a random
 	subset of rows, the results are UNIONed, shuffled, and the final `amount` items
 	are returned. The Statement table uses `2 * amount` to account for its two
 	question subtypes (True/False and Multiple Choice).
 
-	If `exam_session_id` is not provided, the latest exam session is used.
 	If `quiz_type` is provided, only that model's table is queried.
 	"""
 
@@ -126,8 +111,6 @@ def get_random_quiz_items(
 
 	for model in models_to_query:
 		model_table = model._meta.db_table
-		through_table = model.exam_sessions.through._meta.db_table
-		model_name = model.__name__.lower()
 
 		per_model_amount = amount * 2 if model is Statement else amount
 
@@ -142,16 +125,6 @@ def get_random_quiz_items(
 		else:
 			category_clause = ""
 
-		if exam_session_id:
-			session_clause = "t.examsession_id = %s"
-		else:
-			session_clause = f"""t.examsession_id = (
-                    SELECT id
-                    FROM {ExamSession._meta.db_table}
-                    ORDER BY year DESC, month DESC
-                    LIMIT 1
-                )"""
-
 		union_parts.append(f"""
             SELECT * FROM (
                 SELECT
@@ -160,17 +133,13 @@ def get_random_quiz_items(
                     m.content,
                     '{model.__name__}' AS quiz_type
                 FROM {model_table} m
-                INNER JOIN {through_table} t
-                    ON t.{model_name}_id = m.id
-                WHERE {session_clause}
+                WHERE m.is_active = TRUE
                 {category_clause}
                 ORDER BY RANDOM()
                 LIMIT %s
             )
         """)
 
-		if exam_session_id:
-			params.append(exam_session_id)
 		if cat_list:
 			params.extend(cat_list)
 		params.append(per_model_amount)
@@ -206,20 +175,15 @@ class QuizService:
 	def statement_types():
 		return [
 			{"value": choice.value, "label": choice.label}
-			for choice in Statement.QuizType
+			for choice in Statement.StatementType
 		]
 
 	@staticmethod
 	def categories():
 		return [
-			{"value": choice.value, "label": choice.label}
-			for choice in AbstractQuiz.QuizCategory
+			{"value": category.code, "label": category.name}
+			for category in QuizCategory.objects.all()
 		]
-
-	@staticmethod
-	def exam_session_list():
-		qs = ExamSession.objects.all()
-		return ExamSessionSerializer(qs, many=True).data
 
 	@staticmethod
 	def _list(model, filterset_class, serializer_class, params=None):
@@ -266,7 +230,12 @@ class QuizService:
 			p = params.copy()
 			if extra_params:
 				p.update(extra_params)
-			qs = filterset_class(p, queryset=model.objects.all().distinct()).qs
+			base_qs = model.objects.active()
+			# Statements linked as a second part are only ever shown attached to
+			# their first part, never standalone.
+			if model is Statement:
+				base_qs = base_qs.filter(first_part__isnull=True)
+			qs = filterset_class(p, queryset=base_qs.distinct()).qs
 			return serializer_class(qs.order_by("?")[:n], many=True).data
 
 		return {
@@ -274,13 +243,13 @@ class QuizService:
 				Statement,
 				StatementFilter,
 				StatementSerializer,
-				{"type": Statement.QuizType.TRUE_FALSE},
+				{"type": Statement.StatementType.TRUE_FALSE},
 			),
 			"multiple_choice": sample(
 				Statement,
 				StatementFilter,
 				StatementSerializer,
-				{"type": Statement.QuizType.MULTIPLE_CHOICE},
+				{"type": Statement.StatementType.MULTIPLE_CHOICE},
 			),
 			"fill_in_the_blank": sample(
 				FillInTheBlank, FillInTheBlankFilter, FillInTheBlankSerializer
@@ -293,16 +262,29 @@ class QuizService:
 			"map_pointer": sample(MapPointer, MapPointerFilter, MapPointerSerializer),
 		}
 
+	# Category codes for each exam simulation variant's question pool.
+	LISTENING_CATEGORY = "LISTENING"
+	KNOWLEDGE_SIMULATION_CATEGORIES = [
+		QuizCategory.GEOGRAPHY,
+		QuizCategory.CIVICS,
+		QuizCategory.HISTORY,
+		QuizCategory.CULTURE,
+	]
+	LISTENING_SIMULATION_CATEGORIES = [LISTENING_CATEGORY]
+
 	@staticmethod
 	def get_by_category(
 		category: str,
 		amount: int,
-		exam_session_id: int | None = None,
 		quiz_type: str = "",
+		categories: list | None = None,
 	):
 		"""
-		Return `amount` random serialized quiz items for the given category
-		and exam session, using ORM queries and DRF serializers.
+		Return `amount` random serialized active quiz items for the given
+		category, using ORM queries and DRF serializers.
+
+		When `categories` is given, only questions in those categories are
+		included (used by the exam simulation).
 		"""
 		QUIZ_CONFIG = [
 			(Statement, StatementFilter, StatementSerializer),
@@ -332,19 +314,18 @@ class QuizService:
 		filter_params = {}
 		if category:
 			filter_params["category"] = category
-		if exam_session_id:
-			filter_params["exam_session"] = exam_session_id
-		else:
-			latest_session = ExamSession.objects.first()
-			if latest_session:
-				filter_params["exam_session"] = latest_session.id
 
 		items = []
 		for model, filterset_class, serializer_class in configs_to_query:
 			per_model_amount = amount * 2 if model is Statement else amount
-			qs = filterset_class(
-				filter_params, queryset=model.objects.all().distinct()
-			).qs
+			base_qs = model.objects.active()
+			if categories:
+				base_qs = base_qs.filter(category__in=categories)
+			# Statements linked as a second part are only ever shown attached to
+			# their first part, never standalone.
+			if model is Statement:
+				base_qs = base_qs.filter(first_part__isnull=True)
+			qs = filterset_class(filter_params, queryset=base_qs.distinct()).qs
 			sampled = qs.order_by("?")[:per_model_amount]
 			serialized = serializer_class(sampled, many=True).data
 			quiz_type_name = model.__name__
@@ -360,6 +341,13 @@ class AssetService:
 	@staticmethod
 	def resolve_asset_url(asset_id):
 		asset = QuizAsset.objects.filter(id=asset_id).first()
-		if asset:
+		if asset and asset.image:
 			return asset.image.url
+		return None
+
+	@staticmethod
+	def resolve_audio_asset_url(asset_id):
+		asset = QuizAsset.objects.filter(id=asset_id).first()
+		if asset and asset.audio:
+			return asset.audio.url
 		return None

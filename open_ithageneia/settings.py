@@ -268,7 +268,6 @@ ADMIN_STRUCTURE = [
 			"DragAndDrop",
 			"Matching",
 			"QuizAsset",
-			"ExamSession",
 		],
 	),
 ]

@@ -26,6 +26,8 @@ from quiz.models import (
 _image_store = threading.local()
 
 _IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp", ".tiff"}
+_AUDIO_EXTENSIONS = {".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac", ".webm"}
+_MEDIA_EXTENSIONS = _IMAGE_EXTENSIONS | _AUDIO_EXTENSIONS
 
 
 def load_images_from_zip(zip_bytes: bytes) -> bytes:
@@ -48,7 +50,7 @@ def load_images_from_zip(zip_bytes: bytes) -> bytes:
 			if suffix in (".xlsx", ".xls", ".csv"):
 				if spreadsheet_bytes is None:
 					spreadsheet_bytes = zf.read(name)
-			elif suffix in _IMAGE_EXTENSIONS:
+			elif suffix in _MEDIA_EXTENSIONS:
 				# Key = filename only (lowered), so users just type "img.png".
 				key = PurePosixPath(name).name.lower()
 				_image_store.images[key] = zf.read(name)
@@ -88,27 +90,33 @@ def _is_blank(value) -> bool:
 	return value is None or str(value).strip() == ""
 
 
-def _create_asset_from_bytes(image_bytes: bytes, filename: str, title: str = "") -> int:
-	"""Persist raw image bytes as a new QuizAsset and return its pk."""
+def _create_asset_from_bytes(
+	file_bytes: bytes, filename: str, title: str = "", field: str = "image"
+) -> int:
+	"""Persist raw file bytes as a new QuizAsset and return its pk.
+
+	*field* selects the target model field: ``"image"`` or ``"audio"``.
+	"""
 	suffix = PurePosixPath(filename).suffix or ".png"
 	dest_name = f"{uuid.uuid4()}{suffix}"
 	asset = QuizAsset.objects.create(
 		title=title,
-		image=ContentFile(image_bytes, name=dest_name),
+		**{field: ContentFile(file_bytes, name=dest_name)},
 	)
 	return asset.pk
 
 
-def _import_image_column(value, title: str = "") -> int | None:
-	"""Resolve an image column value to a ``QuizAsset`` pk.
+def _import_asset_column(value, title: str = "", field: str = "image") -> int | None:
+	"""Resolve an asset column value to a ``QuizAsset`` pk.
 
 	The value can be one of:
 
 	* **blank / None** → returns ``None``.
 	* **integer (asset ID)** → validated against ``QuizAsset`` and returned
 	  directly.  This path does *not* require a ZIP upload.
-	* **filename string** → looked up in the thread-local image store
-	  (populated from a ZIP upload) and persisted as a new ``QuizAsset``.
+	* **filename string** → looked up in the thread-local media store
+	  (populated from a ZIP upload) and persisted as a new ``QuizAsset``
+	  on the given *field* (``"image"`` or ``"audio"``).
 	"""
 	if _is_blank(value):
 		return None
@@ -121,30 +129,37 @@ def _import_image_column(value, title: str = "") -> int | None:
 		if not QuizAsset.objects.filter(pk=asset_pk).exists():
 			raise ValueError(
 				f"QuizAsset with ID {asset_pk} does not exist. "
-				f"Provide a valid asset ID or an image filename inside a ZIP."
+				f"Provide a valid asset ID or a media filename inside a ZIP."
 			)
 		return asset_pk
 
-	# --- path 2: filename from ZIP image store ---
+	# --- path 2: filename from ZIP media store ---
 	filename = raw
-	image_bytes = _get_image_bytes(filename)
+	file_bytes = _get_image_bytes(filename)
 
-	if image_bytes is None:
+	if file_bytes is None:
 		raise ValueError(
-			f"Image '{filename}' not found in the uploaded ZIP archive. "
-			f"Make sure the file exists in the images/ folder inside the ZIP."
+			f"File '{filename}' not found in the uploaded ZIP archive. "
+			f"Make sure the file exists inside the ZIP."
 		)
 
-	return _create_asset_from_bytes(image_bytes, filename, title=title)
+	return _create_asset_from_bytes(file_bytes, filename, title=title, field=field)
+
+
+def _import_image_column(value, title: str = "") -> int | None:
+	"""Resolve an image column value to a ``QuizAsset`` pk (see ``_import_asset_column``)."""
+	return _import_asset_column(value, title=title, field="image")
+
+
+def _import_audio_column(value, title: str = "") -> int | None:
+	"""Resolve an audio column value to a ``QuizAsset`` pk (see ``_import_asset_column``)."""
+	return _import_asset_column(value, title=title, field="audio")
 
 
 class AbstractQuizResource(resources.ModelResource):
 	"""Base resource for all quiz types.
 
 	Provides:
-	- An ``exam_session`` constructor kwarg (from the import form dropdown).
-	  Since ``exam_sessions`` is an M2M field it is set *after* the
-	  instance is saved via ``after_save_instance``.
 	- Common Meta defaults (``fields``, ``skip_unchanged``).
 	- A custom ``export()`` that produces flat spreadsheet columns matching
 	  the import format (round-trip fidelity).
@@ -155,15 +170,6 @@ class AbstractQuizResource(resources.ModelResource):
 	"""
 
 	EXPORT_HEADERS: list[str] = []
-
-	def __init__(self, *, exam_session=None, **kwargs):
-		self.exam_session = exam_session
-		super().__init__(**kwargs)
-
-	def after_save_instance(self, instance, row, **kwargs):
-		super().after_save_instance(instance, row, **kwargs)
-		if self.exam_session is not None:
-			instance.exam_sessions.add(self.exam_session)
 
 	# ------------------------------------------------------------------
 	# Export: flatten JSON content back into the same columns used by import
@@ -207,6 +213,8 @@ class StatementResource(AbstractQuizResource):
 		"category",
 		"prompt_text",
 		"prompt_image",
+		"prompt_audio",
+		"second_part",
 		*[
 			col
 			for i in range(1, 5)
@@ -268,8 +276,29 @@ class StatementResource(AbstractQuizResource):
 			"prompt_asset_id": _import_image_column(
 				row.get("prompt_image"), title="Prompt"
 			),
+			"prompt_audio_asset_id": _import_audio_column(
+				row.get("prompt_audio"), title="Prompt audio"
+			),
 			"choices": choices,
 		}
+
+		instance.second_part_id = self._resolve_second_part(row, instance)
+
+	@staticmethod
+	def _resolve_second_part(row, instance) -> int | None:
+		"""Resolve the ``second_part`` column to a Statement pk, if valid."""
+		value = row.get("second_part")
+		if _is_blank(value):
+			return None
+
+		second_part_id = int(float(str(value).strip()))
+		if second_part_id == instance.id:
+			raise ValueError("A statement cannot link to itself as its second part.")
+		if not Statement.objects.filter(pk=second_part_id).exists():
+			raise ValueError(
+				f"Statement with ID {second_part_id} (second_part) does not exist."
+			)
+		return second_part_id
 
 	# ------------------------------------------------------------------
 	# Export
@@ -282,9 +311,11 @@ class StatementResource(AbstractQuizResource):
 		row = [
 			instance.id,
 			instance.type,
-			instance.category,
+			instance.category_id,
 			content.get("prompt_text", ""),
 			content.get("prompt_asset_id", "") or "",
+			content.get("prompt_audio_asset_id", "") or "",
+			instance.second_part_id or "",
 		]
 
 		for choice in choices:
@@ -338,7 +369,7 @@ class DragAndDropResource(AbstractQuizResource):
 
 		return [
 			instance.id,
-			instance.category,
+			instance.category_id,
 			left.get("title", ""),
 			right.get("title", ""),
 			", ".join(left.get("values", [])),
@@ -459,7 +490,7 @@ class MatchingResource(AbstractQuizResource):
 
 		return [
 			instance.id,
-			instance.category,
+			instance.category_id,
 			left.get("title", ""),
 			right.get("title", ""),
 			f" {self.ITEM_SEPARATOR} ".join(pairs),
@@ -508,7 +539,7 @@ class FillInTheBlankResource(AbstractQuizResource):
 
 		row = [
 			instance.id,
-			instance.category,
+			instance.category_id,
 			"true" if content.get("show_answers_as_choices") else "false",
 			content.get("prompt_asset_id", "") or "",
 		]
@@ -582,7 +613,7 @@ class OpenEndedResource(AbstractQuizResource):
 
 		return [
 			instance.id,
-			instance.category,
+			instance.category_id,
 			content.get("prompt_text", ""),
 			content.get("prompt_asset_id", "") or "",
 			", ".join(text_parts),
