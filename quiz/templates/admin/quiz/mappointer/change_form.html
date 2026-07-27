@@ -1,0 +1,5 @@
+{% extends "admin/change_form.html" %}
+
+{% block extrahead %}{{ block.super }}
+{{ map_pointer_area_names|json_script:"map-pointer-area-names" }}
+{% endblock %}

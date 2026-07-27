@@ -1,4 +1,4 @@
-﻿import { router } from "@inertiajs/react"
+﻿import { router, usePage } from "@inertiajs/react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ExitConfirmDialog } from "@/components/exit-confirm-dialog"
 import { QuizRenderer } from "@/components/quiz/quiz-renderer"
@@ -20,7 +20,13 @@ function formatTime(seconds: number): string {
 	return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
 }
 
-function SimulationSession({ data }: { data: QuizData }) {
+function SimulationSession({
+	data,
+	basePath,
+}: {
+	data: QuizData
+	basePath: string
+}) {
 	const [currentIndex, setCurrentIndex] = useState(0)
 	const [finished, setFinished] = useState(false)
 	const { exitConfirmOpen, exitConfirmCancel, exitConfirmConfirm } =
@@ -91,7 +97,7 @@ function SimulationSession({ data }: { data: QuizData }) {
 			<section className="mx-auto max-w-md rounded-2xl bg-white p-6 text-center shadow-sm">
 				<h1 className="mb-4 text-xl font-bold">Δεν βρέθηκαν ερωτήσεις</h1>
 				<p className="mb-4 text-sm text-gray-600">Δοκιμάστε ξανά αργότερα.</p>
-				<Button onClick={() => router.get("/quiz/simulation")}>Πίσω</Button>
+				<Button onClick={() => router.get(basePath)}>Πίσω</Button>
 			</section>
 		)
 	}
@@ -110,7 +116,7 @@ function SimulationSession({ data }: { data: QuizData }) {
 					earnedPoints={earnedPoints}
 					maxPoints={maxPoints}
 					buttonLabel="Νέα προσομοίωση"
-					onReset={() => router.get("/quiz/simulation")}
+					onReset={() => router.get(basePath)}
 				/>
 			)}
 
@@ -199,29 +205,13 @@ function SimulationSession({ data }: { data: QuizData }) {
 }
 
 export default function Simulation({ data }: SimulationProps) {
-	if (!data) {
-		return (
-			<section className="mx-auto max-w-md rounded-2xl bg-white p-6 shadow-sm sm:p-8">
-				<h1 className="mb-6 text-2xl font-bold">Προσομοίωση εξέτασης</h1>
-				<p className="mb-4 text-sm text-gray-600">
-					20 τυχαίες ερωτήσεις από όλες τις κατηγορίες. Έχετε 30 λεπτά στη
-					διάθεσή σας.
-				</p>
+	// Current path without query params, so back/reset restart the same
+	// simulation mode (e.g. /quiz/simulation/knowledge), which redirects to the
+	// mode picker when hit without `?start`.
+	const basePath = usePage().url.split("?")[0]
 
-				<Button
-					onClick={() =>
-						router.get(
-							"/quiz/simulation",
-							{ start: "1" },
-							{ preserveState: false },
-						)
-					}
-					className="w-full"
-				>
-					Ξεκινήστε
-				</Button>
-			</section>
-		)
+	if (!data) {
+		return null
 	}
-	return <SimulationSession data={data} />
+	return <SimulationSession data={data} basePath={basePath} />
 }

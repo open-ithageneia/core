@@ -86,6 +86,10 @@ class StatementChoiceContent:
 		"properties": {
 			"prompt_text": {"type": "string", "title": "Question"},
 			"prompt_asset_id": {"type": "integer", "title": "Question image asset ID"},
+			"prompt_audio_asset_id": {
+				"type": "integer",
+				"title": "Question audio asset ID",
+			},
 			"choices": {
 				"type": "array",
 				"title": "Choices",
@@ -114,6 +118,7 @@ class StatementChoiceContent:
 	choices: list[StatementChoice] = field(default_factory=list)
 	prompt_text: str | None = None
 	prompt_asset_id: int | None = None
+	prompt_audio_asset_id: int | None = None
 
 	def to_dict(self):
 		from quiz.services import AssetService
@@ -122,6 +127,9 @@ class StatementChoiceContent:
 			"choices": [c.to_dict() for c in self.choices],
 			"prompt_text": self.prompt_text,
 			"prompt_asset_url": AssetService.resolve_asset_url(self.prompt_asset_id),
+			"prompt_audio_url": AssetService.resolve_audio_asset_url(
+				self.prompt_audio_asset_id
+			),
 		}
 
 	@classmethod
@@ -132,6 +140,7 @@ class StatementChoiceContent:
 		return cls(
 			prompt_text=data.get("prompt_text"),
 			prompt_asset_id=data.get("prompt_asset_id"),
+			prompt_audio_asset_id=data.get("prompt_audio_asset_id"),
 			choices=choices,
 		)
 

@@ -1,13 +1,12 @@
 from rest_framework import serializers
 
 from .models import (
-	AbstractQuiz,
 	DragAndDrop,
-	ExamSession,
 	FillInTheBlank,
 	MapPointer,
 	Matching,
 	QuizAsset,
+	QuizCategory,
 	Statement,
 	OpenEnded,
 )
@@ -27,14 +26,6 @@ class ParsedContentMixin:
 		return data
 
 
-class ExamSessionSerializer(serializers.ModelSerializer):
-	month_display = serializers.CharField(source="get_month_display", read_only=True)
-
-	class Meta:
-		model = ExamSession
-		fields = ["id", "year", "month", "month_display"]
-
-
 class QuizAssetSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = QuizAsset
@@ -42,13 +33,7 @@ class QuizAssetSerializer(serializers.ModelSerializer):
 
 
 class StatementSerializer(ParsedContentMixin, serializers.ModelSerializer):
-	exam_sessions = ExamSessionSerializer(many=True, read_only=True)
-	exam_session_ids = serializers.PrimaryKeyRelatedField(
-		queryset=ExamSession.objects.all(),
-		many=True,
-		write_only=True,
-		source="exam_sessions",
-	)
+	second_part = serializers.SerializerMethodField()
 
 	class Meta:
 		model = Statement
@@ -57,23 +42,22 @@ class StatementSerializer(ParsedContentMixin, serializers.ModelSerializer):
 			"category",
 			"type",
 			"content",
+			"second_part",
 			"is_active",
-			"exam_sessions",
-			"exam_session_ids",
 			"created_at",
 			"updated_at",
 		]
 
+	def get_second_part(self, obj):
+		# Serialize the linked follow-up statement one level deep only. The
+		# ``nested`` context flag bounds recursion so a mis-linked chain can
+		# never loop.
+		if obj.second_part_id and not self.context.get("nested"):
+			return StatementSerializer(obj.second_part, context={"nested": True}).data
+		return None
+
 
 class DragAndDropSerializer(ParsedContentMixin, serializers.ModelSerializer):
-	exam_sessions = ExamSessionSerializer(many=True, read_only=True)
-	exam_session_ids = serializers.PrimaryKeyRelatedField(
-		queryset=ExamSession.objects.all(),
-		many=True,
-		write_only=True,
-		source="exam_sessions",
-	)
-
 	class Meta:
 		model = DragAndDrop
 		fields = [
@@ -81,22 +65,12 @@ class DragAndDropSerializer(ParsedContentMixin, serializers.ModelSerializer):
 			"category",
 			"content",
 			"is_active",
-			"exam_sessions",
-			"exam_session_ids",
 			"created_at",
 			"updated_at",
 		]
 
 
 class MatchingSerializer(ParsedContentMixin, serializers.ModelSerializer):
-	exam_sessions = ExamSessionSerializer(many=True, read_only=True)
-	exam_session_ids = serializers.PrimaryKeyRelatedField(
-		queryset=ExamSession.objects.all(),
-		many=True,
-		write_only=True,
-		source="exam_sessions",
-	)
-
 	class Meta:
 		model = Matching
 		fields = [
@@ -104,22 +78,12 @@ class MatchingSerializer(ParsedContentMixin, serializers.ModelSerializer):
 			"category",
 			"content",
 			"is_active",
-			"exam_sessions",
-			"exam_session_ids",
 			"created_at",
 			"updated_at",
 		]
 
 
 class FillInTheBlankSerializer(ParsedContentMixin, serializers.ModelSerializer):
-	exam_sessions = ExamSessionSerializer(many=True, read_only=True)
-	exam_session_ids = serializers.PrimaryKeyRelatedField(
-		queryset=ExamSession.objects.all(),
-		many=True,
-		write_only=True,
-		source="exam_sessions",
-	)
-
 	class Meta:
 		model = FillInTheBlank
 		fields = [
@@ -127,22 +91,12 @@ class FillInTheBlankSerializer(ParsedContentMixin, serializers.ModelSerializer):
 			"category",
 			"content",
 			"is_active",
-			"exam_sessions",
-			"exam_session_ids",
 			"created_at",
 			"updated_at",
 		]
 
 
 class OpenEndedSerializer(ParsedContentMixin, serializers.ModelSerializer):
-	exam_sessions = ExamSessionSerializer(many=True, read_only=True)
-	exam_session_ids = serializers.PrimaryKeyRelatedField(
-		queryset=ExamSession.objects.all(),
-		many=True,
-		write_only=True,
-		source="exam_sessions",
-	)
-
 	class Meta:
 		model = OpenEnded
 		fields = [
@@ -150,22 +104,12 @@ class OpenEndedSerializer(ParsedContentMixin, serializers.ModelSerializer):
 			"category",
 			"content",
 			"is_active",
-			"exam_sessions",
-			"exam_session_ids",
 			"created_at",
 			"updated_at",
 		]
 
 
 class MapPointerSerializer(ParsedContentMixin, serializers.ModelSerializer):
-	exam_sessions = ExamSessionSerializer(many=True, read_only=True)
-	exam_session_ids = serializers.PrimaryKeyRelatedField(
-		queryset=ExamSession.objects.all(),
-		many=True,
-		write_only=True,
-		source="exam_sessions",
-	)
-
 	class Meta:
 		model = MapPointer
 		fields = [
@@ -174,8 +118,6 @@ class MapPointerSerializer(ParsedContentMixin, serializers.ModelSerializer):
 			"level",
 			"content",
 			"is_active",
-			"exam_sessions",
-			"exam_session_ids",
 			"created_at",
 			"updated_at",
 		]
@@ -184,7 +126,6 @@ class MapPointerSerializer(ParsedContentMixin, serializers.ModelSerializer):
 class ExerciseQuerySerializer(serializers.Serializer):
 	category = serializers.CharField(default="", allow_blank=True)
 	amount = serializers.ChoiceField(default=10, choices=[5, 10, 20])
-	exam_session = serializers.IntegerField(required=False, default=None)
 	quiz_type = serializers.ChoiceField(
 		default="",
 		choices=[
@@ -201,7 +142,7 @@ class ExerciseQuerySerializer(serializers.Serializer):
 	def validate_category(self, value):
 		if not value:
 			return ""
-		valid = {c.value for c in AbstractQuiz.QuizCategory}
+		valid = set(QuizCategory.objects.values_list("code", flat=True))
 		for cat in value.split(","):
 			cat = cat.strip()
 			if cat and cat not in valid:

@@ -11,15 +11,14 @@ from import_export.admin import ImportExportModelAdmin
 
 from open_ithageneia.utils import get_admin_image_thumb_preview
 
-from .forms import QuizImportForm
 from .models import (
 	DragAndDrop,
-	ExamSession,
 	FillInTheBlank,
 	MapPointer,
 	Matching,
 	Statement,
 	QuizAsset,
+	QuizCategory,
 	OpenEnded,
 )
 from .resources import (
@@ -34,24 +33,6 @@ from .resources import (
 from .schemas import AREA_NAME_CHOICES_BY_LEVEL, FillBlankText
 
 logger = logging.getLogger(__name__)
-
-
-class ExamSessionImportMixin:
-	"""Adds an **Exam Session** dropdown to the import form.
-
-	The selected session is forwarded to the Resource constructor via
-	``get_import_resource_kwargs`` so that every imported row is
-	automatically linked to it.
-	"""
-
-	import_form_class = QuizImportForm
-
-	def get_import_resource_kwargs(self, request, **kwargs):
-		rk = super().get_import_resource_kwargs(request, **kwargs)
-		form = kwargs.get("form")
-		if form and hasattr(form, "cleaned_data"):
-			rk["exam_session"] = form.cleaned_data.get("exam_session")
-		return rk
 
 
 class ZipImportMixin:
@@ -123,32 +104,11 @@ class ZipImportMixin:
 			clear_image_store()
 
 
-@admin.register(ExamSession)
-class ExamSessionAdmin(ImportExportModelAdmin):
-	list_display = [
-		"id",
-		"month",
-		"year",
-		"created_at",
-		"updated_at",
-	]
-	search_fields = [
-		"id",
-		"month",
-		"year",
-	]
-	list_filter = ["month", "year", "created_at", "updated_at"]
-	fieldsets = (
-		(None, {"fields": ("month", "year")}),
-		(
-			"Other information",
-			{
-				"classes": ("collapse",),
-				"fields": ("created_at", "updated_at"),
-			},
-		),
-	)
-	readonly_fields = ["created_at", "updated_at"]
+@admin.register(QuizCategory)
+class QuizCategoryAdmin(admin.ModelAdmin):
+	list_display = ["code", "name", "order"]
+	list_editable = ["name", "order"]
+	ordering = ["order", "code"]
 
 
 @admin.register(QuizAsset)
@@ -158,6 +118,7 @@ class QuizAssetAdmin(ImportExportModelAdmin):
 		"title",
 		"image_preview",
 		"image",
+		"audio",
 		"created_at",
 		"updated_at",
 	]
@@ -167,7 +128,7 @@ class QuizAssetAdmin(ImportExportModelAdmin):
 	]
 	list_filter = ["created_at", "updated_at"]
 	fieldsets = (
-		(None, {"fields": ("title", "image")}),
+		(None, {"fields": ("title", "image", "audio")}),
 		(
 			"Other information",
 			{
@@ -183,30 +144,28 @@ class QuizAssetAdmin(ImportExportModelAdmin):
 		return get_admin_image_thumb_preview(obj.image)
 
 
-class AbstractQuizAdmin(ExamSessionImportMixin, ZipImportMixin, ImportExportModelAdmin):
+class AbstractQuizAdmin(ZipImportMixin, ImportExportModelAdmin):
 	skip_export_form = True
 
 	list_display = [
 		"id",
 		"category",
-		"get_exam_sessions_preview",
+		"is_active",
 		"answer_preview",
 		"created_at",
 		"updated_at",
 	]
 	search_fields = [
 		"id",
-		"exam_sessions__month",
-		"exam_sessions__year",
 	]
 	list_filter = [
 		"category",
-		"exam_sessions",
+		"is_active",
 		"created_at",
 		"updated_at",
 	]
 	fieldsets = (
-		(None, {"fields": ("category", "exam_sessions", "content")}),
+		(None, {"fields": ("category", "is_active", "content")}),
 		(
 			"Other information",
 			{
@@ -217,10 +176,6 @@ class AbstractQuizAdmin(ExamSessionImportMixin, ZipImportMixin, ImportExportMode
 	)
 	readonly_fields = ["created_at", "updated_at"]
 
-	@admin.display(description="Exam sessions preview", ordering="exam_sessions__year")
-	def get_exam_sessions_preview(self, obj):
-		return obj.exam_sessions_preview
-
 
 @admin.register(Statement)
 class StatementAdmin(AbstractQuizAdmin):
@@ -229,7 +184,7 @@ class StatementAdmin(AbstractQuizAdmin):
 		"id",
 		"type",
 		"category",
-		"get_exam_sessions_preview",
+		"is_active",
 		"prompt_preview",
 		"answer_preview",
 		"created_at",
@@ -241,10 +196,17 @@ class StatementAdmin(AbstractQuizAdmin):
 		# "content__choices__text", # not working, TODO: Check it
 	]
 	list_filter = ["type"] + AbstractQuizAdmin.list_filter
+	autocomplete_fields = ["second_part"]
 	fieldsets = (
 		(
 			AbstractQuizAdmin.fieldsets[0][0],
-			{"fields": ("type", *AbstractQuizAdmin.fieldsets[0][1]["fields"])},
+			{
+				"fields": (
+					"type",
+					*AbstractQuizAdmin.fieldsets[0][1]["fields"],
+					"second_part",
+				)
+			},
 		),
 		AbstractQuizAdmin.fieldsets[1],
 	)
@@ -254,12 +216,18 @@ class StatementAdmin(AbstractQuizAdmin):
 	def prompt_preview(self, instance):
 		prompt_text = instance.content.get("prompt_text", "")
 		prompt_asset_id = instance.content.get("prompt_asset_id", None)
+		prompt_audio_asset_id = instance.content.get("prompt_audio_asset_id", None)
 
 		image_thumb_preview = get_admin_image_thumb_preview(
 			instance.get_asset_image(prompt_asset_id)
 		)
 
-		if not prompt_text and not image_thumb_preview:
+		audio = instance.get_asset_audio(prompt_audio_asset_id)
+		audio_preview = (
+			format_html('<audio controls src="{}"></audio>', audio.url) if audio else ""
+		)
+
+		if not prompt_text and not image_thumb_preview and not audio_preview:
 			return None
 
 		return format_html_join(
@@ -267,8 +235,9 @@ class StatementAdmin(AbstractQuizAdmin):
 			'<div style="display:flex;gap:10px;align-items:center;margin:10px 0;">'
 			"  <span>{}</span>"
 			"  <span>{}</span>"
+			"  <span>{}</span>"
 			"</div>",
-			((prompt_text, image_thumb_preview),),
+			((prompt_text, image_thumb_preview, audio_preview),),
 		)
 
 	@admin.display(description="Answer")
@@ -501,7 +470,7 @@ class OpenEndedAdmin(AbstractQuizAdmin):
 	list_display = [
 		"id",
 		"category",
-		"get_exam_sessions_preview",
+		"is_active",
 		"prompt_preview",
 		"answer_preview",
 		"created_at",
@@ -600,7 +569,7 @@ class MapPointerAdmin(AbstractQuizAdmin):
 		"id",
 		"category",
 		"level",
-		"get_exam_sessions_preview",
+		"is_active",
 		"prompt_preview",
 		"answer_preview",
 		"created_at",

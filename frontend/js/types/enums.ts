@@ -3,6 +3,7 @@
 	CIVICS = "CIVICS",
 	HISTORY = "HISTORY",
 	CULTURE = "CULTURE",
+	LISTENING = "LISTENING",
 }
 
 export const QUIZ_CATEGORY_LABELS: Record<QuizCategory, string> = {
@@ -10,6 +11,7 @@ export const QUIZ_CATEGORY_LABELS: Record<QuizCategory, string> = {
 	[QuizCategory.CIVICS]: "Θεσμοί του Πολιτεύματος",
 	[QuizCategory.HISTORY]: "Ιστορία",
 	[QuizCategory.CULTURE]: "Πολιτισμός",
+	[QuizCategory.LISTENING]: "Ακουστικό",
 } as const
 
 export enum StatementType {

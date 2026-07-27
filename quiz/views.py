@@ -1,8 +1,9 @@
 import logging
 
+from django.shortcuts import redirect
+from django.urls import reverse
 from inertia import render
 
-from quiz.models import AbstractQuiz
 from quiz.services import QuizService
 
 from .serializers import ExerciseQuerySerializer
@@ -11,10 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def training(request):
-	categories = [
-		{"value": c.value, "label": c.label} for c in AbstractQuiz.QuizCategory
-	]
-	exam_sessions = QuizService.exam_session_list()
+	categories = QuizService.categories()
 
 	# No query params → show setup form
 	if not request.GET.get("amount"):
@@ -23,7 +21,6 @@ def training(request):
 			"Training",
 			props={
 				"categories": categories,
-				"exam_sessions": exam_sessions,
 				"data": None,
 			},
 		)
@@ -37,7 +34,6 @@ def training(request):
 			"Training",
 			props={
 				"categories": categories,
-				"exam_sessions": exam_sessions,
 				"data": None,
 				"errors": query_serializer.errors,
 			},
@@ -46,16 +42,14 @@ def training(request):
 	validated_data = query_serializer.validated_data
 
 	logger.debug(
-		"Training request: category=%s amount=%s exam_session=%s",
+		"Training request: category=%s amount=%s",
 		validated_data["category"],
 		validated_data["amount"],
-		validated_data.get("exam_session"),
 	)
 
 	data_by_category = QuizService.get_by_category(
 		category=validated_data["category"],
 		amount=int(validated_data["amount"]),
-		exam_session_id=validated_data.get("exam_session"),
 		quiz_type=validated_data.get("quiz_type", ""),
 	)
 
@@ -64,28 +58,61 @@ def training(request):
 		"Training",
 		props={
 			"categories": categories,
-			"exam_sessions": exam_sessions,
 			"data": data_by_category,
 		},
 	)
 
 
+# Simulation modes offered on the hub screen, in display order.
+SIMULATION_MODES = [
+	("knowledge", "quiz:knowledge_simulation"),
+	("listening", "quiz:listening_simulation"),
+]
+
+
 def simulation(request):
-	# No "start" param → show start screen
+	# Hub screen: pick a simulation mode.
+	return render(
+		request,
+		"SimulationMenu",
+		props={
+			"modes": [
+				{"key": key, "href": reverse(view_name)}
+				for key, view_name in SIMULATION_MODES
+			]
+		},
+	)
+
+
+def _run_simulation(request, *, variant, categories):
+	# Without an explicit start, send the user back to the mode picker.
 	if not request.GET.get("start"):
-		return render(
-			request,
-			"Simulation",
-			props={"data": None},
-		)
+		return redirect("quiz:simulation")
 
 	data_by_category = QuizService.get_by_category(
 		category="",
 		amount=20,
+		categories=categories,
 	)
 
 	return render(
 		request,
 		"Simulation",
-		props={"data": data_by_category},
+		props={"data": data_by_category, "variant": variant},
+	)
+
+
+def knowledge_simulation(request):
+	return _run_simulation(
+		request,
+		variant="knowledge",
+		categories=QuizService.KNOWLEDGE_SIMULATION_CATEGORIES,
+	)
+
+
+def listening_simulation(request):
+	return _run_simulation(
+		request,
+		variant="listening",
+		categories=QuizService.LISTENING_SIMULATION_CATEGORIES,
 	)

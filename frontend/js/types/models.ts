@@ -9,13 +9,6 @@ interface Activatable {
 	is_active: boolean
 }
 
-export interface ExamSession {
-	id: number
-	year: number
-	month: number
-	month_display: string
-}
-
 export interface QuizAsset extends TimeStamped {
 	id: number
 	title: string
@@ -24,7 +17,6 @@ export interface QuizAsset extends TimeStamped {
 
 interface QuizBase extends TimeStamped, Activatable {
 	id: number
-	exam_sessions: ExamSession[]
 	category: QuizCategory
 }
 
@@ -37,18 +29,21 @@ interface QuizChoice {
 interface TrueFalseContent {
 	prompt_text?: string
 	prompt_asset_url?: string
+	prompt_audio_url?: string
 	choices: QuizChoice[]
 }
 
 interface MultipleChoiceContent {
 	prompt_text?: string
 	prompt_asset_url?: string
+	prompt_audio_url?: string
 	choices: QuizChoice[]
 }
 
 export interface StatementModel extends QuizBase {
 	type: StatementType
 	content: TrueFalseContent | MultipleChoiceContent
+	second_part?: StatementModel | null
 }
 
 interface DragAndDropColumn {

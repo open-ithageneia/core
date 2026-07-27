@@ -1,6 +1,7 @@
 ﻿import type { ReactNode } from "react"
 import DragAndDrop from "@/components/quiz/drag-and-drop"
 import FillInTheBlank from "@/components/quiz/fill-in-the-blank"
+import LinkedStatement from "@/components/quiz/linked-statement"
 import MapPointer from "@/components/quiz/map-pointer"
 import Matching from "@/components/quiz/matching"
 import MultipleChoice from "@/components/quiz/multiple-choice"
@@ -25,6 +26,16 @@ export function QuizRenderer({
 	const content = (() => {
 		switch (item.quiz_type) {
 			case "Statement": {
+				if (item.second_part) {
+					return (
+						<LinkedStatement
+							item={item}
+							item_index={index}
+							forceValidation={forceValidation}
+							onScore={onScore}
+						/>
+					)
+				}
 				if (item.type === "TRUE_FALSE") {
 					return (
 						<TrueFalse
