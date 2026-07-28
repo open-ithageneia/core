@@ -1,4 +1,9 @@
-﻿import type { MapLevel, QuizCategory, StatementType } from "@/types/enums"
+﻿import type {
+	ListeningPart,
+	MapLevel,
+	QuizCategory,
+	StatementType,
+} from "@/types/enums"
 
 interface TimeStamped {
 	created_at: string
@@ -43,7 +48,26 @@ interface MultipleChoiceContent {
 export interface StatementModel extends QuizBase {
 	type: StatementType
 	content: TrueFalseContent | MultipleChoiceContent
-	second_part?: StatementModel | null
+}
+
+export interface ListeningPartGroup {
+	part: ListeningPart
+	/** Part A is usually the TRUE_FALSE statements, part B the MULTIPLE_CHOICE ones. */
+	questions: StatementModel[]
+}
+
+/**
+ * An audio comprehension question: one clip plus the statements and
+ * multiple-choice questions asked about it, split into parts A and B. Unlike the
+ * other quiz types this one has no `content` — its questions are plain
+ * statements.
+ */
+export interface ListeningModel extends QuizBase {
+	audio_url: string | null
+	max_plays: number
+	transcript: string
+	/** Only parts that actually have questions are included. */
+	parts: ListeningPartGroup[]
 }
 
 interface DragAndDropColumn {
@@ -140,5 +164,6 @@ export type QuizDataItem =
 	| (FillInTheBlankModel & { quiz_type: "FillInTheBlank" })
 	| (OpenEndedModel & { quiz_type: "OpenEnded" })
 	| (MapPointerModel & { quiz_type: "MapPointer" })
+	| (ListeningModel & { quiz_type: "Listening" })
 
 export type QuizData = QuizDataItem[]

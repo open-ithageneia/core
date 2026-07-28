@@ -6,6 +6,7 @@ from django.db import connection
 from .filters import (
 	DragAndDropFilter,
 	FillInTheBlankFilter,
+	ListeningFilter,
 	MapPointerFilter,
 	MatchingFilter,
 	OpenEndedFilter,
@@ -14,6 +15,7 @@ from .filters import (
 from .models import (
 	DragAndDrop,
 	FillInTheBlank,
+	Listening,
 	MapPointer,
 	Matching,
 	OpenEnded,
@@ -24,6 +26,7 @@ from .models import (
 from .serializers import (
 	DragAndDropSerializer,
 	FillInTheBlankSerializer,
+	ListeningSerializer,
 	MapPointerSerializer,
 	MatchingSerializer,
 	OpenEndedSerializer,
@@ -32,6 +35,8 @@ from .serializers import (
 
 logger = logging.getLogger(__name__)
 
+# Only models with a JSON ``content`` column — the raw-SQL helpers below select
+# it directly, so ``Listening`` (which has none) is intentionally absent.
 QUIZ_MODELS = [Statement, Matching, DragAndDrop, FillInTheBlank, OpenEnded, MapPointer]
 
 
@@ -231,10 +236,10 @@ class QuizService:
 			if extra_params:
 				p.update(extra_params)
 			base_qs = model.objects.active()
-			# Statements linked as a second part are only ever shown attached to
-			# their first part, never standalone.
+			# Statements belonging to a listening question are only ever shown
+			# inside that question, never standalone.
 			if model is Statement:
-				base_qs = base_qs.filter(first_part__isnull=True)
+				base_qs = base_qs.filter(listening__isnull=True)
 			qs = filterset_class(p, queryset=base_qs.distinct()).qs
 			return serializer_class(qs.order_by("?")[:n], many=True).data
 
@@ -262,15 +267,16 @@ class QuizService:
 			"map_pointer": sample(MapPointer, MapPointerFilter, MapPointerSerializer),
 		}
 
-	# Category codes for each exam simulation variant's question pool.
-	LISTENING_CATEGORY = "LISTENING"
+	# Question pool for the knowledge exam simulation.
 	KNOWLEDGE_SIMULATION_CATEGORIES = [
 		QuizCategory.GEOGRAPHY,
 		QuizCategory.CIVICS,
 		QuizCategory.HISTORY,
 		QuizCategory.CULTURE,
 	]
-	LISTENING_SIMULATION_CATEGORIES = [LISTENING_CATEGORY]
+	# The listening exam is its own section, selected by quiz type rather than by
+	# category, so a clip can still be tagged with the subject it covers.
+	LISTENING_QUIZ_TYPE = Listening.__name__
 
 	@staticmethod
 	def get_by_category(
@@ -293,14 +299,9 @@ class QuizService:
 			(FillInTheBlank, FillInTheBlankFilter, FillInTheBlankSerializer),
 			(OpenEnded, OpenEndedFilter, OpenEndedSerializer),
 			(MapPointer, MapPointerFilter, MapPointerSerializer),
+			(Listening, ListeningFilter, ListeningSerializer),
 		]
 
-		QUIZ_TYPE_MAP = {
-			model.__name__: config
-			for model, *_ in QUIZ_CONFIG
-			for config in [(model, *_[0:])]
-		}
-		# Simpler map:
 		QUIZ_TYPE_MAP = {
 			model.__name__: (model, filt, ser) for model, filt, ser in QUIZ_CONFIG
 		}
@@ -308,7 +309,9 @@ class QuizService:
 		if quiz_type and quiz_type in QUIZ_TYPE_MAP:
 			configs_to_query = [QUIZ_TYPE_MAP[quiz_type]]
 		else:
-			configs_to_query = QUIZ_CONFIG
+			# Listening is a separate exam section: it is only ever sampled when
+			# asked for by name, never mixed into the general pool.
+			configs_to_query = [c for c in QUIZ_CONFIG if c[0] is not Listening]
 
 		# Build filter params
 		filter_params = {}
@@ -321,10 +324,12 @@ class QuizService:
 			base_qs = model.objects.active()
 			if categories:
 				base_qs = base_qs.filter(category__in=categories)
-			# Statements linked as a second part are only ever shown attached to
-			# their first part, never standalone.
+			# Statements belonging to a listening question are only ever shown
+			# inside that question, never standalone.
 			if model is Statement:
-				base_qs = base_qs.filter(first_part__isnull=True)
+				base_qs = base_qs.filter(listening__isnull=True)
+			if model is Listening:
+				base_qs = base_qs.select_related("audio")
 			qs = filterset_class(filter_params, queryset=base_qs.distinct()).qs
 			sampled = qs.order_by("?")[:per_model_amount]
 			serialized = serializer_class(sampled, many=True).data

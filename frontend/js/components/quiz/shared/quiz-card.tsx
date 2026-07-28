@@ -19,6 +19,8 @@ type QuizCardProps = {
 	promptText?: string
 	promptAssetUrl?: string
 	promptAudioUrl?: string
+	/** Overrides the default play limit of the audio prompt. */
+	promptAudioMaxPlays?: number
 	headerExtra?: ReactNode
 	children: ReactNode
 }
@@ -31,6 +33,7 @@ export default function QuizCard({
 	promptText,
 	promptAssetUrl,
 	promptAudioUrl,
+	promptAudioMaxPlays,
 	headerExtra,
 	children,
 }: QuizCardProps) {
@@ -53,7 +56,10 @@ export default function QuizCard({
 					<p className="text-sm text-muted-foreground">{instruction}.</p>
 				)}
 				{promptAudioUrl ? (
-					<AudioPromptButton url={promptAudioUrl} />
+					<AudioPromptButton
+						url={promptAudioUrl}
+						maxPlays={promptAudioMaxPlays}
+					/>
 				) : (
 					promptText && <CardDescription>{promptText}</CardDescription>
 				)}

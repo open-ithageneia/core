@@ -25,7 +25,7 @@ export default function MultipleChoice({
 	bare,
 }: MultipleChoiceProps) {
 	const {
-		totalCorrect,
+		subAnswersCount,
 		selectedIndices,
 		isMultiSelect,
 		showValidation,
@@ -40,9 +40,9 @@ export default function MultipleChoice({
 
 	useEffect(() => {
 		if (showValidation && onScore) {
-			onScore(correctAnswersCount, totalCorrect)
+			onScore(correctAnswersCount, subAnswersCount)
 		}
-	}, [showValidation, onScore, correctAnswersCount, totalCorrect])
+	}, [showValidation, onScore, correctAnswersCount, subAnswersCount])
 
 	const instruction = isMultiSelect
 		? QUIZ_INSTRUCTIONS.MULTIPLE_CHOICE_MULTI

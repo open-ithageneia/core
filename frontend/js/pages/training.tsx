@@ -81,6 +81,7 @@ function TrainingSetup({ categories }: { categories: CategoryOption[] }) {
 						<option value="FillInTheBlank">Συμπλήρωση κενού</option>
 						<option value="OpenEnded">Ανοιχτή ερώτηση</option>
 						<option value="MapPointer">Χάρτης</option>
+						<option value="Listening">Ακουστικό</option>
 					</select>
 				</div>
 			)}
