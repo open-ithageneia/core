@@ -7,6 +7,11 @@ import { cn } from "@/lib/utils"
 import { QUIZ_INSTRUCTIONS } from "@/types/enums"
 import type { StatementModel } from "@/types/models"
 
+const ANSWER_OPTIONS: { label: string; value: boolean }[] = [
+	{ label: "Σωστό", value: true },
+	{ label: "Λάθος", value: false },
+]
+
 type TrueFalseProps = {
 	item: StatementModel
 	item_index: number
@@ -69,32 +74,40 @@ export default function TrueFalse({
 					</span>
 
 					<div className="flex shrink-0 gap-1">
-						<button
-							type="button"
-							disabled={showValidation}
-							onClick={() => selectAnswer(index, true)}
-							className={cn(
-								"rounded-md border px-3 py-1 text-sm font-medium transition-colors",
-								answers[index] === true &&
-									"border-blue-500 bg-blue-50 dark:bg-blue-950",
-								answers[index] !== true && !showValidation && "hover:bg-muted",
-							)}
-						>
-							Σωστό
-						</button>
-						<button
-							type="button"
-							disabled={showValidation}
-							onClick={() => selectAnswer(index, false)}
-							className={cn(
-								"rounded-md border px-3 py-1 text-sm font-medium transition-colors",
-								answers[index] === false &&
-									"border-blue-500 bg-blue-50 dark:bg-blue-950",
-								answers[index] !== false && !showValidation && "hover:bg-muted",
-							)}
-						>
-							Λάθος
-						</button>
+						{ANSWER_OPTIONS.map(({ label, value }) => {
+							const isSelected = answers[index] === value
+							const isCorrectAnswer = choice.is_correct === value
+							return (
+								<button
+									key={label}
+									type="button"
+									disabled={showValidation}
+									onClick={() => selectAnswer(index, value)}
+									className={cn(
+										"rounded-md border px-3 py-1 text-sm font-medium transition-colors",
+										!showValidation &&
+											isSelected &&
+											"border-blue-500 bg-blue-50 dark:bg-blue-950",
+										!showValidation && !isSelected && "hover:bg-muted",
+										// After validation the correct answer is always marked, so a
+										// wrong pick shows both what was chosen and what it should
+										// have been.
+										showValidation &&
+											isCorrectAnswer &&
+											"border-green-500 bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-300",
+										showValidation &&
+											isSelected &&
+											!isCorrectAnswer &&
+											"border-red-500 bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-300",
+										showValidation &&
+											isSelected &&
+											"ring-2 ring-blue-500 ring-offset-1",
+									)}
+								>
+									{label}
+								</button>
+							)
+						})}
 					</div>
 				</div>
 			))}

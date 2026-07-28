@@ -2,6 +2,7 @@ import django_filters
 from .models import (
 	Statement,
 	DragAndDrop,
+	Listening,
 	Matching,
 	FillInTheBlank,
 	OpenEnded,
@@ -26,6 +27,12 @@ class StatementFilter(AbstractQuizFilter):
 	class Meta:
 		model = Statement
 		fields = ["category", "is_active", "type"]
+
+
+class ListeningFilter(AbstractQuizFilter):
+	class Meta:
+		model = Listening
+		fields = ["category", "is_active"]
 
 
 class DragAndDropFilter(AbstractQuizFilter):

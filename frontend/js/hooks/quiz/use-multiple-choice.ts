@@ -62,21 +62,26 @@ export function useMultipleChoice(
 		})
 	}, [showValidation, choices, selectedIndices])
 
+	// A multiple-choice question is a single scoring unit however many options it
+	// has — the whole question is worth one sub-answer. (A true/false block is the
+	// opposite: each of its statements is scored on its own.)
+	const subAnswersCount = 1
+
 	const correctAnswersCount = useMemo(() => {
 		if (!showValidation) {
 			return 0
 		}
-		const selectedCorrect = choices.filter(
-			(c, i) => c.is_correct && selectedIndices.has(i),
-		).length
-		const selectedIncorrect = choices.filter(
-			(c, i) => !c.is_correct && selectedIndices.has(i),
-		).length
-		return Math.max(0, selectedCorrect - selectedIncorrect)
+		// All or nothing: every correct option selected and no incorrect one. For
+		// single-select that reduces to "picked the one correct choice".
+		const isFullyCorrect = choices.every(
+			(choice, index) => selectedIndices.has(index) === choice.is_correct,
+		)
+		return isFullyCorrect ? 1 : 0
 	}, [showValidation, choices, selectedIndices])
 
 	return {
 		totalCorrect,
+		subAnswersCount,
 		selectedIndices,
 		isMultiSelect,
 		showValidation,

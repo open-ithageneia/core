@@ -3,6 +3,7 @@ from rest_framework import serializers
 from .models import (
 	DragAndDrop,
 	FillInTheBlank,
+	Listening,
 	MapPointer,
 	Matching,
 	QuizAsset,
@@ -33,8 +34,6 @@ class QuizAssetSerializer(serializers.ModelSerializer):
 
 
 class StatementSerializer(ParsedContentMixin, serializers.ModelSerializer):
-	second_part = serializers.SerializerMethodField()
-
 	class Meta:
 		model = Statement
 		fields = [
@@ -42,19 +41,51 @@ class StatementSerializer(ParsedContentMixin, serializers.ModelSerializer):
 			"category",
 			"type",
 			"content",
-			"second_part",
 			"is_active",
 			"created_at",
 			"updated_at",
 		]
 
-	def get_second_part(self, obj):
-		# Serialize the linked follow-up statement one level deep only. The
-		# ``nested`` context flag bounds recursion so a mis-linked chain can
-		# never loop.
-		if obj.second_part_id and not self.context.get("nested"):
-			return StatementSerializer(obj.second_part, context={"nested": True}).data
-		return None
+
+class ListeningSerializer(serializers.ModelSerializer):
+	"""Serializes a listening question and its parts.
+
+	Deliberately *not* using ``ParsedContentMixin``: this model has no JSON
+	``content`` field, so there is nothing to parse.
+	"""
+
+	audio_url = serializers.ReadOnlyField()
+	parts = serializers.SerializerMethodField()
+
+	class Meta:
+		model = Listening
+		fields = [
+			"id",
+			"category",
+			"audio_url",
+			"max_plays",
+			"transcript",
+			"parts",
+			"is_active",
+			"created_at",
+			"updated_at",
+		]
+
+	def get_parts(self, obj):
+		"""Group the questions into the sections the exam is split into.
+
+		Parts with no questions are left out. Ordered here rather than via a
+		prefetch so the order holds however the serializer is called; a listening
+		question has a handful of parts at most.
+		"""
+		grouped: dict[str, list] = {}
+		for question in obj.questions.order_by("part", "order", "id"):
+			grouped.setdefault(question.part, []).append(question)
+
+		return [
+			{"part": part, "questions": StatementSerializer(questions, many=True).data}
+			for part, questions in grouped.items()
+		]
 
 
 class DragAndDropSerializer(ParsedContentMixin, serializers.ModelSerializer):
@@ -136,6 +167,7 @@ class ExerciseQuerySerializer(serializers.Serializer):
 			("OpenEnded", "OpenEnded"),
 			("Matching", "Matching"),
 			("MapPointer", "MapPointer"),
+			("Listening", "Listening"),
 		],
 	)
 

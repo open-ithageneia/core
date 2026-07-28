@@ -19,6 +19,23 @@ export enum StatementType {
 	MULTIPLE_CHOICE = "MULTIPLE_CHOICE",
 }
 
+/** Sections a listening question is split into. */
+export enum ListeningPart {
+	A = "A",
+	B = "B",
+}
+
+export const LISTENING_PART_LABELS: Record<ListeningPart, string> = {
+	[ListeningPart.A]: "Μέρος Α",
+	[ListeningPart.B]: "Μέρος Β",
+} as const
+
+/** Single Greek letter shown in the part badge. */
+export const LISTENING_PART_LETTERS: Record<ListeningPart, string> = {
+	[ListeningPart.A]: "Α",
+	[ListeningPart.B]: "Β",
+} as const
+
 /** Administrative division level used by MapPointer questions (coarsest → finest). */
 export enum MapLevel {
 	/** Decentralized administrations (αποκεντρωμένες διοικήσεις) — GADM level 1 */
@@ -46,6 +63,7 @@ export const QUIZ_INSTRUCTIONS = {
 	MATCHING: "Αντιστοιχίστε τα σωστά ζεύγη",
 	FILL_IN_THE_BLANK: "Συμπληρώστε τα κενά",
 	MAP_POINTER: "Τοποθετήστε κάθε επιλογή στη σωστή περιοχή του χάρτη",
+	LISTENING: "Ακούστε το ηχητικό και απαντήστε στις ερωτήσεις",
 } as const
 
 export type QuizType = keyof typeof QUIZ_INSTRUCTIONS

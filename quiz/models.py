@@ -116,6 +116,16 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
 	objects = AbstractQuizManager()
 
 
+class ListeningPart(models.TextChoices):
+	"""Sections a listening question is split into. Part A is usually the
+	true/false statements and part B the multiple-choice questions, but the
+	mapping is not enforced — which part a question belongs to is set explicitly.
+	"""
+
+	A = "A", "Part A"
+	B = "B", "Part B"
+
+
 class Statement(AbstractQuiz):
 	INSTRUCTION_TEXT = {
 		"TRUE_FALSE": "Επιλέξτε τη σωστή απάντηση",
@@ -137,12 +147,23 @@ class Statement(AbstractQuiz):
 		blank=True, default=dict, schema=StatementChoiceContent.STATEMENT_CONTENT_SCHEMA
 	)
 
-	second_part = models.OneToOneField(
-		"self",
-		on_delete=models.SET_NULL,
+	listening = models.ForeignKey(
+		"Listening",
+		on_delete=models.CASCADE,
 		null=True,
 		blank=True,
-		related_name="first_part",
+		related_name="questions",
+		help_text="Set when this statement is one part of a listening question.",
+	)
+	part = models.CharField(
+		max_length=1,
+		choices=ListeningPart,
+		default=ListeningPart.A,
+		help_text="Which section of a listening question this belongs to.",
+	)
+	order = models.PositiveSmallIntegerField(
+		default=0,
+		help_text="Display order within its part of a listening question.",
 	)
 
 	def __str__(self):
@@ -194,11 +215,6 @@ class Statement(AbstractQuiz):
 	def _parse_content(self):
 		return StatementChoiceContent.from_json(self.content)
 
-	def clean(self):
-		super().clean()
-		if self.second_part_id and self.second_part_id == self.id:
-			raise ValidationError({"second_part": "A statement cannot link to itself."})
-
 	def _validate_content(self):
 		data = self.content_model
 		if self.type == self.StatementType.MULTIPLE_CHOICE:
@@ -206,6 +222,88 @@ class Statement(AbstractQuiz):
 				raise ValidationError(
 					"Multiple-choice questions must have at least one correct choice."
 				)
+
+
+def validate_listening_question_types(types):
+	"""Enforce the exam shape of a listening question: exactly one True/False
+	question (which itself holds several statements) plus one or more
+	multiple-choice questions.
+
+	Which ``ListeningPart`` each one belongs to is deliberately not checked —
+	part A is usually the true/false one and part B the multiple-choice ones, but
+	that is a convention rather than a rule.
+
+	*types* is an iterable of ``Statement.StatementType`` values.
+	"""
+	types = list(types)
+	true_false = types.count(Statement.StatementType.TRUE_FALSE)
+	multiple_choice = types.count(Statement.StatementType.MULTIPLE_CHOICE)
+
+	if true_false != 1:
+		raise ValidationError(
+			f"A listening question needs exactly one True/False question, "
+			f"found {true_false}."
+		)
+	if multiple_choice < 1:
+		raise ValidationError(
+			"A listening question needs at least one multiple-choice question."
+		)
+
+
+class Listening(AbstractQuiz):
+	"""An audio comprehension question: one clip, played a limited number of
+	times, followed by the questions asked about it, split into parts A and B.
+
+	The questions are ordinary ``Statement`` rows linked through
+	``Statement.listening`` — one ``TRUE_FALSE`` statement and N
+	``MULTIPLE_CHOICE`` ones, each tagged with its ``ListeningPart``. Nothing
+	about the group itself is free-form, so it has real columns instead of a JSON
+	``content`` field.
+	"""
+
+	INSTRUCTION_TEXT = "Ακούστε το ηχητικό και απαντήστε στις ερωτήσεις"
+
+	audio = models.ForeignKey(
+		QuizAsset,
+		on_delete=models.PROTECT,
+		related_name="listening_questions",
+		help_text="Quiz asset holding the audio clip.",
+	)
+	max_plays = models.PositiveSmallIntegerField(
+		default=2,
+		help_text="How many times the candidate may play the clip.",
+	)
+	transcript = models.TextField(
+		blank=True,
+		default="",
+		help_text="Optional text of the clip, for review after answering.",
+	)
+
+	class Meta:
+		verbose_name_plural = "Listening"
+
+	def __str__(self):
+		return f"id: {self.id} - {self.category} (listening)"
+
+	@property
+	def audio_url(self):
+		return self.audio.audio.url if self.audio_id and self.audio.audio else None
+
+	def _parse_content(self):
+		# This type has no JSON content — the questions come from the reverse
+		# ``questions`` relation and everything else is a column. ``AbstractQuiz``
+		# still calls this from ``clean()``, so it has to return something.
+		return None
+
+	def _validate_content(self):
+		# A group being created has no questions yet, and the admin saves the
+		# parent before its inlines, so this only catches programmatic edits.
+		# ``ListeningQuestionInline``'s formset is the gate for admin saves.
+		if not self.pk:
+			return
+		types = list(self.questions.values_list("type", flat=True))
+		if types:
+			validate_listening_question_types(types)
 
 
 class DragAndDrop(AbstractQuiz):

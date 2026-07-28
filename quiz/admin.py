@@ -14,12 +14,14 @@ from open_ithageneia.utils import get_admin_image_thumb_preview
 from .models import (
 	DragAndDrop,
 	FillInTheBlank,
+	Listening,
 	MapPointer,
 	Matching,
 	Statement,
 	QuizAsset,
 	QuizCategory,
 	OpenEnded,
+	validate_listening_question_types,
 )
 from .resources import (
 	FillInTheBlankResource,
@@ -196,7 +198,7 @@ class StatementAdmin(AbstractQuizAdmin):
 		# "content__choices__text", # not working, TODO: Check it
 	]
 	list_filter = ["type"] + AbstractQuizAdmin.list_filter
-	autocomplete_fields = ["second_part"]
+	autocomplete_fields = ["listening"]
 	fieldsets = (
 		(
 			AbstractQuizAdmin.fieldsets[0][0],
@@ -204,8 +206,17 @@ class StatementAdmin(AbstractQuizAdmin):
 				"fields": (
 					"type",
 					*AbstractQuizAdmin.fieldsets[0][1]["fields"],
-					"second_part",
 				)
+			},
+		),
+		(
+			"Listening question",
+			{
+				"description": (
+					"Only for statements that are part of a listening question. "
+					"Edit these from the Listening page instead."
+				),
+				"fields": ("listening", "part", "order"),
 			},
 		),
 		AbstractQuizAdmin.fieldsets[1],
@@ -263,6 +274,80 @@ class StatementAdmin(AbstractQuizAdmin):
 				for choice in choices
 			),
 		)
+
+
+class ListeningQuestionFormSet(forms.BaseInlineFormSet):
+	def clean(self):
+		super().clean()
+		if any(self.errors):
+			return
+
+		types = [
+			form.cleaned_data["type"]
+			for form in self.forms
+			if form.cleaned_data and not form.cleaned_data.get("DELETE")
+		]
+		# An empty group is allowed so the clip can be created first and its
+		# questions added on a second pass.
+		if types:
+			validate_listening_question_types(types)
+
+
+class ListeningQuestionInline(admin.StackedInline):
+	model = Statement
+	fk_name = "listening"
+	formset = ListeningQuestionFormSet
+	extra = 0
+	ordering = ["part", "order", "id"]
+	fields = ["part", "order", "type", "category", "content", "is_active"]
+	verbose_name = "Question"
+	verbose_name_plural = "Questions (1 True/False + N multiple choice)"
+
+
+@admin.register(Listening)
+class ListeningAdmin(admin.ModelAdmin):
+	inlines = [ListeningQuestionInline]
+	list_display = [
+		"id",
+		"category",
+		"is_active",
+		"audio_preview",
+		"question_count",
+		"max_plays",
+		"created_at",
+		"updated_at",
+	]
+	# Required by ``StatementAdmin.autocomplete_fields``.
+	search_fields = ["id", "transcript"]
+	list_filter = ["category", "is_active", "created_at", "updated_at"]
+	autocomplete_fields = ["audio"]
+	fields = [
+		"category",
+		"is_active",
+		"audio",
+		"max_plays",
+		"transcript",
+		"created_at",
+		"updated_at",
+	]
+	readonly_fields = ["created_at", "updated_at"]
+
+	def get_queryset(self, request):
+		return (
+			super()
+			.get_queryset(request)
+			.select_related("audio")
+			.prefetch_related("questions")
+		)
+
+	@admin.display(description="Audio")
+	def audio_preview(self, instance):
+		url = instance.audio_url
+		return format_html('<audio controls src="{}"></audio>', url) if url else None
+
+	@admin.display(description="Questions")
+	def question_count(self, instance):
+		return instance.questions.count()
 
 
 @admin.register(DragAndDrop)

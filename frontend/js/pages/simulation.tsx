@@ -8,10 +8,48 @@ import { useExitConfirmation } from "@/hooks/use-exit-confirmation"
 import { getScoreColor } from "@/lib/score-color"
 import type { QuizData } from "@/types/models"
 
-const SIMULATION_DURATION = 30 * 60 // 30 minutes in seconds
+type SimulationVariant = "knowledge" | "listening"
+
+/** Time allowed per variant, in seconds. */
+const SIMULATION_DURATION: Record<SimulationVariant, number> = {
+	knowledge: 30 * 60,
+	listening: 15 * 60,
+}
 
 type SimulationProps = {
 	data: QuizData | null
+	variant?: SimulationVariant
+}
+
+// Knowledge questions are worth a flat 2 points each, shared proportionally
+// between their sub-answers.
+const POINTS_PER_QUESTION = 2
+// The listening exam is a single question, so its score comes straight from the
+// sub-answers: 1.5 points each (e.g. 5 true/false + 5 multiple choice → 15).
+const POINTS_PER_SUB_ANSWER = 1.5
+
+type Score = { correct: number; total: number }
+
+function round2(value: number): number {
+	return Math.round(value * 100) / 100
+}
+
+/** Points earned and available for a single question, per scoring mode. */
+function questionPoints(
+	score: Score | undefined,
+	perSubAnswer: boolean,
+): { earned: number; max: number } {
+	if (perSubAnswer) {
+		return {
+			earned: round2((score?.correct ?? 0) * POINTS_PER_SUB_ANSWER),
+			max: round2((score?.total ?? 0) * POINTS_PER_SUB_ANSWER),
+		}
+	}
+	const earned =
+		score && score.total > 0
+			? (score.correct / score.total) * POINTS_PER_QUESTION
+			: 0
+	return { earned: round2(earned), max: POINTS_PER_QUESTION }
 }
 
 function formatTime(seconds: number): string {
@@ -23,21 +61,24 @@ function formatTime(seconds: number): string {
 function SimulationSession({
 	data,
 	basePath,
+	variant,
 }: {
 	data: QuizData
 	basePath: string
+	variant: SimulationVariant
 }) {
 	const [currentIndex, setCurrentIndex] = useState(0)
 	const [finished, setFinished] = useState(false)
+	// No questions means there is no session to protect: keep the interceptor
+	// off so the empty state's navigation isn't swallowed by a dialog that the
+	// empty branch never renders.
 	const { exitConfirmOpen, exitConfirmCancel, exitConfirmConfirm } =
-		useExitConfirmation(!finished)
-	const [timeLeft, setTimeLeft] = useState(SIMULATION_DURATION)
-	const scoresRef = useRef<Map<number, { correct: number; total: number }>>(
-		new Map(),
-	)
+		useExitConfirmation(!finished && data.length > 0)
+	const [timeLeft, setTimeLeft] = useState(SIMULATION_DURATION[variant])
+	const scoresRef = useRef<Map<number, Score>>(new Map())
 	const [scoreVersion, setScoreVersion] = useState(0)
 
-	const POINTS_PER_QUESTION = 2
+	const perSubAnswer = variant === "listening"
 
 	// Timer
 	useEffect(() => {
@@ -69,12 +110,19 @@ function SimulationSession({
 	const { earnedPoints, maxPoints } = useMemo(() => {
 		void scoreVersion
 		let earned = 0
-		const max = data.length * POINTS_PER_QUESTION
-		for (const { correct, total } of scoresRef.current.values()) {
-			earned += total > 0 ? (correct / total) * POINTS_PER_QUESTION : 0
+		// Per-question scoring knows the maximum up front; per-sub-answer scoring
+		// only learns how many sub-answers a question has once it reports a score,
+		// which happens for every question the moment the simulation finishes.
+		let max = perSubAnswer ? 0 : data.length * POINTS_PER_QUESTION
+		for (let index = 0; index < data.length; index++) {
+			const points = questionPoints(scoresRef.current.get(index), perSubAnswer)
+			earned += points.earned
+			if (perSubAnswer) {
+				max += points.max
+			}
 		}
-		return { earnedPoints: Math.round(earned * 100) / 100, maxPoints: max }
-	}, [scoreVersion, data.length])
+		return { earnedPoints: round2(earned), maxPoints: round2(max) }
+	}, [scoreVersion, data.length, perSubAnswer])
 
 	const total = data.length
 	const isFirst = currentIndex === 0
@@ -148,13 +196,8 @@ function SimulationSession({
 			>
 				{data.map((item, idx) => {
 					const score = scoresRef.current.get(idx)
-					const earned =
-						score && score.total > 0
-							? Math.round(
-									(score.correct / score.total) * POINTS_PER_QUESTION * 100,
-								) / 100
-							: 0
-					const ratio = earned / POINTS_PER_QUESTION
+					const { earned, max } = questionPoints(score, perSubAnswer)
+					const ratio = max > 0 ? earned / max : 0
 					return (
 						<div
 							key={`${item.quiz_type}-${item.id}`}
@@ -177,7 +220,7 @@ function SimulationSession({
 											className="text-sm font-bold"
 											style={{ color: getScoreColor(ratio) }}
 										>
-											{earned} / {POINTS_PER_QUESTION}
+											{earned} / {max}
 										</span>
 									) : undefined
 								}
@@ -204,7 +247,10 @@ function SimulationSession({
 	)
 }
 
-export default function Simulation({ data }: SimulationProps) {
+export default function Simulation({
+	data,
+	variant = "knowledge",
+}: SimulationProps) {
 	// Current path without query params, so back/reset restart the same
 	// simulation mode (e.g. /quiz/simulation/knowledge), which redirects to the
 	// mode picker when hit without `?start`.
@@ -213,5 +259,5 @@ export default function Simulation({ data }: SimulationProps) {
 	if (!data) {
 		return null
 	}
-	return <SimulationSession data={data} basePath={basePath} />
+	return <SimulationSession data={data} basePath={basePath} variant={variant} />
 }

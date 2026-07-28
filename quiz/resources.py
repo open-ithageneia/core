@@ -11,6 +11,8 @@ from import_export import resources
 from quiz.models import (
 	DragAndDrop,
 	FillInTheBlank,
+	Listening,
+	ListeningPart,
 	Matching,
 	QuizAsset,
 	Statement,
@@ -214,7 +216,9 @@ class StatementResource(AbstractQuizResource):
 		"prompt_text",
 		"prompt_image",
 		"prompt_audio",
-		"second_part",
+		"listening",
+		"part",
+		"order",
 		*[
 			col
 			for i in range(1, 5)
@@ -282,23 +286,46 @@ class StatementResource(AbstractQuizResource):
 			"choices": choices,
 		}
 
-		instance.second_part_id = self._resolve_second_part(row, instance)
+		instance.listening_id = self._resolve_listening(row)
+		instance.part = self._resolve_part(row)
+		instance.order = self._resolve_order(row)
 
 	@staticmethod
-	def _resolve_second_part(row, instance) -> int | None:
-		"""Resolve the ``second_part`` column to a Statement pk, if valid."""
-		value = row.get("second_part")
+	def _resolve_listening(row) -> int | None:
+		"""Resolve the ``listening`` column to a Listening pk, if valid."""
+		value = row.get("listening")
 		if _is_blank(value):
 			return None
 
-		second_part_id = int(float(str(value).strip()))
-		if second_part_id == instance.id:
-			raise ValueError("A statement cannot link to itself as its second part.")
-		if not Statement.objects.filter(pk=second_part_id).exists():
+		listening_id = int(float(str(value).strip()))
+		if not Listening.objects.filter(pk=listening_id).exists():
 			raise ValueError(
-				f"Statement with ID {second_part_id} (second_part) does not exist."
+				f"Listening question with ID {listening_id} does not exist. "
+				f"Create the listening question first, then import its parts."
 			)
-		return second_part_id
+		return listening_id
+
+	@staticmethod
+	def _resolve_part(row) -> str:
+		"""Resolve the ``part`` column, defaulting to part A."""
+		value = row.get("part")
+		if _is_blank(value):
+			return ListeningPart.A
+
+		part = str(value).strip().upper()
+		if part not in ListeningPart.values:
+			raise ValueError(
+				f"Invalid part '{part}'. Expected one of: {', '.join(ListeningPart.values)}."
+			)
+		return part
+
+	@staticmethod
+	def _resolve_order(row) -> int:
+		"""Resolve the ``order`` column, defaulting to 0."""
+		value = row.get("order")
+		if _is_blank(value):
+			return 0
+		return int(float(str(value).strip()))
 
 	# ------------------------------------------------------------------
 	# Export
@@ -315,7 +342,9 @@ class StatementResource(AbstractQuizResource):
 			content.get("prompt_text", ""),
 			content.get("prompt_asset_id", "") or "",
 			content.get("prompt_audio_asset_id", "") or "",
-			instance.second_part_id or "",
+			instance.listening_id or "",
+			instance.part,
+			instance.order,
 		]
 
 		for choice in choices:
