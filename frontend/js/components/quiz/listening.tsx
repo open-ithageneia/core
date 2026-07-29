@@ -5,8 +5,8 @@ import ValidationButton from "@/components/quiz/shared/validation-button"
 import TrueFalse from "@/components/quiz/true-false"
 import { useValidation } from "@/hooks/quiz/use-validation"
 import {
-	LISTENING_PART_LABELS,
-	LISTENING_PART_LETTERS,
+	listeningPartLabel,
+	listeningPartLetter,
 	QUIZ_INSTRUCTIONS,
 	StatementType,
 } from "@/types/enums"
@@ -49,17 +49,21 @@ function QuestionPart({
 }
 
 /**
- * One part of a listening question, as a panel with its own header so the
- * sections read as separate exercises. The chrome is deliberately monochrome:
+ * One part of a listening question, as a panel with its own header and the
+ * description introducing it, so the sections read as separate exercises. The
+ * chrome is deliberately monochrome:
  * green, red and blue already mean "correct", "wrong" and "your answer" inside
  * these cards, so colouring the parts would collide with that.
  */
 function PartSection({
 	part,
+	part_index,
 	showValidation,
 	reporters,
 }: {
 	part: ListeningPartGroup
+	/** Position of the part, which is what names it — see {@link listeningPartLabel}. */
+	part_index: number
 	showValidation: boolean
 	reporters: Record<number, Reporter>
 }) {
@@ -69,12 +73,18 @@ function PartSection({
 		<section className="overflow-hidden rounded-xl border">
 			<header className="flex items-center gap-2 border-b bg-muted/60 px-3 py-2">
 				<span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-foreground text-xs font-bold text-background">
-					{LISTENING_PART_LETTERS[part.part]}
+					{listeningPartLetter(part_index)}
 				</span>
 				<h3 className="text-sm font-semibold">
-					{LISTENING_PART_LABELS[part.part]}
+					{listeningPartLabel(part_index)}
 				</h3>
 			</header>
+
+			{part.description && (
+				<p className="whitespace-pre-line border-b px-3 py-2 text-sm">
+					{part.description}
+				</p>
+			)}
 
 			<div className="divide-y">
 				{part.questions.map((question, index) => (
@@ -160,10 +170,11 @@ export default function Listening({
 			promptAudioMaxPlays={item.max_plays}
 		>
 			<div className="space-y-4">
-				{item.parts.map((part) => (
+				{item.parts.map((part, index) => (
 					<PartSection
-						key={part.part}
+						key={part.id}
 						part={part}
+						part_index={index}
 						showValidation={showValidation}
 						reporters={reporters}
 					/>

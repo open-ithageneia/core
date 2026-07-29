@@ -72,20 +72,28 @@ class ListeningSerializer(serializers.ModelSerializer):
 		]
 
 	def get_parts(self, obj):
-		"""Group the questions into the sections the exam is split into.
+		"""The sections the exam is split into, in order, each with its description
+		and the questions that belong to it.
 
-		Parts with no questions are left out. Ordered here rather than via a
-		prefetch so the order holds however the serializer is called; a listening
-		question has a handful of parts at most.
+		Parts have no name of their own — the client labels them Α, Β, … by their
+		position here, so the order matters. Parts with no questions are left out.
+		Ordered explicitly rather than via a prefetch so the order holds however
+		the serializer is called; a listening question has a handful of parts at
+		most.
 		"""
-		grouped: dict[str, list] = {}
-		for question in obj.questions.order_by("part", "order", "id"):
-			grouped.setdefault(question.part, []).append(question)
-
-		return [
-			{"part": part, "questions": StatementSerializer(questions, many=True).data}
-			for part, questions in grouped.items()
-		]
+		parts = []
+		for part in obj.parts.order_by("id"):
+			questions = list(part.questions.order_by("order", "id"))
+			if not questions:
+				continue
+			parts.append(
+				{
+					"id": part.id,
+					"description": part.description,
+					"questions": StatementSerializer(questions, many=True).data,
+				}
+			)
+		return parts
 
 
 class DragAndDropSerializer(ParsedContentMixin, serializers.ModelSerializer):
