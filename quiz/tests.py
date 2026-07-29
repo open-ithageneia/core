@@ -365,15 +365,15 @@ class ListeningAdminSaveTests(TestCase):
 				}
 			)
 		formset = FormSet(data, instance=group, prefix="questions")
-		self.assertTrue(
-			formset.is_valid(), formset.errors or formset.non_form_errors()
-		)
+		self.assertTrue(formset.is_valid(), formset.errors or formset.non_form_errors())
 		return formset
 
 	def test_parts_and_their_questions_are_created_in_one_save(self):
 		group = Listening.objects.create(audio=self.asset)
 
-		self._save(group, self._parts_formset(group, ["Μέρος Α intro", "Μέρος Β intro"]))
+		self._save(
+			group, self._parts_formset(group, ["Μέρος Α intro", "Μέρος Β intro"])
+		)
 		self._save(
 			group,
 			self._questions_formset(
@@ -388,7 +388,9 @@ class ListeningAdminSaveTests(TestCase):
 
 		first, second = group.parts.all()
 		self.assertEqual(first.description, "Μέρος Α intro")
-		self.assertEqual([question.type for question in first.questions.all()], ["TRUE_FALSE"])
+		self.assertEqual(
+			[question.type for question in first.questions.all()], ["TRUE_FALSE"]
+		)
 		self.assertEqual(second.questions.count(), 2)
 
 	def test_a_position_with_no_part_grows_one(self):

@@ -21,15 +21,17 @@ def create_parts_from_letters(apps, schema_editor):
 		part = ListeningPart.objects.create(
 			listening_id=listening_id, letter=letter or "A"
 		)
-		Statement.objects.filter(
-			listening_id=listening_id, part_letter=letter
-		).update(part=part)
+		Statement.objects.filter(listening_id=listening_id, part_letter=letter).update(
+			part=part
+		)
 
 
 def restore_letters_from_parts(apps, schema_editor):
 	Statement = apps.get_model("quiz", "Statement")
 
-	for statement in Statement.objects.filter(part__isnull=False).select_related("part"):
+	for statement in Statement.objects.filter(part__isnull=False).select_related(
+		"part"
+	):
 		statement.part_letter = statement.part.letter
 		statement.save(update_fields=["part_letter"])
 

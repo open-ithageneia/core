@@ -281,7 +281,9 @@ class StatementAdmin(AbstractQuizAdmin):
 def part_position_choices(part_count):
 	"""Positions a question can be assigned to: always the two parts the exam has,
 	plus any further ones the group already grew."""
-	return [(position, f"Part {position}") for position in range(1, max(2, part_count) + 1)]
+	return [
+		(position, f"Part {position}") for position in range(1, max(2, part_count) + 1)
+	]
 
 
 class ListeningQuestionForm(forms.ModelForm):
