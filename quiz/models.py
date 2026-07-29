@@ -116,14 +116,66 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
 	objects = AbstractQuizManager()
 
 
-class ListeningPart(models.TextChoices):
-	"""Sections a listening question is split into. Part A is usually the
-	true/false statements and part B the multiple-choice questions, but the
-	mapping is not enforced — which part a question belongs to is set explicitly.
+class ListeningPart(TimeStampedModel):
+	"""One section of a listening question, with the description that introduces
+	it.
+
+	A part knows nothing about its questions — a ``Statement`` points at the part
+	it belongs to, not the other way around. Parts carry no name or number: they
+	are ordered by creation and the UI labels them Α, Β, … by position. The first
+	part is usually the true/false statements and the second the multiple-choice
+	questions, but the mapping is not enforced.
 	"""
 
-	A = "A", "Part A"
-	B = "B", "Part B"
+	listening = models.ForeignKey(
+		"Listening",
+		on_delete=models.CASCADE,
+		related_name="parts",
+	)
+	description = models.TextField(
+		blank=True,
+		default="",
+		help_text="Optional text introducing the part, shown above its questions.",
+	)
+
+	class Meta:
+		ordering = ["id"]
+		verbose_name = "Listening part"
+		verbose_name_plural = "Listening parts"
+
+	def __str__(self):
+		# Nothing names a part, so its description doubles as the label in the
+		# admin — the questions inline picks a part from a dropdown.
+		lines = self.description.strip().splitlines()
+		label = lines[0][:60] if lines else f"part {self.pk}"
+		return f"{label} (listening {self.listening_id})"
+
+	@property
+	def position(self):
+		"""1-based position among the parts of its listening question — what makes
+		this part Μέρος Α or Μέρος Β, since parts have no name of their own."""
+		ids = list(
+			ListeningPart.objects.filter(listening_id=self.listening_id).values_list(
+				"id", flat=True
+			)
+		)
+		return ids.index(self.id) + 1
+
+	@classmethod
+	def at_position(cls, listening, position):
+		"""The part of *listening* at *position*, creating the parts up to it when
+		the group doesn't have that many yet. Returns ``(part, created)``, where
+		*created* says whether any had to be added.
+
+		Positions are how both the admin and the importer address parts: a part
+		being created in the same save has no pk to point at yet, and a spreadsheet
+		has no pk to write down.
+		"""
+		parts = list(cls.objects.filter(listening=listening))
+		created = len(parts) < position
+		while len(parts) < position:
+			parts.append(cls.objects.create(listening=listening))
+		return parts[position - 1], created
 
 
 class Statement(AbstractQuiz):
@@ -155,11 +207,16 @@ class Statement(AbstractQuiz):
 		related_name="questions",
 		help_text="Set when this statement is one part of a listening question.",
 	)
-	part = models.CharField(
-		max_length=1,
-		choices=ListeningPart,
-		default=ListeningPart.A,
-		help_text="Which section of a listening question this belongs to.",
+	part = models.ForeignKey(
+		ListeningPart,
+		on_delete=models.SET_NULL,
+		null=True,
+		blank=True,
+		related_name="questions",
+		help_text=(
+			"Which section of the listening question this belongs to. Must be a "
+			"part of the same listening question."
+		),
 	)
 	order = models.PositiveSmallIntegerField(
 		default=0,
@@ -168,6 +225,14 @@ class Statement(AbstractQuiz):
 
 	def __str__(self):
 		return f"id: {self.id}, {self.type} - {self.category}"
+
+	def clean(self):
+		super().clean()
+		# The part carries its own listening FK, so the two could disagree.
+		if self.part_id and self.part.listening_id != self.listening_id:
+			raise ValidationError(
+				{"part": "The part must belong to the same listening question."}
+			)
 
 	class Meta:
 		verbose_name_plural = "Statements (True/False or Multiple choice)"
@@ -229,9 +294,11 @@ def validate_listening_question_types(types):
 	question (which itself holds several statements) plus one or more
 	multiple-choice questions.
 
-	Which ``ListeningPart`` each one belongs to is deliberately not checked —
-	part A is usually the true/false one and part B the multiple-choice ones, but
-	that is a convention rather than a rule.
+	Which ``ListeningPart`` each one belongs to is deliberately not checked — the
+	first part is usually the true/false one and the second the multiple-choice
+	ones, but that is a convention rather than a rule. Nor is having a part
+	checked here: ``ListeningQuestionFormSet`` is what requires one on admin
+	saves.
 
 	*types* is an iterable of ``Statement.StatementType`` values.
 	"""
@@ -252,11 +319,12 @@ def validate_listening_question_types(types):
 
 class Listening(AbstractQuiz):
 	"""An audio comprehension question: one clip, played a limited number of
-	times, followed by the questions asked about it, split into parts A and B.
+	times, followed by the questions asked about it, split into parts.
 
-	The questions are ordinary ``Statement`` rows linked through
-	``Statement.listening`` — one ``TRUE_FALSE`` statement and N
-	``MULTIPLE_CHOICE`` ones, each tagged with its ``ListeningPart``. Nothing
+	The parts are ``ListeningPart`` rows (``parts``), each holding the
+	description that introduces it. The questions are ordinary ``Statement`` rows
+	linked through ``Statement.listening`` — one ``TRUE_FALSE`` statement and N
+	``MULTIPLE_CHOICE`` ones — each pointing at the part it belongs to. Nothing
 	about the group itself is free-form, so it has real columns instead of a JSON
 	``content`` field.
 	"""

@@ -1,9 +1,4 @@
-﻿import type {
-	ListeningPart,
-	MapLevel,
-	QuizCategory,
-	StatementType,
-} from "@/types/enums"
+﻿import type { MapLevel, QuizCategory, StatementType } from "@/types/enums"
 
 interface TimeStamped {
 	created_at: string
@@ -50,9 +45,15 @@ export interface StatementModel extends QuizBase {
 	content: TrueFalseContent | MultipleChoiceContent
 }
 
+/**
+ * One section of a listening question. Parts are unnamed: their order in
+ * `ListeningModel.parts` is what makes one Μέρος Α and the next Μέρος Β.
+ */
 export interface ListeningPartGroup {
-	part: ListeningPart
-	/** Part A is usually the TRUE_FALSE statements, part B the MULTIPLE_CHOICE ones. */
+	id: number
+	/** Text introducing the part, shown above its questions. Empty when unset. */
+	description: string
+	/** The first part is usually the TRUE_FALSE statements, the second the MULTIPLE_CHOICE ones. */
 	questions: StatementModel[]
 }
 

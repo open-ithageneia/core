@@ -19,22 +19,25 @@ export enum StatementType {
 	MULTIPLE_CHOICE = "MULTIPLE_CHOICE",
 }
 
-/** Sections a listening question is split into. */
-export enum ListeningPart {
-	A = "A",
-	B = "B",
+/**
+ * Names for the sections a listening question is split into, by position: the
+ * parts themselves are unnamed on the server, so the naming lives here. Indexed
+ * by the part's position in `ListeningModel.parts`.
+ */
+export const LISTENING_PART_LABELS = ["Μέρος Α", "Μέρος Β"] as const
+
+/** Single Greek letter shown in the part badge, by position. */
+export const LISTENING_PART_LETTERS = ["Α", "Β"] as const
+
+/** Name of the part at *index*, falling back to its number past the letters. */
+export function listeningPartLabel(index: number): string {
+	return LISTENING_PART_LABELS[index] ?? `Μέρος ${index + 1}`
 }
 
-export const LISTENING_PART_LABELS: Record<ListeningPart, string> = {
-	[ListeningPart.A]: "Μέρος Α",
-	[ListeningPart.B]: "Μέρος Β",
-} as const
-
-/** Single Greek letter shown in the part badge. */
-export const LISTENING_PART_LETTERS: Record<ListeningPart, string> = {
-	[ListeningPart.A]: "Α",
-	[ListeningPart.B]: "Β",
-} as const
+/** Badge letter of the part at *index*, falling back to its number. */
+export function listeningPartLetter(index: number): string {
+	return LISTENING_PART_LETTERS[index] ?? String(index + 1)
+}
 
 /** Administrative division level used by MapPointer questions (coarsest → finest). */
 export enum MapLevel {

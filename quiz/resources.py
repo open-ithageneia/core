@@ -218,6 +218,7 @@ class StatementResource(AbstractQuizResource):
 		"prompt_audio",
 		"listening",
 		"part",
+		"part_description",
 		"order",
 		*[
 			col
@@ -287,7 +288,7 @@ class StatementResource(AbstractQuizResource):
 		}
 
 		instance.listening_id = self._resolve_listening(row)
-		instance.part = self._resolve_part(row)
+		instance.part = self._resolve_part(row, instance.listening_id)
 		instance.order = self._resolve_order(row)
 
 	@staticmethod
@@ -306,17 +307,45 @@ class StatementResource(AbstractQuizResource):
 		return listening_id
 
 	@staticmethod
-	def _resolve_part(row) -> str:
-		"""Resolve the ``part`` column, defaulting to part A."""
+	def _resolve_part(row, listening_id) -> ListeningPart | None:
+		"""Resolve the ``part`` column to the matching part of the listening
+		question, creating the parts up to that position if the group doesn't have
+		them yet.
+
+		Parts have no name of their own, so they are addressed by position: 1 is
+		the first part (shown as Μέρος Α), 2 the second, and so on. Defaults to the
+		first. A non-blank ``part_description`` column sets the description of that
+		part — it describes the part, not the row it arrives on, so every row of
+		the same part may carry it.
+
+		Statements that are not part of a listening question have no part.
+		"""
+		if listening_id is None:
+			return None
+
 		value = row.get("part")
 		if _is_blank(value):
-			return ListeningPart.A
+			position = 1
+		else:
+			try:
+				position = int(float(str(value).strip()))
+			except ValueError:
+				raise ValueError(
+					f"Invalid part '{value}'. Parts are addressed by position: "
+					f"1 for the first part, 2 for the second, and so on."
+				) from None
+		if position < 1:
+			raise ValueError(f"Invalid part '{value}'. The first part is 1.")
 
-		part = str(value).strip().upper()
-		if part not in ListeningPart.values:
-			raise ValueError(
-				f"Invalid part '{part}'. Expected one of: {', '.join(ListeningPart.values)}."
-			)
+		part, _ = ListeningPart.at_position(Listening(pk=listening_id), position)
+
+		description = row.get("part_description")
+		if not _is_blank(description):
+			description = str(description).strip()
+			if part.description != description:
+				part.description = description
+				part.save(update_fields=["description", "updated_at"])
+
 		return part
 
 	@staticmethod
@@ -343,7 +372,8 @@ class StatementResource(AbstractQuizResource):
 			content.get("prompt_asset_id", "") or "",
 			content.get("prompt_audio_asset_id", "") or "",
 			instance.listening_id or "",
-			instance.part,
+			instance.part.position if instance.part_id else "",
+			instance.part.description if instance.part_id else "",
 			instance.order,
 		]
 

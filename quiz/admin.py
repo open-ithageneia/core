@@ -1,9 +1,10 @@
+import copy
 import logging
 import re
 import zipfile
 
 from django import forms
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
@@ -15,6 +16,7 @@ from .models import (
 	DragAndDrop,
 	FillInTheBlank,
 	Listening,
+	ListeningPart,
 	MapPointer,
 	Matching,
 	Statement,
@@ -198,7 +200,7 @@ class StatementAdmin(AbstractQuizAdmin):
 		# "content__choices__text", # not working, TODO: Check it
 	]
 	list_filter = ["type"] + AbstractQuizAdmin.list_filter
-	autocomplete_fields = ["listening"]
+	autocomplete_fields = ["listening", "part"]
 	fieldsets = (
 		(
 			AbstractQuizAdmin.fieldsets[0][0],
@@ -276,6 +278,42 @@ class StatementAdmin(AbstractQuizAdmin):
 		)
 
 
+def part_position_choices(part_count):
+	"""Positions a question can be assigned to: always the two parts the exam has,
+	plus any further ones the group already grew."""
+	return [(position, f"Part {position}") for position in range(1, max(2, part_count) + 1)]
+
+
+class ListeningQuestionForm(forms.ModelForm):
+	"""Picks the part by position rather than by row, so a question can be added
+	in the same save as the part it belongs to — a part being created in that same
+	save has no pk for a dropdown to point at yet.
+
+	``ListeningAdmin.save_formset`` turns the position back into the ``part`` FK
+	once the parts inline has been saved.
+	"""
+
+	part_position = forms.TypedChoiceField(
+		coerce=int,
+		choices=part_position_choices(0),
+		label="Part",
+		help_text=(
+			"Which part above this question belongs to, counting from the top. "
+			"Parts added in this same save count too."
+		),
+	)
+
+	class Meta:
+		model = Statement
+		fields = ["order", "type", "category", "content", "is_active"]
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		part = self.instance.part if self.instance.part_id else None
+		if part:
+			self.fields["part_position"].initial = part.position
+
+
 class ListeningQuestionFormSet(forms.BaseInlineFormSet):
 	def clean(self):
 		super().clean()
@@ -293,20 +331,54 @@ class ListeningQuestionFormSet(forms.BaseInlineFormSet):
 			validate_listening_question_types(types)
 
 
+class ListeningPartInline(admin.StackedInline):
+	model = ListeningPart
+	extra = 0
+	fields = ["description"]
+	verbose_name = "Part"
+	verbose_name_plural = (
+		"Parts, in order (shown as Μέρος Α, Μέρος Β, … — each with the "
+		"description introducing it)"
+	)
+
+
 class ListeningQuestionInline(admin.StackedInline):
 	model = Statement
 	fk_name = "listening"
+	form = ListeningQuestionForm
 	formset = ListeningQuestionFormSet
 	extra = 0
-	ordering = ["part", "order", "id"]
-	fields = ["part", "order", "type", "category", "content", "is_active"]
+	ordering = ["part_id", "order", "id"]
+	fields = ["part_position", "order", "type", "category", "content", "is_active"]
 	verbose_name = "Question"
 	verbose_name_plural = "Questions (1 True/False + N multiple choice)"
+
+	def get_formset(self, request, obj=None, **kwargs):
+		"""Offer one position per part of the group being edited. The field is
+		copied first: its choices are per-group, but the declared field object is
+		shared by every request."""
+		formset = super().get_formset(request, obj, **kwargs)
+		field = copy.deepcopy(formset.form.base_fields["part_position"])
+		field.choices = part_position_choices(obj.parts.count() if obj else 0)
+		formset.form.base_fields["part_position"] = field
+		return formset
+
+
+@admin.register(ListeningPart)
+class ListeningPartAdmin(admin.ModelAdmin):
+	"""Parts are normally edited inline on the listening question; this page
+	exists so ``part`` can be an autocomplete field elsewhere."""
+
+	list_display = ["id", "listening", "description", "created_at"]
+	list_filter = ["created_at", "updated_at"]
+	search_fields = ["id", "description", "listening__id"]
+	autocomplete_fields = ["listening"]
+	readonly_fields = ["created_at", "updated_at"]
 
 
 @admin.register(Listening)
 class ListeningAdmin(admin.ModelAdmin):
-	inlines = [ListeningQuestionInline]
+	inlines = [ListeningPartInline, ListeningQuestionInline]
 	list_display = [
 		"id",
 		"category",
@@ -332,12 +404,45 @@ class ListeningAdmin(admin.ModelAdmin):
 	]
 	readonly_fields = ["created_at", "updated_at"]
 
+	def save_formset(self, request, form, formset, change):
+		"""Point each saved question at the part whose position it picked.
+
+		The parts inline comes first in ``inlines`` and so is saved first, which is
+		what lets a part and its questions be created in the same save: by the time
+		the questions are saved, the parts they refer to exist. A position with no
+		part behind it grows the group an empty one, rather than leaving the
+		question in no part at all and out of the exam.
+		"""
+		if formset.model is not Statement:
+			super().save_formset(request, form, formset, change)
+			return
+
+		pending = formset.save(commit=False)
+		for question_form in formset.forms:
+			question = question_form.instance
+			if question not in pending:
+				continue
+			position = question_form.cleaned_data["part_position"]
+			question.part, created = ListeningPart.at_position(form.instance, position)
+			if created:
+				self.message_user(
+					request,
+					f"Part {position} did not exist yet — added it without a "
+					f"description. Give it one below.",
+					messages.WARNING,
+				)
+			question.save()
+
+		for question in formset.deleted_objects:
+			question.delete()
+		formset.save_m2m()
+
 	def get_queryset(self, request):
 		return (
 			super()
 			.get_queryset(request)
 			.select_related("audio")
-			.prefetch_related("questions")
+			.prefetch_related("parts", "questions")
 		)
 
 	@admin.display(description="Audio")
