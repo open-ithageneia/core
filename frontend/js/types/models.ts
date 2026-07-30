@@ -143,7 +143,11 @@ export interface OpenEndedModel extends QuizBase {
 
 export interface MapPointerTextGroup {
 	alternatives: string[]
-	area?: string
+	/**
+	 * Every area this answer may be placed on — placing it on any one of them
+	 * counts as correct (e.g. a river crossing several prefectures).
+	 */
+	areas?: string[]
 }
 
 export interface MapPointerContent {

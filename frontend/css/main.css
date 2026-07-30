@@ -24,6 +24,14 @@
 	color: #1e40af;
 }
 
+/* Region that would also have been accepted for an answer given elsewhere */
+.map-label--alternative {
+	background: rgba(219, 234, 254, 0.95);
+	border-color: #3b82f6;
+	border-style: dashed;
+	color: #1e40af;
+}
+
 .map-label--correct {
 	background: rgba(220, 252, 231, 0.95);
 	border-color: #16a34a;

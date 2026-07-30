@@ -5,6 +5,7 @@ from abc import abstractmethod, ABCMeta
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.base import ModelBase
+from django.urls import reverse
 from django_jsonform.models.fields import JSONField
 
 from open_ithageneia.models import ActivatableModel, TimeStampedModel
@@ -22,11 +23,18 @@ from .schemas import (
 
 
 def _map_pointer_content_schema(instance=None):
-	"""Dynamic django-jsonform schema: scope the ``area`` enum to the map
+	"""Dynamic django-jsonform schema: scope the ``areas`` enum to the map
 	level of the instance being edited (falls back to the default level on
 	the admin "add" form where no instance is bound)."""
-	level = getattr(instance, "level", None)
-	return MapPointerContent.build_schema(level)
+	level = int(getattr(instance, "level", None) or MapPointerContent.DEFAULT_LEVEL)
+	return MapPointerContent.build_schema(
+		level,
+		# The area picker searches within one level, so the level is part of the
+		# endpoint it queries (see MapPointerAdmin.area_options_view).
+		area_options_url=reverse(
+			"admin:quiz_mappointer_area_options", kwargs={"level": level}
+		),
+	)
 
 
 def get_quiz_asset_upload_to(instance, filename):
@@ -480,8 +488,21 @@ class MapPointer(AbstractQuiz):
 				f"the number of available answers ({len(data.texts)})."
 			)
 		valid_areas = set(AREA_NAME_CHOICES_BY_LEVEL[int(self.level)])
-		for group in data.texts:
-			if group.area and group.area not in valid_areas:
+		seen_areas: dict[str, int] = {}
+		for idx, group in enumerate(data.texts):
+			label = group.alternatives[0] if group.alternatives else ""
+			if len(set(group.areas)) != len(group.areas):
 				raise ValidationError(
-					f"Area '{group.area}' is not a valid level-{self.level} area."
+					f"Answer '{label}' lists the same area more than once."
 				)
+			for area in group.areas:
+				if area not in valid_areas:
+					raise ValidationError(
+						f"Area '{area}' is not a valid level-{self.level} area."
+					)
+				# Two answers sharing an area would make that area ambiguous:
+				# whichever answer is placed there could be scored as correct.
+				if seen_areas.setdefault(area, idx) != idx:
+					raise ValidationError(
+						f"Area '{area}' is used by more than one answer."
+					)

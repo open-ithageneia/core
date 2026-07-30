@@ -1,11 +1,15 @@
 import copy
 import logging
 import re
+import unicodedata
 import zipfile
 
 from django import forms
 from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.http import Http404, JsonResponse
+from django.urls import path
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 from import_export.admin import ImportExportModelAdmin
@@ -34,9 +38,24 @@ from .resources import (
 	load_images_from_zip,
 	OpenEndedResource,
 )
-from .schemas import AREA_NAME_CHOICES_BY_LEVEL, FillBlankText
+from .schemas import (
+	AREA_NAME_CHOICES_BY_LEVEL,
+	FillBlankText,
+	MapPointerTextGroup,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def _fold_for_search(text: str) -> str:
+	"""Lowercase and strip accents so area names match however they are typed
+	(Greek is routinely typed without its tonos)."""
+	stripped = "".join(
+		char
+		for char in unicodedata.normalize("NFD", text)
+		if not unicodedata.combining(char)
+	)
+	return unicodedata.normalize("NFC", stripped).strip().casefold()
 
 
 class ZipImportMixin:
@@ -779,6 +798,36 @@ class MapPointerAdmin(AbstractQuizAdmin):
 		AbstractQuizAdmin.fieldsets[1],
 	)
 
+	def get_urls(self):
+		# Registered first so "area-options/…" is not swallowed by the admin's
+		# catch-all "<path:object_id>/" route.
+		return [
+			path(
+				"area-options/<int:level>/",
+				self.admin_site.admin_view(self.area_options_view),
+				name="quiz_mappointer_area_options",
+			),
+			*super().get_urls(),
+		]
+
+	def area_options_view(self, request, level):
+		"""Options for the searchable ``areas`` picker.
+
+		django-jsonform's autocomplete widget calls this with the typed text in
+		``query`` and expects ``{"results": [...]}``. Matching ignores case and
+		accents, so "ιωαννινα" finds "Ιωάννινα". A blank query lists the level's
+		areas in full so the picker can also be browsed — no level runs to more
+		than a few hundred names, and the popup scrolls."""
+		if not self.has_view_or_change_permission(request):
+			raise PermissionDenied
+		names = AREA_NAME_CHOICES_BY_LEVEL.get(level)
+		if names is None:
+			raise Http404(f"Unknown map level: {level}")
+		query = _fold_for_search(request.GET.get("query", ""))
+		if query:
+			names = [name for name in names if query in _fold_for_search(name)]
+		return JsonResponse({"results": names})
+
 	def get_form(self, request, obj=None, **kwargs):
 		"""Bind the instance so the dynamic ``content`` schema can scope the
 		area enum to the selected map level (see _map_pointer_content_schema).
@@ -810,8 +859,10 @@ class MapPointerAdmin(AbstractQuizAdmin):
 		for t in texts:
 			if isinstance(t, dict):
 				alts = t.get("alternatives", [])
-				area = t.get("area", "")
-				parts.append((", ".join(alts), area))
+				areas = MapPointerTextGroup.parse_areas(
+					t["areas"] if "areas" in t else t.get("area")
+				)
+				parts.append((", ".join(alts), " / ".join(areas)))
 
 		return format_html_join(
 			"",

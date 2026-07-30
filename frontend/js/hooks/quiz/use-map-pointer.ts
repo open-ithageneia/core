@@ -1,5 +1,6 @@
 import type { FeatureCollection, Geometry } from "geojson"
 import { useCallback, useMemo, useRef, useState } from "react"
+import type { RegionValidation } from "@/components/quiz/shared/greece-map"
 import { getGeoJson, type RegionProperties } from "@/geo/util"
 import { useValidation } from "@/hooks/quiz/use-validation"
 import { normalizeForTextComparison, shuffleArray } from "@/lib/utils"
@@ -12,38 +13,44 @@ type UseMapPointerOptions = {
 }
 
 /**
- * Resolve which GeoJSON region ID corresponds to each answer group.
- * Uses the explicit `area` name when available, falls back to matching
- * alternatives against prefecture names.
+ * Resolve which GeoJSON region IDs an answer group accepts.
+ *
+ * A group may list several areas — an answer that spans more than one area
+ * (a river crossing several prefectures, say) is correct on any of them — so
+ * each group maps to a list of accepted region IDs. Uses the explicit `areas`
+ * names when available, falls back to matching alternatives against area names.
  */
 function resolveRegionIds(
 	texts: MapPointerTextGroup[],
 	geojson: FeatureCollection<Geometry, RegionProperties>,
-): Map<number, string> {
-	const map = new Map<number, string>()
+): Map<number, string[]> {
+	const findRegionId = (name: string): string | undefined => {
+		const norm = normalizeForTextComparison(name)
+		return geojson.features.find(
+			(f) => normalizeForTextComparison(f.properties.name) === norm,
+		)?.properties.id
+	}
+
+	const map = new Map<number, string[]>()
 	for (let i = 0; i < texts.length; i++) {
 		const group = texts[i]
-		// Prefer explicit area reference
-		if (group.area) {
-			const area = group.area
-			const match = geojson.features.find(
-				(f) =>
-					normalizeForTextComparison(f.properties.name) ===
-					normalizeForTextComparison(area),
-			)
-			if (match) {
-				map.set(i, match.properties.id)
-				continue
+		// Prefer explicit area references
+		const regionIds: string[] = []
+		for (const area of group.areas ?? []) {
+			const id = findRegionId(area)
+			if (id && !regionIds.includes(id)) {
+				regionIds.push(id)
 			}
+		}
+		if (regionIds.length > 0) {
+			map.set(i, regionIds)
+			continue
 		}
 		// Fallback: match alternatives against GeoJSON names
 		for (const alt of group.alternatives) {
-			const normAlt = normalizeForTextComparison(alt)
-			const match = geojson.features.find(
-				(f) => normalizeForTextComparison(f.properties.name) === normAlt,
-			)
-			if (match) {
-				map.set(i, match.properties.id)
+			const id = findRegionId(alt)
+			if (id) {
+				map.set(i, [id])
 				break
 			}
 		}
@@ -64,8 +71,8 @@ export function useMapPointer(
 	/** GeoJSON for the question's administrative level */
 	const geojson = useMemo(() => getGeoJson(item.level), [item.level])
 
-	/** Map: answer group index → GeoJSON region ID */
-	const answerToRegion = useMemo(
+	/** Map: answer group index → every GeoJSON region ID it accepts */
+	const answerToRegions = useMemo(
 		() => resolveRegionIds(texts, geojson),
 		[texts, geojson],
 	)
@@ -73,16 +80,18 @@ export function useMapPointer(
 	/** Reverse map: region ID → answer group index */
 	const regionToAnswer = useMemo(() => {
 		const map = new Map<string, number>()
-		for (const [idx, regionId] of answerToRegion.entries()) {
-			map.set(regionId, idx)
+		for (const [idx, regionIds] of answerToRegions.entries()) {
+			for (const regionId of regionIds) {
+				map.set(regionId, idx)
+			}
 		}
 		return map
-	}, [answerToRegion])
+	}, [answerToRegions])
 
 	/** All region IDs that are valid targets in this quiz */
 	const validRegionIds = useMemo(
-		() => new Set(answerToRegion.values()),
-		[answerToRegion],
+		() => new Set(regionToAnswer.keys()),
+		[regionToAnswer],
 	)
 
 	/** Every region ID on the map — any region is a droppable target */
@@ -180,86 +189,74 @@ export function useMapPointer(
 		[showValidation],
 	)
 
-	/** Validate drop mode: check if each placed label's answer group matches the region */
-	const dropValidationMap = useMemo(() => {
+	/**
+	 * Validate drop mode: a placed label is correct when its region is one of
+	 * the regions its answer group accepts.
+	 */
+	const dropValidation = useMemo(() => {
 		if (!showValidation) {
-			return new Map<string, "correct" | "incorrect">()
+			return {
+				regionStates: new Map<string, RegionValidation>(),
+				correctGroupIndices: new Set<number>(),
+			}
 		}
-		const map = new Map<string, "correct" | "incorrect">()
+		const regionStates = new Map<string, RegionValidation>()
+		const correctGroupIndices = new Set<number>()
 		for (const [regionId, label] of placements.entries()) {
 			// Find which answer group this label belongs to
 			const groupIdx = texts.findIndex((g) => g.alternatives[0] === label)
-			if (groupIdx === -1) {
-				map.set(regionId, "incorrect")
-				continue
-			}
-			// Check if this region is the correct region for this answer group
-			const correctRegionId = answerToRegion.get(groupIdx)
-			map.set(regionId, regionId === correctRegionId ? "correct" : "incorrect")
-		}
-		// Mark valid regions that were left unplaced as incorrect
-		for (const regionId of validRegionIds) {
-			if (!map.has(regionId)) {
-				map.set(regionId, "incorrect")
+			const isCorrect =
+				groupIdx !== -1 &&
+				(answerToRegions.get(groupIdx)?.includes(regionId) ?? false)
+			regionStates.set(regionId, isCorrect ? "correct" : "incorrect")
+			if (isCorrect) {
+				correctGroupIndices.add(groupIdx)
 			}
 		}
-		return map
-	}, [showValidation, placements, texts, answerToRegion, validRegionIds])
+		// The accepted regions left over: mistakes if the answer never landed on
+		// any of them, otherwise alternatives — one of them was all it needed.
+		for (const [idx, regionIds] of answerToRegions.entries()) {
+			const answered = correctGroupIndices.has(idx)
+			for (const regionId of regionIds) {
+				if (!regionStates.has(regionId)) {
+					regionStates.set(regionId, answered ? "alternative" : "incorrect")
+				}
+			}
+		}
+		return { regionStates, correctGroupIndices }
+	}, [showValidation, placements, texts, answerToRegions])
+
+	const dropValidationMap = dropValidation.regionStates
 
 	const dropCorrectAnswersMap = useMemo(() => {
 		if (!showValidation) {
 			return new Map<string, string>()
 		}
+		// Name the answer each unplaced region belonged to, whether it was missed
+		// or merely an alternative.
 		const map = new Map<string, string>()
-		// Show correct label for wrongly-assigned regions
-		for (const [regionId, result] of dropValidationMap.entries()) {
-			if (result === "incorrect") {
-				const answerIdx = regionToAnswer.get(regionId)
-				if (answerIdx !== undefined) {
-					map.set(regionId, texts[answerIdx].alternatives[0])
+		for (const [idx, regionIds] of answerToRegions.entries()) {
+			for (const regionId of regionIds) {
+				if (dropValidation.regionStates.get(regionId) === "correct") {
+					continue
 				}
-			}
-		}
-		// Also show correct answer for unplaced regions
-		for (const [idx, regionId] of answerToRegion.entries()) {
-			if (!placements.has(regionId)) {
 				map.set(regionId, texts[idx].alternatives[0])
 			}
 		}
 		return map
-	}, [
-		showValidation,
-		dropValidationMap,
-		placements,
-		regionToAnswer,
-		answerToRegion,
-		texts,
-	])
+	}, [showValidation, dropValidation.regionStates, answerToRegions, texts])
 
-	const dropCorrectCount = useMemo(() => {
-		let count = 0
-		for (const v of dropValidationMap.values()) {
-			if (v === "correct") {
-				count++
-			}
-		}
-		return count
-	}, [dropValidationMap])
+	const dropCorrectCount = dropValidation.correctGroupIndices.size
 
-	/** Labels that were not placed on their correct region */
+	/** Labels that were not placed on any of their accepted regions */
 	const dropMissedAnswers = useMemo(() => {
 		if (!showValidation) {
 			return []
 		}
-		const missed: string[] = []
-		for (const [idx, regionId] of answerToRegion.entries()) {
-			const placement = placements.get(regionId)
-			if (placement !== texts[idx].alternatives[0]) {
-				missed.push(texts[idx].alternatives[0])
-			}
-		}
-		return missed
-	}, [showValidation, answerToRegion, placements, texts])
+		return texts
+			.filter((_, i) => !dropValidation.correctGroupIndices.has(i))
+			.map((g) => g.alternatives[0])
+	}, [showValidation, dropValidation.correctGroupIndices, texts])
 
 	const isDropComplete = placements.size === texts.length
 
@@ -325,6 +322,7 @@ export function useMapPointer(
 			return {
 				regionStates: new Map<string, ValidationState>(),
 				matchedGroupIndices: new Set<number>(),
+				alternativeRegionIds: new Set<string>(),
 			}
 		}
 		const matchedGroupIndices = new Set<number>()
@@ -337,16 +335,17 @@ export function useMapPointer(
 			}
 			// Find which answer group corresponds to this region
 			const answerIdx = regionToAnswer.get(regionId)
-			if (answerIdx !== undefined && !matchedGroupIndices.has(answerIdx)) {
-				if (
-					texts[answerIdx].alternatives.some(
-						(alt) => normalizeForTextComparison(alt) === norm,
-					)
-				) {
-					matchedGroupIndices.add(answerIdx)
-					regionStates.set(regionId, ValidationStatus.Correct)
-					continue
-				}
+			if (
+				answerIdx !== undefined &&
+				texts[answerIdx].alternatives.some(
+					(alt) => normalizeForTextComparison(alt) === norm,
+				)
+			) {
+				// Correct even if the group was already matched on one of its other
+				// accepted regions — the score counts groups, not regions.
+				matchedGroupIndices.add(answerIdx)
+				regionStates.set(regionId, ValidationStatus.Correct)
+				continue
 			}
 			// Also check all groups in case user typed a correct answer on the wrong region
 			let found = false
@@ -369,24 +368,26 @@ export function useMapPointer(
 				regionStates.set(regionId, ValidationStatus.Incorrect)
 			}
 		}
-		// Regions with no answer are incorrect
-		for (const regionId of validRegionIds) {
-			if (!regionStates.has(regionId)) {
-				regionStates.set(regionId, ValidationStatus.Incorrect)
+		// The accepted regions left unanswered: mistakes if the answer never
+		// landed on any of them, otherwise alternatives — one was all it needed.
+		const alternativeRegionIds = new Set<string>()
+		for (const [idx, regionIds] of answerToRegions.entries()) {
+			const answered = matchedGroupIndices.has(idx)
+			for (const regionId of regionIds) {
+				if (regionStates.has(regionId)) {
+					continue
+				}
+				if (answered) {
+					alternativeRegionIds.add(regionId)
+				} else {
+					regionStates.set(regionId, ValidationStatus.Incorrect)
+				}
 			}
 		}
-		return { regionStates, matchedGroupIndices }
-	}, [showValidation, typeAnswers, texts, regionToAnswer, validRegionIds])
+		return { regionStates, matchedGroupIndices, alternativeRegionIds }
+	}, [showValidation, typeAnswers, texts, regionToAnswer, answerToRegions])
 
-	const typeCorrectCount = useMemo(() => {
-		let count = 0
-		for (const v of typeValidation.regionStates.values()) {
-			if (v === ValidationStatus.Correct) {
-				count++
-			}
-		}
-		return count
-	}, [typeValidation.regionStates])
+	const typeCorrectCount = typeValidation.matchedGroupIndices.size
 
 	const missedAnswers = useMemo(() => {
 		if (!showValidation) {
@@ -402,32 +403,43 @@ export function useMapPointer(
 		if (!showValidation) {
 			return undefined
 		}
-		const map = new Map<string, "correct" | "incorrect">()
+		const map = new Map<string, RegionValidation>()
 		for (const [regionId, state] of typeValidation.regionStates.entries()) {
 			map.set(
 				regionId,
 				state === ValidationStatus.Correct ? "correct" : "incorrect",
 			)
 		}
+		for (const regionId of typeValidation.alternativeRegionIds) {
+			map.set(regionId, "alternative")
+		}
 		return map
-	}, [showValidation, typeValidation.regionStates])
+	}, [
+		showValidation,
+		typeValidation.regionStates,
+		typeValidation.alternativeRegionIds,
+	])
 
 	/** Correct answers to show on the map after validation in type mode */
 	const typeCorrectAnswersMap = useMemo(() => {
 		if (!showValidation) {
 			return undefined
 		}
+		// Name the answer each unanswered region belonged to, whether it was
+		// missed or merely an alternative.
 		const map = new Map<string, string>()
-		for (const [regionId, state] of typeValidation.regionStates.entries()) {
-			if (state === ValidationStatus.Incorrect) {
-				const answerIdx = regionToAnswer.get(regionId)
-				if (answerIdx !== undefined) {
-					map.set(regionId, texts[answerIdx].alternatives[0])
+		for (const [idx, regionIds] of answerToRegions.entries()) {
+			for (const regionId of regionIds) {
+				if (
+					typeValidation.regionStates.get(regionId) === ValidationStatus.Correct
+				) {
+					continue
 				}
+				map.set(regionId, texts[idx].alternatives[0])
 			}
 		}
 		return map
-	}, [showValidation, typeValidation.regionStates, regionToAnswer, texts])
+	}, [showValidation, typeValidation.regionStates, answerToRegions, texts])
 
 	// ─── Unified return ─────────────────────────────────────────────────
 
