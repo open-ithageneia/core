@@ -17,8 +17,16 @@ from quiz.admin import (
 	ListeningQuestionFormSet,
 	ListeningQuestionInline,
 )
-from quiz.models import Listening, ListeningPart, QuizAsset, Statement
-from quiz.serializers import ListeningSerializer
+from quiz.models import (
+	Listening,
+	ListeningPart,
+	MapPointer,
+	QuizAsset,
+	QuizCategory,
+	Statement,
+)
+from quiz.schemas import AREA_NAME_CHOICES_BY_LEVEL, MapPointerContent
+from quiz.serializers import ListeningSerializer, MapPointerSerializer
 from quiz.services import QuizService
 
 
@@ -488,3 +496,210 @@ class ListeningAdminSaveTests(TestCase):
 		form = ListeningQuestionForm(instance=question)
 
 		self.assertEqual(form.fields["part_position"].initial, 2)
+
+
+class MapPointerContentTests(TestCase):
+	"""An answer may accept several areas — e.g. a river crossing prefectures."""
+
+	LEVEL = MapPointer.MapLevel.PREFECTURE_UNIT
+	# Two prefecture units the Αλιάκμονας flows through, plus an unrelated one.
+	AREAS = AREA_NAME_CHOICES_BY_LEVEL[int(LEVEL)][:3]
+
+	def _content(self, *groups, min_correct_answers=1):
+		return {
+			"prompt_text": "Πού βρίσκεται;",
+			"show_answers": True,
+			"min_correct_answers": min_correct_answers,
+			"texts": [
+				{"alternatives": alternatives, "areas": areas}
+				for alternatives, areas in groups
+			],
+		}
+
+	def _create(self, *groups, **kwargs):
+		return MapPointer.objects.create(
+			level=self.LEVEL, content=self._content(*groups, **kwargs)
+		)
+
+	def test_an_answer_keeps_every_area_it_accepts(self):
+		quiz = self._create((["Αλιάκμονας"], self.AREAS[:2]))
+
+		self.assertEqual(quiz.content_model.texts[0].areas, self.AREAS[:2])
+		self.assertEqual(
+			MapPointerSerializer(quiz).data["content"]["texts"],
+			[{"alternatives": ["Αλιάκμονας"], "areas": self.AREAS[:2]}],
+		)
+
+	def test_a_legacy_single_area_is_read_as_a_one_item_list(self):
+		quiz = MapPointer(
+			level=self.LEVEL,
+			content={
+				"prompt_text": "Πού βρίσκεται;",
+				"show_answers": True,
+				"min_correct_answers": 1,
+				"texts": [{"alternatives": ["Αλιάκμονας"], "area": self.AREAS[0]}],
+			},
+		)
+		quiz.save()
+
+		self.assertEqual(quiz.content_model.texts[0].areas, [self.AREAS[0]])
+
+	def test_a_legacy_area_object_is_read_as_a_one_item_list(self):
+		content = MapPointerContent.from_json(
+			{
+				"show_answers": True,
+				"min_correct_answers": 1,
+				"texts": [
+					{"alternatives": ["Αλιάκμονας"], "area": {"name": self.AREAS[0]}}
+				],
+			}
+		)
+
+		self.assertEqual(content.texts[0].areas, [self.AREAS[0]])
+
+	def test_rejects_an_area_outside_the_map_level(self):
+		with self.assertRaises(ValidationError):
+			self._create((["Αλιάκμονας"], [self.AREAS[0], "Ουτοπία"]))
+
+	def test_rejects_the_same_area_twice_in_one_answer(self):
+		with self.assertRaises(ValidationError):
+			self._create((["Αλιάκμονας"], [self.AREAS[0], self.AREAS[0]]))
+
+	def test_rejects_an_area_shared_by_two_answers(self):
+		with self.assertRaises(ValidationError):
+			self._create(
+				(["Αλιάκμονας"], [self.AREAS[0], self.AREAS[1]]),
+				(["Αξιός"], [self.AREAS[1], self.AREAS[2]]),
+				min_correct_answers=2,
+			)
+
+
+class MapPointerAreaPickerTests(TestCase):
+	"""The area lists run to hundreds of names, so the admin offers a
+	type-to-search picker instead of a plain dropdown. django-jsonform's
+	autocomplete widget fetches the matches from an endpoint as the editor
+	types — it does not filter the schema's enum client-side."""
+
+	LEVEL = MapPointer.MapLevel.PREFECTURE_UNIT
+
+	def setUp(self):
+		self.admin_user = get_user_model().objects.create_superuser(
+			username="admin", email="admin@example.com", password="password"
+		)
+		self.client.force_login(self.admin_user)
+
+	def _search(self, query, level=None):
+		url = reverse(
+			"admin:quiz_mappointer_area_options",
+			kwargs={"level": int(level if level is not None else self.LEVEL)},
+		)
+		return self.client.get(url, {"query": query})
+
+	def test_the_add_page_wires_the_picker_to_this_level_s_options(self):
+		page = self.client.get(reverse("admin:quiz_mappointer_add"))
+
+		self.assertEqual(page.status_code, 200)
+		areas = MapPointerContent.build_schema(
+			MapPointerContent.DEFAULT_LEVEL, area_options_url="/areas/4/"
+		)["properties"]["texts"]["items"]["properties"]["areas"]
+		self.assertEqual(areas["items"]["widget"], "multiselect-autocomplete")
+		self.assertEqual(areas["items"]["handler"], "/areas/4/")
+		# The saved area names still have to come from the level's own list.
+		self.assertEqual(
+			areas["items"]["enum"],
+			AREA_NAME_CHOICES_BY_LEVEL[MapPointerContent.DEFAULT_LEVEL],
+		)
+		rendered = page.content.decode()
+		self.assertIn("multiselect-autocomplete", rendered)
+		self.assertIn(
+			reverse(
+				"admin:quiz_mappointer_area_options",
+				kwargs={"level": MapPointerContent.DEFAULT_LEVEL},
+			),
+			rendered,
+		)
+
+	def test_searching_returns_the_matching_area_names(self):
+		response = self._search("ΙΩΑΝΝ")
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.json()["results"], ["ΙΩΑΝΝΙΝΩΝ"])
+
+	def test_searching_ignores_case(self):
+		self.assertEqual(self._search("ιωανν").json()["results"], ["ΙΩΑΝΝΙΝΩΝ"])
+
+	def test_searching_ignores_accents(self):
+		"""Greek is routinely typed without its tonos."""
+		results = self._search("αθως", level=MapPointer.MapLevel.MUNICIPALITY).json()[
+			"results"
+		]
+
+		self.assertEqual(results, ["Άθως"])
+
+	def test_a_query_matching_nothing_returns_no_options(self):
+		self.assertEqual(self._search("Ουτοπίας").json()["results"], [])
+
+	def test_a_blank_query_lists_the_whole_level(self):
+		"""Nothing typed yet means "show me everything" — the picker seeds its
+		search box with a space so the list can be browsed as well as searched."""
+		everything = AREA_NAME_CHOICES_BY_LEVEL[int(self.LEVEL)]
+
+		self.assertEqual(self._search(" ").json()["results"], everything)
+		self.assertEqual(self._search("").json()["results"], everything)
+
+	def test_the_typed_text_is_matched_ignoring_surrounding_space(self):
+		"""The seeded space sits in front of whatever the editor types next."""
+		self.assertEqual(self._search(" ιωανν ").json()["results"], ["ΙΩΑΝΝΙΝΩΝ"])
+
+	def test_every_match_is_returned(self):
+		"""A common stem matches many areas; none of them may be dropped."""
+		results = self._search("αγιου", level=MapPointer.MapLevel.MUNICIPALITY).json()[
+			"results"
+		]
+
+		self.assertEqual(
+			results,
+			[
+				"ΑγίουΒασιλείου",
+				"ΑγίουΔημητρίου",
+				"ΑγίουΕυστρατίου",
+				"ΑγίουΝικολάου",
+				"Μώλου-ΑγίουΚωνσταντίνου",
+				"Νίκαιας-ΑγίουΙωάννηΡέντη",
+			],
+		)
+
+	def test_an_unknown_level_is_not_found(self):
+		self.assertEqual(self._search("Ιωάνν", level=99).status_code, 404)
+
+	def test_the_admin_saves_an_answer_with_several_picked_areas(self):
+		"""End to end through jsonform's own validation of the picked values."""
+		areas = AREA_NAME_CHOICES_BY_LEVEL[int(self.LEVEL)][:3]
+		content = {
+			"prompt_text": "Ποιον νομό διασχίζει ο Αλιάκμονας;",
+			"show_answers": True,
+			"min_correct_answers": 1,
+			"texts": [{"alternatives": ["Αλιάκμονας"], "areas": areas}],
+		}
+
+		response = self.client.post(
+			reverse("admin:quiz_mappointer_add"),
+			{
+				"level": str(int(self.LEVEL)),
+				"category": QuizCategory.GEOGRAPHY,
+				"content": json.dumps(content),
+				"is_active": "on",
+			},
+		)
+
+		self.assertEqual(response.status_code, 302, getattr(response, "context", None))
+		quiz = MapPointer.objects.get()
+		self.assertEqual(quiz.content_model.texts[0].areas, areas)
+
+	def test_the_options_are_closed_to_non_staff(self):
+		self.client.logout()
+
+		response = self._search("Ιωάνν")
+
+		self.assertNotEqual(response.status_code, 200)
+		self.assertNotIn("Ιωάννινα", response.content.decode())

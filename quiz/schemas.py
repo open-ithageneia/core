@@ -570,13 +570,36 @@ class OpenEndedContent:
 @dataclass
 class MapPointerTextGroup:
 	alternatives: list[str]
-	area: str | None = None
+	# Every area the answer may be placed on. More than one is allowed because a
+	# single answer can legitimately span several areas (e.g. a river crossing
+	# many prefectures) — placing the label on any of them counts as correct.
+	areas: list[str] = field(default_factory=list)
 
 	def to_dict(self):
 		d: dict = {"alternatives": self.alternatives}
-		if self.area:
-			d["area"] = self.area
+		if self.areas:
+			d["areas"] = self.areas
 		return d
+
+	@staticmethod
+	def parse_areas(raw) -> list[str]:
+		"""Normalise the stored area reference into a list of area names.
+
+		Accepts the current list form as well as the legacy single ``area``
+		(plain string or ``{"name": ...}`` object)."""
+		if raw is None:
+			return []
+		if isinstance(raw, str):
+			return [raw] if raw else []
+		if isinstance(raw, dict):
+			name = raw.get("name")
+			return [name] if name else []
+		if isinstance(raw, list):
+			areas = []
+			for item in raw:
+				areas.extend(MapPointerTextGroup.parse_areas(item))
+			return areas
+		return []
 
 
 @dataclass
@@ -586,9 +609,14 @@ class MapPointerContent:
 	DEFAULT_LEVEL = 4
 
 	@classmethod
-	def build_schema(cls, level: int | None = None) -> dict:
+	def build_schema(
+		cls, level: int | None = None, area_options_url: str | None = None
+	) -> dict:
 		"""Build the django-jsonform schema, scoping the ``area`` enum to the
-		valid area names for the given admin level."""
+		valid area names for the given admin level.
+
+		``area_options_url`` is the endpoint the searchable area picker queries
+		as the editor types; without it the picker cannot offer any options."""
 		level = int(level) if level else cls.DEFAULT_LEVEL
 		return {
 			"type": "object",
@@ -609,7 +637,7 @@ class MapPointerContent:
 					"title": "Answer groups",
 					"items": {
 						"type": "object",
-						"required": ["alternatives", "area"],
+						"required": ["alternatives", "areas"],
 						"properties": {
 							"alternatives": {
 								"type": "array",
@@ -617,10 +645,28 @@ class MapPointerContent:
 								"items": {"type": "string"},
 								"minItems": 1,
 							},
-							"area": {
-								"type": "string",
-								"title": "Area",
-								"enum": AREA_NAME_CHOICES_BY_LEVEL[level],
+							"areas": {
+								"type": "array",
+								"title": "Areas",
+								"description": (
+									"Type to search. The answer counts as correct on "
+									"any of the selected areas."
+								),
+								"items": {
+									# Searchable multi-select — the area lists run to
+									# hundreds of names, too many to scroll through. The
+									# widget and enum belong on ``items``, and the title
+									# is left off so the group heading above isn't
+									# repeated as the input's label.
+									"type": "string",
+									"widget": "multiselect-autocomplete",
+									# The widget fetches matches from the handler as the
+									# editor types; the enum still guards what may be
+									# saved.
+									"handler": area_options_url or "",
+									"enum": AREA_NAME_CHOICES_BY_LEVEL[level],
+								},
+								"minItems": 1,
 							},
 						},
 						"additionalProperties": False,
@@ -649,16 +695,19 @@ class MapPointerContent:
 		texts: list[MapPointerTextGroup] = []
 		for t in raw_texts:
 			if isinstance(t, dict):
-				# New format: {"alternatives": [...], "area": "..."}
+				# Current format: {"alternatives": [...], "areas": [...]}
 				alts = t.get("alternatives", [])
 				if not alts and "text" in t:
 					# Legacy single-text dict: {"text": "word"}
 					alts = [t["text"]]
-				area = t.get("area")
-				# Handle legacy object format: {"name": "..."}
-				if isinstance(area, dict):
-					area = area.get("name")
-				texts.append(MapPointerTextGroup(alternatives=alts, area=area))
+				# "area" is the legacy single-area key, still read for old rows.
+				raw_areas = t["areas"] if "areas" in t else t.get("area")
+				texts.append(
+					MapPointerTextGroup(
+						alternatives=alts,
+						areas=MapPointerTextGroup.parse_areas(raw_areas),
+					)
+				)
 			elif isinstance(t, list):
 				texts.append(MapPointerTextGroup(alternatives=t))
 			elif isinstance(t, str):

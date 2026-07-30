@@ -7,6 +7,13 @@ import {
 	type RegionProperties,
 } from "@/geo/util"
 
+/**
+ * Per-region outcome after validation. ``alternative`` marks a region that
+ * would also have been accepted for an answer already given elsewhere — an
+ * answer can span several regions, and only one of them was ever needed.
+ */
+export type RegionValidation = "correct" | "incorrect" | "alternative"
+
 type GreeceMapProps = {
 	/** GADM administrative level to render (2 = regions, 3 = municipalities) */
 	level?: number
@@ -14,8 +21,8 @@ type GreeceMapProps = {
 	highlightedRegions?: Map<string, string>
 	/** Region IDs that are valid drop targets */
 	activeRegionIds?: Set<string>
-	/** Validation results: region_id → "correct" | "incorrect" */
-	validationMap?: Map<string, "correct" | "incorrect">
+	/** Validation results: region_id → outcome */
+	validationMap?: Map<string, RegionValidation>
 	/** Correct answers to reveal after validation: region_id → label */
 	correctAnswers?: Map<string, string>
 	disabled?: boolean
@@ -26,7 +33,7 @@ function getRegionStyle(
 	id: string,
 	highlightedRegions?: Map<string, string>,
 	activeRegionIds?: Set<string>,
-	validationMap?: Map<string, "correct" | "incorrect">,
+	validationMap?: Map<string, RegionValidation>,
 ): L.PathOptions {
 	const validation = validationMap?.get(id)
 	if (validation === "correct") {
@@ -43,6 +50,16 @@ function getRegionStyle(
 			fillOpacity: 0.7,
 			color: "#dc2626",
 			weight: 2,
+		}
+	}
+	if (validation === "alternative") {
+		// Light blue, dashed: also acceptable, neither scored nor a mistake.
+		return {
+			fillColor: "#bfdbfe",
+			fillOpacity: 0.6,
+			color: "#3b82f6",
+			weight: 2,
+			dashArray: "4 3",
 		}
 	}
 	if (highlightedRegions?.has(id)) {
@@ -248,7 +265,11 @@ export default function GreeceMap({
 			// Determine what text to show
 			let labelText: string | null = null
 			let cssClass = "map-label"
-			if (validation === "correct" && placed) {
+			if (validation === "alternative" && correct) {
+				// The answer given elsewhere would have been accepted here too
+				labelText = correct
+				cssClass = "map-label map-label--alternative"
+			} else if (validation === "correct" && placed) {
 				labelText = placed
 				cssClass = "map-label map-label--correct"
 			} else if (validation === "incorrect" && placed && correct) {
