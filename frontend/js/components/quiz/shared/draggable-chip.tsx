@@ -45,7 +45,7 @@ export default function DraggableChip<T>({
 					<img
 						src={imageUrl}
 						alt={`Επιλογή ${id}`}
-						className="max-h-48 rounded"
+						className="max-h-32 rounded sm:max-h-48"
 					/>
 				) : (
 					displayValue(value)
