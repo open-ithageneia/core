@@ -56,6 +56,7 @@ export default function DragAndDrop({
 			values={availableValues}
 			disabled={showValidation}
 			chipId={(value) => `chip-${value}`}
+			emptyMessage="Όλες τα αντικείμενα έχουν τοποθετηθεί"
 		/>
 	)
 

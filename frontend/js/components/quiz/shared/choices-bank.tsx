@@ -21,7 +21,7 @@ export default function ChoicesBank<T>({
 }: ChoicesBankProps<T>) {
 	return (
 		<div className="rounded-xl border bg-muted/30 p-2">
-			<div className="chips-scrollable flex h-12 items-center gap-1 overflow-x-auto">
+			<div className="flex py-2 items-center gap-1 overflow-x-auto">
 				{values.map((value, index) => (
 					<DraggableChip
 						key={chipKey ? chipKey(value, index) : chipId(value, index)}
