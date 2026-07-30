@@ -67,7 +67,7 @@ export default function QuizCard({
 
 			{headerExtra && <div className="shrink-0 px-2">{headerExtra}</div>}
 
-			<CardContent className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2 pt-1">
+			<CardContent className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2 pt-0 mt-2">
 				{promptAssetUrl && (
 					<img
 						src={promptAssetUrl}

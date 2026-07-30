@@ -58,7 +58,7 @@ export default function Matching({
 			chipId={(item) => `chip-${item.id}`}
 			imageUrl={(item) => item.asset_url}
 			displayValue={(value) => value.text}
-			emptyMessage="Όλες τα αντικείμενα έχουν τοποθετηθεί"
+			emptyMessage="Όλα τα αντικείμενα έχουν τοποθετηθεί"
 		/>
 	)
 
