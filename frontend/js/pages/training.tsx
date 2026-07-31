@@ -7,13 +7,82 @@ import { Button } from "@/components/ui/button"
 import { MultiSelect } from "@/components/ui/multi-select"
 import { useExitConfirmation } from "@/hooks/use-exit-confirmation"
 import { getScoreColor } from "@/lib/score-color"
-import { QUIZ_CATEGORY_LABELS, type QuizCategory } from "@/types/enums"
-import type { QuizData } from "@/types/models"
+import {
+	QUIZ_CATEGORY_LABELS,
+	QuizCategory,
+	StatementType,
+} from "@/types/enums"
+import type { QuizData, QuizDataItem, StatementModel } from "@/types/models"
 
 type CategoryOption = {
 	value: string
 	label: string
 }
+
+// Knowledge questions are worth a flat 2 points each, shared proportionally
+// between their sub-answers.
+const POINTS_PER_QUESTION = 2
+// A listening question is scored per sub-answer instead — 1.5 points each, the
+// same as the listening simulation (e.g. 5 true/false + 5 multiple choice → 15).
+const POINTS_PER_SUB_ANSWER = 1.5
+
+type Score = { correct: number; total: number }
+
+function round2(value: number): number {
+	return Math.round(value * 100) / 100
+}
+
+/**
+ * How many sub-answers a statement is scored on — the `total` it reports
+ * through `onScore`. A true/false block is a list of statements each marked
+ * σωστό/λάθος on its own, so it is worth as many sub-answers as it has choices;
+ * a multiple-choice question is one all-or-nothing unit however many options it
+ * offers. Mirrors `useTrueFalse` and `useMultipleChoice`.
+ */
+function statementSubAnswers(statement: StatementModel): number {
+	return statement.type === StatementType.TRUE_FALSE
+		? statement.content.choices.length
+		: 1
+}
+
+/**
+ * Points earned and available for a single question. A listening question's
+ * maximum comes from the sub-answers it asks, so unlike a knowledge question it
+ * is not a fixed number — it is counted off the question itself rather than
+ * taken from the reported score, which stays 0 until the question is checked.
+ */
+function questionPoints(
+	item: QuizDataItem,
+	score: Score | undefined,
+): { earned: number; max: number } {
+	if (item.quiz_type === "Listening") {
+		const subAnswers = item.parts.reduce(
+			(sum, part) =>
+				sum + part.questions.reduce((n, q) => n + statementSubAnswers(q), 0),
+			0,
+		)
+		return {
+			earned: round2((score?.correct ?? 0) * POINTS_PER_SUB_ANSWER),
+			max: round2(subAnswers * POINTS_PER_SUB_ANSWER),
+		}
+	}
+	const earned =
+		score && score.total > 0
+			? (score.correct / score.total) * POINTS_PER_QUESTION
+			: 0
+	return { earned: round2(earned), max: POINTS_PER_QUESTION }
+}
+
+/** The two sections of the exam, which are practised separately. */
+type TrainingMode = "knowledge" | "listening"
+
+const MODE_LABELS: Record<TrainingMode, string> = {
+	knowledge: "Γνώσεις",
+	listening: "Ακουστικά",
+}
+
+const SELECT_CLASS =
+	"w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 
 type TrainingProps = {
 	categories: CategoryOption[]
@@ -21,17 +90,34 @@ type TrainingProps = {
 }
 
 function TrainingSetup({ categories }: { categories: CategoryOption[] }) {
+	const [mode, setMode] = useState<TrainingMode>("knowledge")
 	const [categories_selected, setCategoriesSelected] = useState<string[]>([])
 	const [amount, setAmount] = useState("10")
 	const [quizType, setQuizType] = useState("")
 
+	// The listening category holds nothing but audio clips, which are reached
+	// through the Ακουστικά mode — offering it as a knowledge subject would only
+	// ever produce an empty test.
+	const categoryOptions = categories
+		.filter((c) => c.value !== QuizCategory.LISTENING)
+		.map((c) => ({
+			value: c.value,
+			label: QUIZ_CATEGORY_LABELS[c.value as QuizCategory] ?? c.label,
+		}))
+
 	function handleStart() {
 		const params: Record<string, string> = { amount }
-		if (categories_selected.length > 0) {
-			params.category = categories_selected.join(",")
-		}
-		if (quizType) {
-			params.quiz_type = quizType
+		if (mode === "listening") {
+			// The listening section is asked for by question type, not by subject:
+			// the clips are one pool, so there is no category to narrow it by.
+			params.quiz_type = "Listening"
+		} else {
+			if (categories_selected.length > 0) {
+				params.category = categories_selected.join(",")
+			}
+			if (quizType) {
+				params.quiz_type = quizType
+			}
 		}
 		router.get("/quiz/training", params, { preserveState: false })
 	}
@@ -42,48 +128,68 @@ function TrainingSetup({ categories }: { categories: CategoryOption[] }) {
 
 			<div className="mb-4">
 				<label
-					htmlFor="category"
+					htmlFor="mode"
 					className="mb-1 block text-sm font-medium text-gray-700"
 				>
-					Κατηγορία
+					Είδος εξάσκησης
 				</label>
-				<MultiSelect
-					options={categories.map((c) => ({
-						value: c.value,
-						label: QUIZ_CATEGORY_LABELS[c.value as QuizCategory] ?? c.label,
-					}))}
-					selected={categories_selected}
-					onChange={setCategoriesSelected}
-					placeholder="Όλες οι κατηγορίες"
-				/>
+				<select
+					id="mode"
+					value={mode}
+					onChange={(e) => setMode(e.target.value as TrainingMode)}
+					className={SELECT_CLASS}
+				>
+					<option value="knowledge">{MODE_LABELS.knowledge}</option>
+					<option value="listening">{MODE_LABELS.listening}</option>
+				</select>
 			</div>
 
-			{import.meta.env.DEV && (
-				<div className="mb-6">
-					<label
-						htmlFor="quiz-type"
-						className="mb-1 block text-sm font-medium text-gray-700"
-					>
-						Τύπος ερώτησης
-					</label>
-					<select
-						id="quiz-type"
-						value={quizType}
-						onChange={(e) => setQuizType(e.target.value)}
-						className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-					>
-						<option value="">Όλοι οι τύποι</option>
-						<option value="Statement">
-							Σωστό / Λάθος & Πολλαπλής επιλογής
-						</option>
-						<option value="DragAndDrop">Κατάταξη</option>
-						<option value="Matching">Αντιστοίχηση</option>
-						<option value="FillInTheBlank">Συμπλήρωση κενού</option>
-						<option value="OpenEnded">Ανοιχτή ερώτηση</option>
-						<option value="MapPointer">Χάρτης</option>
-						<option value="Listening">Ακουστικό</option>
-					</select>
-				</div>
+			{/* The subject and the question type only narrow the knowledge pool —
+			    the listening section is a single pool of clips. */}
+			{mode === "knowledge" && (
+				<>
+					<div className="mb-4">
+						<label
+							htmlFor="category"
+							className="mb-1 block text-sm font-medium text-gray-700"
+						>
+							Κατηγορία
+						</label>
+						<MultiSelect
+							options={categoryOptions}
+							selected={categories_selected}
+							onChange={setCategoriesSelected}
+							placeholder="Όλες οι κατηγορίες"
+						/>
+					</div>
+
+					{import.meta.env.DEV && (
+						<div className="mb-6">
+							<label
+								htmlFor="quiz-type"
+								className="mb-1 block text-sm font-medium text-gray-700"
+							>
+								Τύπος ερώτησης
+							</label>
+							<select
+								id="quiz-type"
+								value={quizType}
+								onChange={(e) => setQuizType(e.target.value)}
+								className={SELECT_CLASS}
+							>
+								<option value="">Όλοι οι τύποι</option>
+								<option value="Statement">
+									Σωστό / Λάθος & Πολλαπλής επιλογής
+								</option>
+								<option value="DragAndDrop">Κατάταξη</option>
+								<option value="Matching">Αντιστοίχηση</option>
+								<option value="FillInTheBlank">Συμπλήρωση κενού</option>
+								<option value="OpenEnded">Ανοιχτή ερώτηση</option>
+								<option value="MapPointer">Χάρτης</option>
+							</select>
+						</div>
+					)}
+				</>
 			)}
 
 			<div className="mb-6">
@@ -97,7 +203,7 @@ function TrainingSetup({ categories }: { categories: CategoryOption[] }) {
 					id="amount"
 					value={amount}
 					onChange={(e) => setAmount(e.target.value)}
-					className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+					className={SELECT_CLASS}
 				>
 					<option value="5">5</option>
 					<option value="10">10</option>
@@ -118,12 +224,8 @@ function TrainingSession({ data }: { data: QuizData }) {
 	const allValidatedEarly = validatedSet.size === data.length
 	const { exitConfirmOpen, exitConfirmCancel, exitConfirmConfirm } =
 		useExitConfirmation(!allValidatedEarly)
-	const scoresRef = useRef<Map<number, { correct: number; total: number }>>(
-		new Map(),
-	)
+	const scoresRef = useRef<Map<number, Score>>(new Map())
 	const [scoreVersion, setScoreVersion] = useState(0)
-
-	const POINTS_PER_QUESTION = 2
 
 	const scoreCallbacks = useMemo(
 		() =>
@@ -134,24 +236,32 @@ function TrainingSession({ data }: { data: QuizData }) {
 		[data],
 	)
 
-	const { earnedPoints, maxPoints, earnedUpToCurrent } = useMemo(() => {
-		void scoreVersion
-		let earned = 0
-		let earnedUpto = 0
-		const max = data.length * POINTS_PER_QUESTION
-		for (const [idx, { correct, total }] of scoresRef.current.entries()) {
-			const pts = total > 0 ? (correct / total) * POINTS_PER_QUESTION : 0
-			earned += pts
-			if (idx <= currentIndex) {
-				earnedUpto += pts
+	// A question's maximum depends on its type — a listening clip is worth as
+	// much as its sub-answers add up to, not the flat two points of a knowledge
+	// question — so the total is summed per question rather than multiplied.
+	const { earnedPoints, maxPoints, earnedUpToCurrent, maxUpToCurrent } =
+		useMemo(() => {
+			void scoreVersion
+			let earned = 0
+			let earnedUpto = 0
+			let max = 0
+			let maxUpto = 0
+			data.forEach((item, idx) => {
+				const points = questionPoints(item, scoresRef.current.get(idx))
+				earned += points.earned
+				max += points.max
+				if (idx <= currentIndex) {
+					earnedUpto += points.earned
+					maxUpto += points.max
+				}
+			})
+			return {
+				earnedPoints: round2(earned),
+				maxPoints: round2(max),
+				earnedUpToCurrent: round2(earnedUpto),
+				maxUpToCurrent: round2(maxUpto),
 			}
-		}
-		return {
-			earnedPoints: Math.round(earned * 100) / 100,
-			maxPoints: max,
-			earnedUpToCurrent: Math.round(earnedUpto * 100) / 100,
-		}
-	}, [scoreVersion, data.length, currentIndex])
+		}, [scoreVersion, data, currentIndex])
 
 	const total = data.length
 	const isFirst = currentIndex === 0
@@ -212,8 +322,7 @@ function TrainingSession({ data }: { data: QuizData }) {
 							Ερώτηση {currentIndex + 1} από {total}
 						</span>
 						<span className="text-sm font-medium text-blue-600">
-							Βαθμολογία: {earnedUpToCurrent} /{" "}
-							{(currentIndex + 1) * POINTS_PER_QUESTION}
+							Βαθμολογία: {earnedUpToCurrent} / {maxUpToCurrent}
 						</span>
 					</div>
 					<div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
@@ -232,13 +341,8 @@ function TrainingSession({ data }: { data: QuizData }) {
 			>
 				{data.map((item, idx) => {
 					const score = scoresRef.current.get(idx)
-					const earned =
-						score && score.total > 0
-							? Math.round(
-									(score.correct / score.total) * POINTS_PER_QUESTION * 100,
-								) / 100
-							: 0
-					const ratio = earned / POINTS_PER_QUESTION
+					const { earned, max } = questionPoints(item, score)
+					const ratio = max > 0 ? earned / max : 0
 					return (
 						<div
 							key={`${item.quiz_type}-${item.id}`}
@@ -261,7 +365,7 @@ function TrainingSession({ data }: { data: QuizData }) {
 											className="text-sm font-bold"
 											style={{ color: getScoreColor(ratio) }}
 										>
-											{earned} / {POINTS_PER_QUESTION}
+											{earned} / {max}
 										</span>
 									) : undefined
 								}

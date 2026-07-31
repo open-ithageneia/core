@@ -203,6 +203,48 @@ class ListeningTests(TestCase):
 		self.assertFalse(Statement.objects.filter(listening_id=self.group.id).exists())
 
 
+class CategorySamplingTests(TestCase):
+	"""The training page sends its category multi-select as one comma-separated
+	value, so sampling has to honour every code in it."""
+
+	def setUp(self):
+		self.statements = {
+			code: Statement.objects.create(
+				type=Statement.StatementType.MULTIPLE_CHOICE,
+				category_id=code,
+				content=_multiple_choice_content(code),
+			)
+			for code in (
+				QuizCategory.GEOGRAPHY,
+				QuizCategory.CIVICS,
+				QuizCategory.HISTORY,
+			)
+		}
+
+	def _sampled_categories(self, category):
+		sampled = QuizService.get_by_category(category=category, amount=50)
+		return {item["category"] for item in sampled}
+
+	def test_a_single_category_is_honoured(self):
+		self.assertEqual(
+			self._sampled_categories(QuizCategory.HISTORY), {QuizCategory.HISTORY}
+		)
+
+	def test_several_categories_are_honoured(self):
+		self.assertEqual(
+			self._sampled_categories(
+				f"{QuizCategory.GEOGRAPHY},{QuizCategory.HISTORY}"
+			),
+			{QuizCategory.GEOGRAPHY, QuizCategory.HISTORY},
+		)
+
+	def test_no_category_means_every_category(self):
+		self.assertEqual(
+			self._sampled_categories(""),
+			{QuizCategory.GEOGRAPHY, QuizCategory.CIVICS, QuizCategory.HISTORY},
+		)
+
+
 class ListeningAdminInlineTests(TestCase):
 	"""The admin saves a group before its inlines, so the formset — not
 	``Listening.full_clean()`` — is what validates the shape on admin saves."""

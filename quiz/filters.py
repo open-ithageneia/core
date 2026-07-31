@@ -1,4 +1,6 @@
 import django_filters
+from django_filters.widgets import CSVWidget
+
 from .models import (
 	Statement,
 	DragAndDrop,
@@ -12,9 +14,10 @@ from .models import (
 
 
 class AbstractQuizFilter(django_filters.FilterSet):
-	category = django_filters.ModelChoiceFilter(
+	category = django_filters.ModelMultipleChoiceFilter(
 		queryset=QuizCategory.objects.all(),
 		to_field_name="code",
+		widget=CSVWidget,
 	)
 	is_active = django_filters.BooleanFilter()
 
