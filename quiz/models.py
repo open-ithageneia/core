@@ -60,6 +60,7 @@ class QuizCategory(TimeStampedModel):
 	CIVICS = "CIVICS"
 	HISTORY = "HISTORY"
 	CULTURE = "CULTURE"
+	LISTENING = "LISTENING"
 
 	code = models.CharField(max_length=32, primary_key=True)
 	name = models.CharField(max_length=64)
