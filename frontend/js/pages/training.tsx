@@ -343,20 +343,19 @@ function TrainingSession({ data }: { data: QuizData }) {
 					const score = scoresRef.current.get(idx)
 					const { earned, max } = questionPoints(item, score)
 					const ratio = max > 0 ? earned / max : 0
+					// Every question stays mounted so its answers survive going back and
+					// forth; only the current one is on screen, and once the test is over
+					// they all are, as a list to review.
+					const isVisible = allValidated || idx === currentIndex
 					return (
 						<div
 							key={`${item.quiz_type}-${item.id}`}
-							className={
-								!allValidated && idx !== currentIndex
-									? "hidden"
-									: !allValidated
-										? "h-full"
-										: ""
-							}
+							className={!isVisible ? "hidden" : !allValidated ? "h-full" : ""}
 						>
 							<QuizRenderer
 								item={item}
 								index={idx + 1}
+								active={isVisible}
 								forceValidation={validatedSet.has(idx)}
 								onScore={scoreCallbacks[idx]}
 								badge={

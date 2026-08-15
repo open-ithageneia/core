@@ -198,20 +198,19 @@ function SimulationSession({
 					const score = scoresRef.current.get(idx)
 					const { earned, max } = questionPoints(score, perSubAnswer)
 					const ratio = max > 0 ? earned / max : 0
+					// Every question stays mounted so its answers survive going back and
+					// forth; only the current one is on screen, and once the test is over
+					// they all are, as a list to review.
+					const isVisible = finished || idx === currentIndex
 					return (
 						<div
 							key={`${item.quiz_type}-${item.id}`}
-							className={
-								!finished && idx !== currentIndex
-									? "hidden"
-									: !finished
-										? "h-full"
-										: ""
-							}
+							className={!isVisible ? "hidden" : !finished ? "h-full" : ""}
 						>
 							<QuizRenderer
 								item={item}
 								index={idx + 1}
+								active={isVisible}
 								forceValidation={finished}
 								onScore={scoreCallbacks[idx]}
 								badge={
