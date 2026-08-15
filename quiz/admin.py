@@ -173,6 +173,7 @@ class AbstractQuizAdmin(ZipImportMixin, ImportExportModelAdmin):
 	list_display = [
 		"id",
 		"category",
+		"question_number",
 		"is_active",
 		"answer_preview",
 		"created_at",
@@ -180,15 +181,17 @@ class AbstractQuizAdmin(ZipImportMixin, ImportExportModelAdmin):
 	]
 	search_fields = [
 		"id",
+		"question_number",
 	]
 	list_filter = [
 		"category",
+		"question_number",
 		"is_active",
 		"created_at",
 		"updated_at",
 	]
 	fieldsets = (
-		(None, {"fields": ("category", "is_active", "content")}),
+		(None, {"fields": ("category", "question_number", "is_active", "content")}),
 		(
 			"Other information",
 			{
@@ -207,6 +210,7 @@ class StatementAdmin(AbstractQuizAdmin):
 		"id",
 		"type",
 		"category",
+		"question_number",
 		"is_active",
 		"prompt_preview",
 		"answer_preview",
@@ -403,6 +407,7 @@ class ListeningAdmin(admin.ModelAdmin):
 	list_display = [
 		"id",
 		"category",
+		"question_number",
 		"is_active",
 		"audio_preview",
 		"question_count",
@@ -411,11 +416,18 @@ class ListeningAdmin(admin.ModelAdmin):
 		"updated_at",
 	]
 	# Required by ``StatementAdmin.autocomplete_fields``.
-	search_fields = ["id", "transcript"]
-	list_filter = ["category", "is_active", "created_at", "updated_at"]
+	search_fields = ["id", "question_number", "transcript"]
+	list_filter = [
+		"category",
+		"question_number",
+		"is_active",
+		"created_at",
+		"updated_at",
+	]
 	autocomplete_fields = ["audio"]
 	fields = [
 		"category",
+		"question_number",
 		"is_active",
 		"audio",
 		"max_plays",
