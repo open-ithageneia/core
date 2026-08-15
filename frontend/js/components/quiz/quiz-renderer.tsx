@@ -6,6 +6,7 @@ import MapPointer from "@/components/quiz/map-pointer"
 import Matching from "@/components/quiz/matching"
 import MultipleChoice from "@/components/quiz/multiple-choice"
 import OpenEnded from "@/components/quiz/open-ended"
+import { QuizActiveProvider } from "@/components/quiz/shared/quiz-active-context"
 import { QuizResultsProvider } from "@/components/quiz/shared/quiz-results-context"
 import TrueFalse from "@/components/quiz/true-false"
 import type { QuizData } from "@/types/models"
@@ -16,12 +17,15 @@ export function QuizRenderer({
 	forceValidation,
 	onScore,
 	badge,
+	active = true,
 }: {
 	item: QuizData[number]
 	index: number
 	forceValidation?: boolean
 	onScore?: (correct: number, total: number) => void
 	badge?: ReactNode
+	/** False while the question is kept mounted but hidden — see {@link QuizActiveProvider}. */
+	active?: boolean
 }) {
 	const content = (() => {
 		switch (item.quiz_type) {
@@ -115,5 +119,9 @@ export function QuizRenderer({
 		}
 	})()
 
-	return <QuizResultsProvider badge={badge}>{content}</QuizResultsProvider>
+	return (
+		<QuizActiveProvider active={active}>
+			<QuizResultsProvider badge={badge}>{content}</QuizResultsProvider>
+		</QuizActiveProvider>
+	)
 }
