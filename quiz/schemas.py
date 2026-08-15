@@ -573,6 +573,8 @@ class MapPointerTextGroup:
 	# Every area the answer may be placed on. More than one is allowed because a
 	# single answer can legitimately span several areas (e.g. a river crossing
 	# many prefectures) — placing the label on any of them counts as correct.
+	# Two answers may also share an area: a polygon that several answers pass
+	# through accepts each of them, and holds one label per answer placed there.
 	areas: list[str] = field(default_factory=list)
 
 	def to_dict(self):

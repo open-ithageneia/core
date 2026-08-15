@@ -700,13 +700,31 @@ class MapPointerContentTests(TestCase):
 		with self.assertRaises(ValidationError):
 			self._create((["Αλιάκμονας"], [self.AREAS[0], self.AREAS[0]]))
 
-	def test_rejects_an_area_shared_by_two_answers(self):
-		with self.assertRaises(ValidationError):
-			self._create(
-				(["Αλιάκμονας"], [self.AREAS[0], self.AREAS[1]]),
-				(["Αξιός"], [self.AREAS[1], self.AREAS[2]]),
-				min_correct_answers=2,
-			)
+	def test_two_answers_may_share_an_area(self):
+		"""Two rivers can run through the same prefecture; the polygon accepts
+		each of them and holds one label per answer placed on it."""
+		quiz = self._create(
+			(["Αλιάκμονας"], [self.AREAS[0], self.AREAS[1]]),
+			(["Αξιός"], [self.AREAS[1], self.AREAS[2]]),
+			min_correct_answers=2,
+		)
+
+		self.assertEqual(
+			[group.areas for group in quiz.content_model.texts],
+			[[self.AREAS[0], self.AREAS[1]], [self.AREAS[1], self.AREAS[2]]],
+		)
+
+	def test_two_answers_may_share_their_only_area(self):
+		quiz = self._create(
+			(["Αλιάκμονας"], [self.AREAS[0]]),
+			(["Αξιός"], [self.AREAS[0]]),
+			min_correct_answers=2,
+		)
+
+		self.assertEqual(
+			[group.areas for group in quiz.content_model.texts],
+			[[self.AREAS[0]], [self.AREAS[0]]],
+		)
 
 
 class MapPointerAreaPickerTests(TestCase):

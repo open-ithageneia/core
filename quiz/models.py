@@ -494,8 +494,7 @@ class MapPointer(AbstractQuiz):
 				f"the number of available answers ({len(data.texts)})."
 			)
 		valid_areas = set(AREA_NAME_CHOICES_BY_LEVEL[int(self.level)])
-		seen_areas: dict[str, int] = {}
-		for idx, group in enumerate(data.texts):
+		for group in data.texts:
 			label = group.alternatives[0] if group.alternatives else ""
 			if len(set(group.areas)) != len(group.areas):
 				raise ValidationError(
@@ -505,10 +504,4 @@ class MapPointer(AbstractQuiz):
 				if area not in valid_areas:
 					raise ValidationError(
 						f"Area '{area}' is not a valid level-{self.level} area."
-					)
-				# Two answers sharing an area would make that area ambiguous:
-				# whichever answer is placed there could be scored as correct.
-				if seen_areas.setdefault(area, idx) != idx:
-					raise ValidationError(
-						f"Area '{area}' is used by more than one answer."
 					)

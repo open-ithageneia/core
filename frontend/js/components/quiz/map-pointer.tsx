@@ -34,10 +34,9 @@ export default function MapPointer({
 		// Drop mode
 		availableLabels,
 		selectedLabel,
-		placements,
 		isDropComplete,
 		dropValidationMap,
-		dropCorrectAnswersMap,
+		dropRegionLabels,
 		handleRegionClick,
 		toggleLabelSelection,
 		// Type mode
@@ -45,7 +44,7 @@ export default function MapPointer({
 		typeAnswers,
 		hasAtLeastOneAnswer,
 		typeValidationMap,
-		typeCorrectAnswersMap,
+		typeRegionLabels,
 		handleTypeRegionClick,
 		updateTypeAnswer,
 		clearTypeAnswer,
@@ -57,9 +56,9 @@ export default function MapPointer({
 		}
 	}, [showValidation, onScore, correctAnswersCount, totalScore])
 
-	const activeRegionIds = new Set(
-		[...allRegionIds].filter((id) => !placements.has(id)),
-	)
+	// Every region takes a label, including ones that already hold others: two
+	// answers sharing a polygon both have to be placeable on it.
+	const activeRegionIds = allRegionIds
 
 	return (
 		<QuizCard
@@ -116,10 +115,9 @@ export default function MapPointer({
 					{/* Interactive map */}
 					<GreeceMap
 						level={item.level}
-						highlightedRegions={placements}
+						regionLabels={dropRegionLabels}
 						activeRegionIds={selectedLabel ? activeRegionIds : undefined}
 						validationMap={showValidation ? dropValidationMap : undefined}
-						correctAnswers={showValidation ? dropCorrectAnswersMap : undefined}
 						disabled={showValidation}
 						onRegionClick={handleRegionClick}
 					/>
@@ -136,9 +134,8 @@ export default function MapPointer({
 					{/* Interactive map — click any region to type your answer */}
 					<GreeceMap
 						level={item.level}
-						highlightedRegions={typeAnswers}
+						regionLabels={typeRegionLabels}
 						validationMap={showValidation ? typeValidationMap : undefined}
-						correctAnswers={showValidation ? typeCorrectAnswersMap : undefined}
 						disabled={showValidation}
 						onRegionClick={handleTypeRegionClick}
 					/>
