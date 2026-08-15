@@ -47,7 +47,7 @@ export enum MapLevel {
 	Region = 2,
 	/** Prefecture units (νομοί / νησιά) */
 	PrefectureUnit = 3,
-	/** Municipalities (δήμοι) — GADM level 3 */
+	/** Municipalities and islands (δήμοι και νησιά) — GADM level 3 */
 	Municipality = 4,
 	/** Geographic departments (γεωγραφικά διαμερίσματα) — derived from level 3 */
 	GeographicDepartment = 5,

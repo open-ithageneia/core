@@ -1,5 +1,11 @@
 @import "./tailwind.css";
 
+/* Leaflet gives its panes/controls z-index 400–1000, which paints them above
+   portaled dialogs (z-50). Confine them to the map's own stacking context. */
+.leaflet-container {
+	z-index: 0;
+}
+
 /* Leaflet map labels for MapPointer quiz */
 .map-label {
 	background: rgba(255, 255, 255, 0.92);

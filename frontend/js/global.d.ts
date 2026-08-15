@@ -25,6 +25,7 @@ declare module "@inertiajs/core" {
 		sharedPageProps: {
 			messages: DjangoMessage[]
 			nav: Nav
+			is_admin: boolean
 		}
 	}
 }

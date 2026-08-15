@@ -29,7 +29,10 @@ class DataShareMiddleware(object):
 				"Sharing %d flash message(s) for %s", len(messages), request.path
 			)
 
-		share(request, messages=messages, nav=get_nav(request))
+		user = getattr(request, "user", None)
+		is_admin = bool(user and user.is_authenticated and user.is_staff)
+
+		share(request, messages=messages, nav=get_nav(request), is_admin=is_admin)
 
 		response = self.get_response(request)
 

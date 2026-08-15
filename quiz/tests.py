@@ -2,6 +2,7 @@ import json
 from types import SimpleNamespace
 
 from django.contrib.admin.sites import site
+from django.contrib.admin.utils import flatten_fieldsets
 from django.contrib.auth import get_user_model
 from django.contrib.messages.storage.cookie import CookieStorage
 from django.core.exceptions import ValidationError
@@ -16,6 +17,7 @@ from quiz.admin import (
 	ListeningQuestionForm,
 	ListeningQuestionFormSet,
 	ListeningQuestionInline,
+	MapPointerAdmin,
 )
 from quiz.models import (
 	Listening,
@@ -299,7 +301,6 @@ class ListeningAdminInlineTests(TestCase):
 					),
 					f"questions-{index}-order": str(index),
 					f"questions-{index}-type": type_,
-					f"questions-{index}-category": "GEOGRAPHY",
 					f"questions-{index}-content": json.dumps(self._posted_content()),
 					f"questions-{index}-is_active": "on",
 				}
@@ -407,7 +408,6 @@ class ListeningAdminSaveTests(TestCase):
 					f"questions-{index}-part_position": str(position),
 					f"questions-{index}-order": str(index),
 					f"questions-{index}-type": type_,
-					f"questions-{index}-category": "GEOGRAPHY",
 					f"questions-{index}-content": json.dumps(
 						ListeningAdminInlineTests._posted_content()
 					),
@@ -479,7 +479,6 @@ class ListeningAdminSaveTests(TestCase):
 		response = self.client.post(
 			reverse("admin:quiz_listening_add"),
 			{
-				"category": "GEOGRAPHY",
 				"is_active": "on",
 				"audio": str(self.asset.pk),
 				"max_plays": "2",
@@ -497,13 +496,11 @@ class ListeningAdminSaveTests(TestCase):
 				"questions-0-part_position": "1",
 				"questions-0-order": "0",
 				"questions-0-type": Statement.StatementType.TRUE_FALSE,
-				"questions-0-category": "GEOGRAPHY",
 				"questions-0-content": content,
 				"questions-0-is_active": "on",
 				"questions-1-part_position": "2",
 				"questions-1-order": "0",
 				"questions-1-type": Statement.StatementType.MULTIPLE_CHOICE,
-				"questions-1-category": "GEOGRAPHY",
 				"questions-1-content": content,
 				"questions-1-is_active": "on",
 			},
@@ -538,6 +535,102 @@ class ListeningAdminSaveTests(TestCase):
 		form = ListeningQuestionForm(instance=question)
 
 		self.assertEqual(form.fields["part_position"].initial, 2)
+
+
+class FixedCategoryAdminTests(TestCase):
+	"""Quiz types that only ever sit in one category don't ask for it: the admin
+	leaves the picker off the page and fills the value in itself."""
+
+	def setUp(self):
+		self.asset = QuizAsset.objects.create(
+			title="clip", audio=ContentFile(b"audio-bytes", name="clip.mp3")
+		)
+		admin_user = get_user_model().objects.create_superuser(
+			username="admin", email="admin@example.com", password="password"
+		)
+		self.client.force_login(admin_user)
+
+	@staticmethod
+	def _rendered_fields(model_admin):
+		return flatten_fieldsets(model_admin.get_fieldsets(None))
+
+	def test_the_listening_page_has_no_category_picker(self):
+		self.assertNotIn(
+			"category", self._rendered_fields(ListeningAdmin(Listening, site))
+		)
+		self.assertNotIn("category", ListeningQuestionInline.fields)
+
+	def test_the_map_pointer_page_has_no_category_picker(self):
+		self.assertNotIn(
+			"category", self._rendered_fields(MapPointerAdmin(MapPointer, site))
+		)
+
+	def test_a_clip_and_its_questions_are_filed_under_listening(self):
+		content = json.dumps(ListeningAdminInlineTests._posted_content())
+
+		response = self.client.post(
+			reverse("admin:quiz_listening_add"),
+			{
+				"is_active": "on",
+				"audio": str(self.asset.pk),
+				"max_plays": "2",
+				"transcript": "",
+				"parts-TOTAL_FORMS": "2",
+				"parts-INITIAL_FORMS": "0",
+				"parts-MIN_NUM_FORMS": "0",
+				"parts-MAX_NUM_FORMS": "1000",
+				"parts-0-description": "",
+				"parts-1-description": "",
+				"questions-TOTAL_FORMS": "2",
+				"questions-INITIAL_FORMS": "0",
+				"questions-MIN_NUM_FORMS": "0",
+				"questions-MAX_NUM_FORMS": "1000",
+				"questions-0-part_position": "1",
+				"questions-0-order": "0",
+				"questions-0-type": Statement.StatementType.TRUE_FALSE,
+				"questions-0-content": content,
+				"questions-0-is_active": "on",
+				"questions-1-part_position": "2",
+				"questions-1-order": "0",
+				"questions-1-type": Statement.StatementType.MULTIPLE_CHOICE,
+				"questions-1-content": content,
+				"questions-1-is_active": "on",
+			},
+		)
+
+		self.assertEqual(response.status_code, 302)
+		group = Listening.objects.get()
+		self.assertEqual(group.category_id, QuizCategory.LISTENING)
+		self.assertEqual(
+			set(group.questions.values_list("category_id", flat=True)),
+			{QuizCategory.LISTENING},
+		)
+
+	def test_a_map_question_is_filed_under_geography(self):
+		level = MapPointer.MapLevel.PREFECTURE_UNIT
+		content = {
+			"prompt_text": "Πού βρίσκεται;",
+			"show_answers": True,
+			"min_correct_answers": 1,
+			"texts": [
+				{
+					"alternatives": ["Αλιάκμονας"],
+					"areas": AREA_NAME_CHOICES_BY_LEVEL[int(level)][:1],
+				}
+			],
+		}
+
+		response = self.client.post(
+			reverse("admin:quiz_mappointer_add"),
+			{
+				"level": str(int(level)),
+				"content": json.dumps(content),
+				"is_active": "on",
+			},
+		)
+
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(MapPointer.objects.get().category_id, QuizCategory.GEOGRAPHY)
 
 
 class MapPointerContentTests(TestCase):
@@ -728,7 +821,6 @@ class MapPointerAreaPickerTests(TestCase):
 			reverse("admin:quiz_mappointer_add"),
 			{
 				"level": str(int(self.LEVEL)),
-				"category": QuizCategory.GEOGRAPHY,
 				"content": json.dumps(content),
 				"is_active": "on",
 			},

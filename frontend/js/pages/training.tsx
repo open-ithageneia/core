@@ -6,6 +6,7 @@ import { ResultsBanner } from "@/components/quiz/shared/results-banner"
 import { Button } from "@/components/ui/button"
 import { MultiSelect } from "@/components/ui/multi-select"
 import { useExitConfirmation } from "@/hooks/use-exit-confirmation"
+import { useIsAdmin } from "@/hooks/use-is-admin"
 import { getScoreColor } from "@/lib/score-color"
 import {
 	QUIZ_CATEGORY_LABELS,
@@ -90,6 +91,7 @@ type TrainingProps = {
 }
 
 function TrainingSetup({ categories }: { categories: CategoryOption[] }) {
+	const isAdmin = useIsAdmin()
 	const [mode, setMode] = useState<TrainingMode>("knowledge")
 	const [categories_selected, setCategoriesSelected] = useState<string[]>([])
 	const [amount, setAmount] = useState("10")
@@ -163,7 +165,9 @@ function TrainingSetup({ categories }: { categories: CategoryOption[] }) {
 						/>
 					</div>
 
-					{import.meta.env.DEV && (
+					{/* Picking the question type is a debugging aid for staff, not
+					    something the exam itself offers. */}
+					{isAdmin && (
 						<div className="mb-6">
 							<label
 								htmlFor="quiz-type"

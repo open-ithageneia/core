@@ -15,7 +15,7 @@ import {
 export type RegionValidation = "correct" | "incorrect" | "alternative"
 
 type GreeceMapProps = {
-	/** GADM administrative level to render (2 = regions, 3 = municipalities) */
+	/** Map level to render (see MapLevel; 2 = regions, 4 = municipalities/islands) */
 	level?: number
 	/** Currently placed labels: region_id → label text */
 	highlightedRegions?: Map<string, string>
