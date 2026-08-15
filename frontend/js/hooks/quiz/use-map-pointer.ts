@@ -406,16 +406,21 @@ export function useMapPointer(
 			return {
 				regionStates: new Map<string, ValidationState>(),
 				matchedGroupIndices: new Set<number>(),
+				placedGroupIndices: new Set<number>(),
 				alternativeRegionIds: new Set<string>(),
 				matchedByRegion: new Map<string, Set<number>>(),
 			}
 		}
+		/** Groups whose text was typed correctly, on any region right or wrong */
 		const matchedGroupIndices = new Set<number>()
+		/** Groups whose text was typed on one of the regions they accept */
+		const placedGroupIndices = new Set<number>()
 		const regionStates = new Map<string, ValidationState>()
 		/** region → the groups credited by the answer typed there */
 		const matchedByRegion = new Map<string, Set<number>>()
 		const creditAt = (regionId: string, idx: number) => {
 			matchedGroupIndices.add(idx)
+			placedGroupIndices.add(idx)
 			const credited = matchedByRegion.get(regionId) ?? new Set<number>()
 			credited.add(idx)
 			matchedByRegion.set(regionId, credited)
@@ -468,9 +473,11 @@ export function useMapPointer(
 		}
 		// The accepted regions left unanswered: mistakes if the answer never
 		// landed on any of them, otherwise alternatives — one was all it needed.
+		// Placement is what counts here: an answer typed somewhere it is not
+		// accepted has not landed anywhere, so its regions stay mistakes.
 		const alternativeRegionIds = new Set<string>()
 		for (const [idx, regionIds] of answerToRegions.entries()) {
-			const answered = matchedGroupIndices.has(idx)
+			const answered = placedGroupIndices.has(idx)
 			for (const regionId of regionIds) {
 				if (regionStates.has(regionId)) {
 					continue
@@ -485,12 +492,14 @@ export function useMapPointer(
 		return {
 			regionStates,
 			matchedGroupIndices,
+			placedGroupIndices,
 			alternativeRegionIds,
 			matchedByRegion,
 		}
 	}, [showValidation, typeAnswers, texts, regionToAnswers, answerToRegions])
 
-	const typeCorrectCount = typeValidation.matchedGroupIndices.size
+	const typeTypedCount = typeValidation.matchedGroupIndices.size
+	const typePlacedCount = typeValidation.placedGroupIndices.size
 
 	const missedAnswers = useMemo(() => {
 		if (!showValidation) {
@@ -544,11 +553,13 @@ export function useMapPointer(
 				},
 			])
 		}
+		// Credit here means placement: an answer typed on a region that does not
+		// accept it is spelled out on the regions it did belong to.
 		appendRevealedAnswers(
 			map,
 			texts,
 			answerToRegions,
-			typeValidation.matchedGroupIndices,
+			typeValidation.placedGroupIndices,
 			typeValidation.matchedByRegion,
 		)
 		return map
@@ -556,7 +567,7 @@ export function useMapPointer(
 		showValidation,
 		typeAnswers,
 		typeValidation.regionStates,
-		typeValidation.matchedGroupIndices,
+		typeValidation.placedGroupIndices,
 		typeValidation.matchedByRegion,
 		answerToRegions,
 		texts,
@@ -564,8 +575,30 @@ export function useMapPointer(
 
 	// ─── Unified return ─────────────────────────────────────────────────
 
-	const totalScore = texts.length
-	const correctAnswersCount = isDropMode ? dropCorrectCount : typeCorrectCount
+	const minCorrectAnswers = item.content.min_correct_answers
+
+	/**
+	 * Points available for the question.
+	 *
+	 * Drop mode asks one thing of each answer — put the chip on the right region
+	 * — so it is worth one point per label. Type mode asks two: name the answer
+	 * and put it on the region it belongs to. Each of those is scored on its own
+	 * against ``min_correct_answers``, so the question is worth twice that:
+	 *
+	 *     (correct typed + correct placed) / (min_correct_answers * 2)
+	 */
+	const totalScore = isDropMode ? texts.length : minCorrectAnswers * 2
+
+	/**
+	 * Points earned. In type mode a right answer typed on the wrong region still
+	 * earns its typing point — only the placement point is lost. Each half is
+	 * capped at ``min_correct_answers`` so answering beyond the minimum asked
+	 * cannot push the question over 100%.
+	 */
+	const correctAnswersCount = isDropMode
+		? dropCorrectCount
+		: Math.min(typeTypedCount, minCorrectAnswers) +
+			Math.min(typePlacedCount, minCorrectAnswers)
 
 	return {
 		isDropMode,
@@ -598,6 +631,6 @@ export function useMapPointer(
 		handleTypeRegionClick,
 		updateTypeAnswer,
 		clearTypeAnswer,
-		minCorrectAnswers: item.content.min_correct_answers,
+		minCorrectAnswers,
 	}
 }
