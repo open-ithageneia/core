@@ -89,7 +89,8 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
 
 	question_number = models.SmallIntegerField(
 		blank=True,
-		default=0,)
+		default=0,
+	)
 
 	_cached_content_model = None
 

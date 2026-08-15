@@ -4,45 +4,44 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+	dependencies = [
+		("quiz", "0015_map_pointer_area_to_areas"),
+	]
 
-    dependencies = [
-        ('quiz', '0015_map_pointer_area_to_areas'),
-    ]
-
-    operations = [
-        migrations.AddField(
-            model_name='draganddrop',
-            name='question_number',
-            field=models.SmallIntegerField(blank=True, default=0),
-        ),
-        migrations.AddField(
-            model_name='fillintheblank',
-            name='question_number',
-            field=models.SmallIntegerField(blank=True, default=0),
-        ),
-        migrations.AddField(
-            model_name='listening',
-            name='question_number',
-            field=models.SmallIntegerField(blank=True, default=0),
-        ),
-        migrations.AddField(
-            model_name='mappointer',
-            name='question_number',
-            field=models.SmallIntegerField(blank=True, default=0),
-        ),
-        migrations.AddField(
-            model_name='matching',
-            name='question_number',
-            field=models.SmallIntegerField(blank=True, default=0),
-        ),
-        migrations.AddField(
-            model_name='openended',
-            name='question_number',
-            field=models.SmallIntegerField(blank=True, default=0),
-        ),
-        migrations.AddField(
-            model_name='statement',
-            name='question_number',
-            field=models.SmallIntegerField(blank=True, default=0),
-        ),
-    ]
+	operations = [
+		migrations.AddField(
+			model_name="draganddrop",
+			name="question_number",
+			field=models.SmallIntegerField(blank=True, default=0),
+		),
+		migrations.AddField(
+			model_name="fillintheblank",
+			name="question_number",
+			field=models.SmallIntegerField(blank=True, default=0),
+		),
+		migrations.AddField(
+			model_name="listening",
+			name="question_number",
+			field=models.SmallIntegerField(blank=True, default=0),
+		),
+		migrations.AddField(
+			model_name="mappointer",
+			name="question_number",
+			field=models.SmallIntegerField(blank=True, default=0),
+		),
+		migrations.AddField(
+			model_name="matching",
+			name="question_number",
+			field=models.SmallIntegerField(blank=True, default=0),
+		),
+		migrations.AddField(
+			model_name="openended",
+			name="question_number",
+			field=models.SmallIntegerField(blank=True, default=0),
+		),
+		migrations.AddField(
+			model_name="statement",
+			name="question_number",
+			field=models.SmallIntegerField(blank=True, default=0),
+		),
+	]

@@ -417,7 +417,13 @@ class ListeningAdmin(admin.ModelAdmin):
 	]
 	# Required by ``StatementAdmin.autocomplete_fields``.
 	search_fields = ["id", "question_number", "transcript"]
-	list_filter = ["category", "question_number", "is_active", "created_at", "updated_at"]
+	list_filter = [
+		"category",
+		"question_number",
+		"is_active",
+		"created_at",
+		"updated_at",
+	]
 	autocomplete_fields = ["audio"]
 	fields = [
 		"category",
