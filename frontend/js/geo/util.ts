@@ -5,7 +5,7 @@
  *   - level 1 → decentralized administrations (αποκεντρωμένες διοικήσεις)
  *   - level 2 → regions (περιφέρειες)
  *   - level 3 → prefecture units (νομοί / νησιά)
- *   - level 4 → municipalities (δήμοι)
+ *   - level 4 → municipalities and islands (δήμοι και νησιά)
  *   - level 5 → geographic departments (γεωγραφικά διαμερίσματα)
  *
  * With Leaflet handling projection, this module only normalises the raw GADM
@@ -82,7 +82,8 @@ const GEOJSON_BY_LEVEL: Record<
 		latinKey: "name",
 		idKey: "id",
 	}),
-	// 4 — municipalities (δήμοι), GADM level 3.
+	// 4 — municipalities and islands (δήμοι και νησιά), GADM level 3. The
+	// Lefkada municipality feature is split so Κάλαμος and Καστός stand alone.
 	4: processLevel(gadmLevel3 as FeatureCollection, {
 		nameKey: "NL_NAME_3",
 		latinKey: "NAME_3",

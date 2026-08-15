@@ -463,7 +463,7 @@ class MapPointer(AbstractQuiz):
 		DECENTRALIZED_ADMIN = 1, "Decentralized administration (Αποκεντρωμένη διοίκηση)"
 		REGION = 2, "Region (Περιφέρεια)"
 		PREFECTURE_UNIT = 3, "Prefecture unit (Νομός / Νησί)"
-		MUNICIPALITY = 4, "Municipality (Δήμος)"
+		MUNICIPALITY = 4, "Municipality and islands (Δήμος και νησιά)"
 		GEOGRAPHIC_DEPARTMENT = 5, "Geographic department (Γεωγραφικό διαμέρισμα)"
 
 	level = models.PositiveSmallIntegerField(

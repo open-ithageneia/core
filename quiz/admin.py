@@ -47,6 +47,36 @@ from .schemas import (
 logger = logging.getLogger(__name__)
 
 
+def without_category(fields):
+	"""``fields`` minus ``category``.
+
+	Some quiz types only ever belong to one category, so on their pages the
+	picker, the column and the filter are all noise. See
+	``FixedCategoryFormMixin`` for how the value gets set once the field is gone.
+	"""
+	return [field for field in fields if field != "category"]
+
+
+class FixedCategoryFormMixin:
+	"""Stamps ``fixed_category`` on the instance being saved, for the admin pages
+	that leave ``category`` out of their fields.
+
+	The stamp has to happen here rather than through a model default: a field the
+	admin does not render is one nothing fills in, and the value is a property of
+	the page (a listening question is a listening question) rather than of the
+	table. Setting it on ``self.instance`` — not as form ``initial``, which only
+	feeds rendered fields — puts it in place before validation, and Django's
+	``_post_clean`` leaves fields the form does not carry alone, so it survives to
+	the save.
+	"""
+
+	fixed_category = None
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.instance.category_id = self.fixed_category
+
+
 def _fold_for_search(text: str) -> str:
 	"""Lowercase and strip accents so area names match however they are typed
 	(Greek is routinely typed without its tonos)."""
@@ -309,14 +339,20 @@ def part_position_choices(part_count):
 	]
 
 
-class ListeningQuestionForm(forms.ModelForm):
+class ListeningQuestionForm(FixedCategoryFormMixin, forms.ModelForm):
 	"""Picks the part by position rather than by row, so a question can be added
 	in the same save as the part it belongs to — a part being created in that same
 	save has no pk for a dropdown to point at yet.
 
 	``ListeningAdmin.save_formset`` turns the position back into the ``part`` FK
 	once the parts inline has been saved.
+
+	A question asked about a clip is part of the listening section whatever
+	subject the clip covers, so it is categorised as such and the picker is left
+	off the inline.
 	"""
+
+	fixed_category = QuizCategory.LISTENING
 
 	part_position = forms.TypedChoiceField(
 		coerce=int,
@@ -330,7 +366,7 @@ class ListeningQuestionForm(forms.ModelForm):
 
 	class Meta:
 		model = Statement
-		fields = ["order", "type", "category", "content", "is_active"]
+		fields = ["order", "type", "content", "is_active"]
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
@@ -374,7 +410,7 @@ class ListeningQuestionInline(admin.StackedInline):
 	formset = ListeningQuestionFormSet
 	extra = 0
 	ordering = ["part_id", "order", "id"]
-	fields = ["part_position", "order", "type", "category", "content", "is_active"]
+	fields = ["part_position", "order", "type", "content", "is_active"]
 	verbose_name = "Question"
 	verbose_name_plural = "Questions (1 True/False + N multiple choice)"
 
@@ -417,12 +453,23 @@ class ListeningPartAdmin(admin.ModelAdmin):
 		return False
 
 
+class ListeningForm(FixedCategoryFormMixin, forms.ModelForm):
+	"""Every clip belongs to the listening section, so the category is stamped on
+	rather than picked."""
+
+	fixed_category = QuizCategory.LISTENING
+
+	class Meta:
+		model = Listening
+		fields = "__all__"
+
+
 @admin.register(Listening)
 class ListeningAdmin(admin.ModelAdmin):
+	form = ListeningForm
 	inlines = [ListeningPartInline, ListeningQuestionInline]
 	list_display = [
 		"id",
-		"category",
 		"question_number",
 		"is_active",
 		"audio_preview",
@@ -434,7 +481,6 @@ class ListeningAdmin(admin.ModelAdmin):
 	# Required by ``StatementAdmin.autocomplete_fields``.
 	search_fields = ["id", "question_number", "transcript"]
 	list_filter = [
-		"category",
 		"question_number",
 		"is_active",
 		"created_at",
@@ -442,7 +488,6 @@ class ListeningAdmin(admin.ModelAdmin):
 	]
 	autocomplete_fields = ["audio"]
 	fields = [
-		"category",
 		"question_number",
 		"is_active",
 		"audio",
@@ -806,7 +851,6 @@ class MapPointerAdmin(AbstractQuizAdmin):
 	form = MapPointerAdminForm
 	list_display = [
 		"id",
-		"category",
 		"question_number",
 		"level",
 		"is_active",
@@ -815,14 +859,21 @@ class MapPointerAdmin(AbstractQuizAdmin):
 		"created_at",
 		"updated_at",
 	]
-	list_filter = ["level"] + AbstractQuizAdmin.list_filter
+	list_filter = ["level"] + without_category(AbstractQuizAdmin.list_filter)
 	search_fields = AbstractQuizAdmin.search_fields + [
 		"content__prompt_text",
 	]
+	# Map questions are always geography ones, so the picker is left off and the
+	# model default (GEOGRAPHY) stands.
 	fieldsets = (
 		(
 			AbstractQuizAdmin.fieldsets[0][0],
-			{"fields": ("level", *AbstractQuizAdmin.fieldsets[0][1]["fields"])},
+			{
+				"fields": (
+					"level",
+					*without_category(AbstractQuizAdmin.fieldsets[0][1]["fields"]),
+				)
+			},
 		),
 		AbstractQuizAdmin.fieldsets[1],
 	)

@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 #   1 = decentralized administrations (αποκεντρωμένες διοικήσεις) — GADM level 1
 #   2 = regions (περιφέρειες)                                     — GADM level 2
 #   3 = prefecture units (νομοί/νησιά)                            — peterdsp greece-prefectures-and-units
-#   4 = municipalities (δήμοι)                                    — GADM level 3
+#   4 = municipalities and islands (δήμοι και νησιά)              — GADM level 3
 #   5 = geographic departments (γεωγραφικά διαμερίσματα)          — derived (build_geographic_departments.py)
 MAP_LEVEL_SOURCES: dict[int, tuple[str, str]] = {
 	1: ("gadm41_GRC_1.json", "NL_NAME_1"),
