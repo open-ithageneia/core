@@ -391,14 +391,30 @@ class ListeningQuestionInline(admin.StackedInline):
 
 @admin.register(ListeningPart)
 class ListeningPartAdmin(admin.ModelAdmin):
-	"""Parts are normally edited inline on the listening question; this page
-	exists so ``part`` can be an autocomplete field elsewhere."""
+	"""Parts are edited inline on the listening question. This registration exists
+	only so ``part`` can be an autocomplete field on ``StatementAdmin``: the
+	autocomplete endpoint looks its target up in the admin registry and 404s
+	unless that admin declares ``search_fields``. The page itself is hidden and
+	read-only, so the inline stays the one way in.
 
-	list_display = ["id", "listening", "description", "created_at"]
-	list_filter = ["created_at", "updated_at"]
+	``has_view_permission`` is left alone — autocomplete permission-checks against
+	it. None of this reaches ``ListeningPartInline``, whose permissions are
+	checked on the inline class rather than here.
+	"""
+
 	search_fields = ["id", "description", "listening__id"]
-	autocomplete_fields = ["listening"]
-	readonly_fields = ["created_at", "updated_at"]
+
+	def get_model_perms(self, request):
+		return {}
+
+	def has_add_permission(self, request):
+		return False
+
+	def has_change_permission(self, request, obj=None):
+		return False
+
+	def has_delete_permission(self, request, obj=None):
+		return False
 
 
 @admin.register(Listening)
@@ -791,6 +807,7 @@ class MapPointerAdmin(AbstractQuizAdmin):
 	list_display = [
 		"id",
 		"category",
+		"question_number",
 		"level",
 		"is_active",
 		"prompt_preview",
