@@ -1,6 +1,9 @@
 import type { FeatureCollection, Geometry } from "geojson"
 import { useCallback, useMemo, useRef, useState } from "react"
-import type { RegionValidation } from "@/components/quiz/shared/greece-map"
+import type {
+	RegionLabel,
+	RegionValidation,
+} from "@/components/quiz/shared/greece-map"
 import { getGeoJson, type RegionProperties } from "@/geo/util"
 import { useValidation } from "@/hooks/quiz/use-validation"
 import { normalizeForTextComparison, shuffleArray } from "@/lib/utils"
@@ -58,6 +61,37 @@ function resolveRegionIds(
 	return map
 }
 
+/**
+ * Reveal, on every accepted region, the answer it belonged to.
+ *
+ * A region is skipped for a group that was already credited there — its own
+ * chip is on the map already. Everywhere else the answer is spelled out: as an
+ * ``alternative`` when the group was credited on one of its other regions (one
+ * was all it needed), otherwise as the ``correct`` answer the user missed.
+ */
+function appendRevealedAnswers(
+	labels: Map<string, RegionLabel[]>,
+	texts: MapPointerTextGroup[],
+	answerToRegions: Map<number, string[]>,
+	creditedGroups: Set<number>,
+	creditedByRegion: Map<string, Set<number>>,
+) {
+	for (const [idx, regionIds] of answerToRegions.entries()) {
+		const credited = creditedGroups.has(idx)
+		for (const regionId of regionIds) {
+			if (creditedByRegion.get(regionId)?.has(idx)) {
+				continue
+			}
+			const existing = labels.get(regionId) ?? []
+			existing.push({
+				text: texts[idx].alternatives[0],
+				state: credited ? "alternative" : "correct",
+			})
+			labels.set(regionId, existing)
+		}
+	}
+}
+
 export function useMapPointer(
 	item: MapPointerModel,
 	options?: UseMapPointerOptions,
@@ -77,12 +111,17 @@ export function useMapPointer(
 		[texts, geojson],
 	)
 
-	/** Reverse map: region ID → answer group index */
-	const regionToAnswer = useMemo(() => {
-		const map = new Map<string, number>()
+	/**
+	 * Reverse map: region ID → every answer group that accepts it. Several
+	 * answers may share a polygon, so a region can answer to more than one.
+	 */
+	const regionToAnswers = useMemo(() => {
+		const map = new Map<string, number[]>()
 		for (const [idx, regionIds] of answerToRegions.entries()) {
 			for (const regionId of regionIds) {
-				map.set(regionId, idx)
+				const accepting = map.get(regionId) ?? []
+				accepting.push(idx)
+				map.set(regionId, accepting)
 			}
 		}
 		return map
@@ -90,8 +129,8 @@ export function useMapPointer(
 
 	/** All region IDs that are valid targets in this quiz */
 	const validRegionIds = useMemo(
-		() => new Set(regionToAnswer.keys()),
-		[regionToAnswer],
+		() => new Set(regionToAnswers.keys()),
+		[regionToAnswers],
 	)
 
 	/** Every region ID on the map — any region is a droppable target */
@@ -112,20 +151,21 @@ export function useMapPointer(
 	const [selectedLabel, setSelectedLabel] = useState<string | null>(null)
 	const selectedLabelRef = useRef<string | null>(null)
 	selectedLabelRef.current = selectedLabel
-	/** Map: region_id → placed label text */
-	const [placements, setPlacements] = useState<Map<string, string>>(new Map())
+	/**
+	 * Map: region_id → placed labels, in the order they were dropped. A region
+	 * holds a stack rather than a single label because several answers may share
+	 * a polygon and each has to be placeable on it.
+	 */
+	const [placements, setPlacements] = useState<Map<string, string[]>>(new Map())
 
 	const placeLabel = useCallback(
 		(regionId: string, label: string) => {
 			if (showValidation) {
 				return
 			}
-			if (placements.has(regionId)) {
-				return
-			}
 			setPlacements((prev) => {
 				const next = new Map(prev)
-				next.set(regionId, label)
+				next.set(regionId, [...(prev.get(regionId) ?? []), label])
 				return next
 			})
 			setAvailableLabels((prev) => {
@@ -137,21 +177,28 @@ export function useMapPointer(
 			})
 			setSelectedLabel(null)
 		},
-		[showValidation, placements],
+		[showValidation],
 	)
 
+	/** Take the last label off a region and return it to the bank. */
 	const removeLabel = useCallback(
 		(regionId: string) => {
 			if (showValidation) {
 				return
 			}
-			const label = placements.get(regionId)
-			if (!label) {
+			const stack = placements.get(regionId)
+			if (!stack || stack.length === 0) {
 				return
 			}
+			const label = stack[stack.length - 1]
 			setPlacements((prev) => {
 				const next = new Map(prev)
-				next.delete(regionId)
+				const rest = (prev.get(regionId) ?? []).slice(0, -1)
+				if (rest.length === 0) {
+					next.delete(regionId)
+				} else {
+					next.set(regionId, rest)
+				}
 				return next
 			})
 			setAvailableLabels((prev) => [...prev, label])
@@ -164,19 +211,18 @@ export function useMapPointer(
 			if (showValidation) {
 				return
 			}
-			// If region already has a placement, remove it (acts as X button)
-			if (placements.has(regionId)) {
-				removeLabel(regionId)
-				return
-			}
 			// Read latest selectedLabel from ref (avoids stale closure)
 			const label = selectedLabelRef.current
-			if (!label) {
+			// A selected label always stacks onto the region, even one that already
+			// holds others — that is how two answers land on a shared polygon.
+			if (label) {
+				placeLabel(regionId, label)
 				return
 			}
-			placeLabel(regionId, label)
+			// Nothing selected: clicking a region takes its last label back off.
+			removeLabel(regionId)
 		},
-		[showValidation, placements, placeLabel, removeLabel],
+		[showValidation, placeLabel, removeLabel],
 	)
 
 	const toggleLabelSelection = useCallback(
@@ -191,28 +237,56 @@ export function useMapPointer(
 
 	/**
 	 * Validate drop mode: a placed label is correct when its region is one of
-	 * the regions its answer group accepts.
+	 * the regions its answer group accepts. Labels are judged one by one, so a
+	 * shared polygon can hold a right and a wrong answer at the same time.
 	 */
 	const dropValidation = useMemo(() => {
 		if (!showValidation) {
 			return {
 				regionStates: new Map<string, RegionValidation>(),
 				correctGroupIndices: new Set<number>(),
+				labels: new Map<string, RegionLabel[]>(),
 			}
 		}
 		const regionStates = new Map<string, RegionValidation>()
 		const correctGroupIndices = new Set<number>()
-		for (const [regionId, label] of placements.entries()) {
-			// Find which answer group this label belongs to
-			const groupIdx = texts.findIndex((g) => g.alternatives[0] === label)
-			const isCorrect =
-				groupIdx !== -1 &&
-				(answerToRegions.get(groupIdx)?.includes(regionId) ?? false)
-			regionStates.set(regionId, isCorrect ? "correct" : "incorrect")
-			if (isCorrect) {
-				correctGroupIndices.add(groupIdx)
+		/** region → the groups whose own label was correctly placed there */
+		const correctByRegion = new Map<string, Set<number>>()
+		const labels = new Map<string, RegionLabel[]>()
+
+		for (const [regionId, stack] of placements.entries()) {
+			const chips: RegionLabel[] = []
+			let anyCorrect = false
+			for (const label of stack) {
+				// Find which answer group this label belongs to
+				const groupIdx = texts.findIndex((g) => g.alternatives[0] === label)
+				const isCorrect =
+					groupIdx !== -1 &&
+					(answerToRegions.get(groupIdx)?.includes(regionId) ?? false)
+				chips.push({
+					text: label,
+					state: isCorrect ? "correct" : "incorrect",
+					// A wrong label is struck through; the right answer for the region
+					// is appended below it by appendRevealedAnswers.
+					struck: !isCorrect,
+				})
+				if (isCorrect) {
+					anyCorrect = true
+					correctGroupIndices.add(groupIdx)
+					const credited = correctByRegion.get(regionId) ?? new Set<number>()
+					credited.add(groupIdx)
+					correctByRegion.set(regionId, credited)
+				}
 			}
+			if (chips.length === 0) {
+				continue
+			}
+			labels.set(regionId, chips)
+			// One right answer is enough to colour the region: any wrong label
+			// stacked beside it still shows red on its own chip.
+			regionStates.set(regionId, anyCorrect ? "correct" : "incorrect")
 		}
+
 		// The accepted regions left over: mistakes if the answer never landed on
 		// any of them, otherwise alternatives — one of them was all it needed.
 		for (const [idx, regionIds] of answerToRegions.entries()) {
@@ -223,28 +297,32 @@ export function useMapPointer(
 				}
 			}
 		}
-		return { regionStates, correctGroupIndices }
+		appendRevealedAnswers(
+			labels,
+			texts,
+			answerToRegions,
+			correctGroupIndices,
+			correctByRegion,
+		)
+		return { regionStates, correctGroupIndices, labels }
 	}, [showValidation, placements, texts, answerToRegions])
 
 	const dropValidationMap = dropValidation.regionStates
 
-	const dropCorrectAnswersMap = useMemo(() => {
-		if (!showValidation) {
-			return new Map<string, string>()
+	/** Labels drawn on the map in drop mode, before and after validation. */
+	const dropRegionLabels = useMemo(() => {
+		if (showValidation) {
+			return dropValidation.labels
 		}
-		// Name the answer each unplaced region belonged to, whether it was missed
-		// or merely an alternative.
-		const map = new Map<string, string>()
-		for (const [idx, regionIds] of answerToRegions.entries()) {
-			for (const regionId of regionIds) {
-				if (dropValidation.regionStates.get(regionId) === "correct") {
-					continue
-				}
-				map.set(regionId, texts[idx].alternatives[0])
-			}
+		const map = new Map<string, RegionLabel[]>()
+		for (const [regionId, stack] of placements.entries()) {
+			map.set(
+				regionId,
+				stack.map((text) => ({ text, state: "placed" as const })),
+			)
 		}
 		return map
-	}, [showValidation, dropValidation.regionStates, answerToRegions, texts])
+	}, [showValidation, dropValidation.labels, placements])
 
 	const dropCorrectCount = dropValidation.correctGroupIndices.size
 
@@ -258,7 +336,13 @@ export function useMapPointer(
 			.map((g) => g.alternatives[0])
 	}, [showValidation, dropValidation.correctGroupIndices, texts])
 
-	const isDropComplete = placements.size === texts.length
+	/** Every label is down — regions may hold several, so count them, not regions. */
+	const isDropComplete = useMemo(
+		() =>
+			[...placements.values()].reduce((n, stack) => n + stack.length, 0) ===
+			texts.length,
+		[placements, texts],
+	)
 
 	// ─── Mode 2: Type mode (show_answers=false) ─────────────────────────
 
@@ -323,27 +407,41 @@ export function useMapPointer(
 				regionStates: new Map<string, ValidationState>(),
 				matchedGroupIndices: new Set<number>(),
 				alternativeRegionIds: new Set<string>(),
+				matchedByRegion: new Map<string, Set<number>>(),
 			}
 		}
 		const matchedGroupIndices = new Set<number>()
 		const regionStates = new Map<string, ValidationState>()
+		/** region → the groups credited by the answer typed there */
+		const matchedByRegion = new Map<string, Set<number>>()
+		const creditAt = (regionId: string, idx: number) => {
+			matchedGroupIndices.add(idx)
+			const credited = matchedByRegion.get(regionId) ?? new Set<number>()
+			credited.add(idx)
+			matchedByRegion.set(regionId, credited)
+		}
 		for (const [regionId, answer] of typeAnswers.entries()) {
 			const norm = normalizeForTextComparison(answer)
 			if (norm.length === 0) {
 				regionStates.set(regionId, ValidationStatus.Incorrect)
 				continue
 			}
-			// Find which answer group corresponds to this region
-			const answerIdx = regionToAnswer.get(regionId)
-			if (
-				answerIdx !== undefined &&
-				texts[answerIdx].alternatives.some(
+			// Any answer group that accepts this region will do — a shared polygon
+			// answers to each of them, so the typed text is matched against them all.
+			const accepting = regionToAnswers.get(regionId) ?? []
+			const matching = accepting.filter((idx) =>
+				texts[idx].alternatives.some(
 					(alt) => normalizeForTextComparison(alt) === norm,
+				),
+			)
+			if (matching.length > 0) {
+				// Credit a group that has not scored yet where possible; when they all
+				// have, the region is still correct — the score counts groups, not
+				// regions, so an answer repeated on a second accepted region is free.
+				creditAt(
+					regionId,
+					matching.find((idx) => !matchedGroupIndices.has(idx)) ?? matching[0],
 				)
-			) {
-				// Correct even if the group was already matched on one of its other
-				// accepted regions — the score counts groups, not regions.
-				matchedGroupIndices.add(answerIdx)
 				regionStates.set(regionId, ValidationStatus.Correct)
 				continue
 			}
@@ -384,8 +482,13 @@ export function useMapPointer(
 				}
 			}
 		}
-		return { regionStates, matchedGroupIndices, alternativeRegionIds }
-	}, [showValidation, typeAnswers, texts, regionToAnswer, answerToRegions])
+		return {
+			regionStates,
+			matchedGroupIndices,
+			alternativeRegionIds,
+			matchedByRegion,
+		}
+	}, [showValidation, typeAnswers, texts, regionToAnswers, answerToRegions])
 
 	const typeCorrectCount = typeValidation.matchedGroupIndices.size
 
@@ -420,26 +523,44 @@ export function useMapPointer(
 		typeValidation.alternativeRegionIds,
 	])
 
-	/** Correct answers to show on the map after validation in type mode */
-	const typeCorrectAnswersMap = useMemo(() => {
+	/** Labels drawn on the map in type mode, before and after validation. */
+	const typeRegionLabels = useMemo(() => {
+		const map = new Map<string, RegionLabel[]>()
 		if (!showValidation) {
-			return undefined
-		}
-		// Name the answer each unanswered region belonged to, whether it was
-		// missed or merely an alternative.
-		const map = new Map<string, string>()
-		for (const [idx, regionIds] of answerToRegions.entries()) {
-			for (const regionId of regionIds) {
-				if (
-					typeValidation.regionStates.get(regionId) === ValidationStatus.Correct
-				) {
-					continue
-				}
-				map.set(regionId, texts[idx].alternatives[0])
+			for (const [regionId, answer] of typeAnswers.entries()) {
+				map.set(regionId, [{ text: answer, state: "placed" }])
 			}
+			return map
 		}
+		// The typed answer first, then the answer(s) the region really belonged to.
+		for (const [regionId, answer] of typeAnswers.entries()) {
+			const isCorrect =
+				typeValidation.regionStates.get(regionId) === ValidationStatus.Correct
+			map.set(regionId, [
+				{
+					text: answer,
+					state: isCorrect ? "correct" : "incorrect",
+					struck: !isCorrect,
+				},
+			])
+		}
+		appendRevealedAnswers(
+			map,
+			texts,
+			answerToRegions,
+			typeValidation.matchedGroupIndices,
+			typeValidation.matchedByRegion,
+		)
 		return map
-	}, [showValidation, typeValidation.regionStates, answerToRegions, texts])
+	}, [
+		showValidation,
+		typeAnswers,
+		typeValidation.regionStates,
+		typeValidation.matchedGroupIndices,
+		typeValidation.matchedByRegion,
+		answerToRegions,
+		texts,
+	])
 
 	// ─── Unified return ─────────────────────────────────────────────────
 
@@ -462,7 +583,7 @@ export function useMapPointer(
 		placements,
 		isDropComplete,
 		dropValidationMap,
-		dropCorrectAnswersMap,
+		dropRegionLabels,
 		dropMissedAnswers,
 		handleRegionClick,
 		toggleLabelSelection,
@@ -473,7 +594,7 @@ export function useMapPointer(
 		hasAtLeastOneAnswer,
 		missedAnswers,
 		typeValidationMap,
-		typeCorrectAnswersMap,
+		typeRegionLabels,
 		handleTypeRegionClick,
 		updateTypeAnswer,
 		clearTypeAnswer,

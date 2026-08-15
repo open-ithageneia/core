@@ -14,24 +14,67 @@ import {
  */
 export type RegionValidation = "correct" | "incorrect" | "alternative"
 
+/**
+ * One label drawn on a region. A region carries a list of them rather than a
+ * single string: answers may share a polygon, so several labels can be placed
+ * on — or revealed for — the same region.
+ */
+export type RegionLabel = {
+	text: string
+	/** Visual treatment; ``placed`` is the plain blue chip shown before validation. */
+	state: "placed" | RegionValidation
+	/** Strike the text through, for a wrong answer shown beside the right one. */
+	struck?: boolean
+}
+
 type GreeceMapProps = {
 	/** Map level to render (see MapLevel; 2 = regions, 4 = municipalities/islands) */
 	level?: number
-	/** Currently placed labels: region_id → label text */
-	highlightedRegions?: Map<string, string>
+	/** Labels to draw on each region: region_id → labels, top to bottom */
+	regionLabels?: Map<string, RegionLabel[]>
 	/** Region IDs that are valid drop targets */
 	activeRegionIds?: Set<string>
 	/** Validation results: region_id → outcome */
 	validationMap?: Map<string, RegionValidation>
-	/** Correct answers to reveal after validation: region_id → label */
-	correctAnswers?: Map<string, string>
 	disabled?: boolean
 	onRegionClick?: (regionId: string) => void
 }
 
+/** Escape text interpolated into the tooltip's HTML. */
+function escapeHtml(text: string): string {
+	return text
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+}
+
+/** Render a region's labels as a stack of individually styled chips. */
+function renderLabels(labels: RegionLabel[]): string {
+	return labels
+		.map((label) => {
+			const classes = ["map-label__item", `map-label__item--${label.state}`]
+			if (label.struck) {
+				classes.push("map-label__item--struck")
+			}
+			return `<span class="${classes.join(" ")}">${escapeHtml(label.text)}</span>`
+		})
+		.join("")
+}
+
+/** Regions holding a not-yet-validated placement, which paints them blue. */
+function hasPlacedLabel(
+	id: string,
+	regionLabels?: Map<string, RegionLabel[]>,
+): boolean {
+	return (
+		regionLabels?.get(id)?.some((label) => label.state === "placed") ?? false
+	)
+}
+
 function getRegionStyle(
 	id: string,
-	highlightedRegions?: Map<string, string>,
+	regionLabels?: Map<string, RegionLabel[]>,
 	activeRegionIds?: Set<string>,
 	validationMap?: Map<string, RegionValidation>,
 ): L.PathOptions {
@@ -62,7 +105,7 @@ function getRegionStyle(
 			dashArray: "4 3",
 		}
 	}
-	if (highlightedRegions?.has(id)) {
+	if (hasPlacedLabel(id, regionLabels)) {
 		return {
 			fillColor: "#93c5fd",
 			fillOpacity: 0.5,
@@ -83,10 +126,9 @@ function getRegionStyle(
 
 export default function GreeceMap({
 	level = DEFAULT_MAP_LEVEL,
-	highlightedRegions,
+	regionLabels,
 	activeRegionIds,
 	validationMap,
-	correctAnswers,
 	disabled,
 	onRegionClick,
 }: GreeceMapProps) {
@@ -94,18 +136,16 @@ export default function GreeceMap({
 	const mapRef = useRef<L.Map | null>(null)
 	const geoLayerRef = useRef<L.GeoJSON | null>(null)
 	const propsRef = useRef({
-		highlightedRegions,
+		regionLabels,
 		activeRegionIds,
 		validationMap,
-		correctAnswers,
 		disabled,
 		onRegionClick,
 	})
 	propsRef.current = {
-		highlightedRegions,
+		regionLabels,
 		activeRegionIds,
 		validationMap,
-		correctAnswers,
 		disabled,
 		onRegionClick,
 	}
@@ -162,11 +202,11 @@ export default function GreeceMap({
 			style: (feature) => {
 				const id = feature?.properties?.id ?? ""
 				const {
-					highlightedRegions: hl,
+					regionLabels: labels,
 					activeRegionIds: active,
 					validationMap: vm,
 				} = propsRef.current
-				return getRegionStyle(id, hl, active, vm)
+				return getRegionStyle(id, labels, active, vm)
 			},
 			onEachFeature: (feature, layer) => {
 				const props = feature.properties as RegionProperties
@@ -202,11 +242,11 @@ export default function GreeceMap({
 
 				layer.on("mouseout", (e) => {
 					const {
-						highlightedRegions: hl,
+						regionLabels: labels,
 						activeRegionIds: active,
 						validationMap: vm,
 					} = propsRef.current
-					const style = getRegionStyle(id, hl, active, vm)
+					const style = getRegionStyle(id, labels, active, vm)
 					;(e.target as L.Path).setStyle(style)
 				})
 			},
@@ -251,45 +291,15 @@ export default function GreeceMap({
 			const id = feature.properties.id as string
 			const style = getRegionStyle(
 				id,
-				highlightedRegions,
+				regionLabels,
 				activeRegionIds,
 				validationMap,
 			)
 			;(layer as L.Path).setStyle(style)
 
-			// Show placed label or correct answer on the region
-			const placed = highlightedRegions?.get(id)
-			const correct = correctAnswers?.get(id)
-			const validation = validationMap?.get(id)
-
-			// Determine what text to show
-			let labelText: string | null = null
-			let cssClass = "map-label"
-			if (validation === "alternative" && correct) {
-				// The answer given elsewhere would have been accepted here too
-				labelText = correct
-				cssClass = "map-label map-label--alternative"
-			} else if (validation === "correct" && placed) {
-				labelText = placed
-				cssClass = "map-label map-label--correct"
-			} else if (validation === "incorrect" && placed && correct) {
-				// Show user's wrong answer (struck) + the correct answer
-				labelText = `<s>${placed}</s><br><span>${correct}</span>`
-				cssClass = "map-label map-label--incorrect"
-			} else if (validation === "incorrect" && placed) {
-				labelText = placed
-				cssClass = "map-label map-label--incorrect"
-			} else if (validation === "incorrect" && correct) {
-				// Missed region: show what the correct answer is
-				labelText = correct
-				cssClass = "map-label map-label--correct"
-			} else if (placed) {
-				labelText = placed
-				cssClass = "map-label map-label--placed"
-			} else if (correct) {
-				labelText = correct
-				cssClass = "map-label map-label--correct"
-			}
+			// Every label the region carries, stacked — each paints itself, so a
+			// shared polygon can show a correct and a wrong answer side by side.
+			const labels = regionLabels?.get(id) ?? []
 
 			// Bind/unbind permanent tooltip as label
 			const typedLayer = layer as L.Path & {
@@ -297,16 +307,16 @@ export default function GreeceMap({
 				unbindTooltip: () => void
 				bindTooltip: (content: string, options?: L.TooltipOptions) => void
 			}
-			if (labelText) {
+			if (labels.length > 0) {
 				// Always rebind so the CSS className is applied to the DOM element
 				// (Leaflet ignores options.className changes on existing tooltips)
 				if (typedLayer.getTooltip()) {
 					typedLayer.unbindTooltip()
 				}
-				typedLayer.bindTooltip(labelText, {
+				typedLayer.bindTooltip(renderLabels(labels), {
 					permanent: true,
 					direction: "center",
-					className: cssClass,
+					className: "map-label",
 				})
 			} else {
 				if (typedLayer.getTooltip()) {
@@ -314,7 +324,7 @@ export default function GreeceMap({
 				}
 			}
 		})
-	}, [highlightedRegions, activeRegionIds, validationMap, correctAnswers])
+	}, [regionLabels, activeRegionIds, validationMap])
 
 	return (
 		<div
