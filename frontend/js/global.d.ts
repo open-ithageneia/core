@@ -26,6 +26,8 @@ declare module "@inertiajs/core" {
 			messages: DjangoMessage[]
 			nav: Nav
 			is_admin: boolean
+			/** Category code → its Greek name, from the quiz category table. */
+			quiz_category_labels: Record<string, string>
 		}
 	}
 }

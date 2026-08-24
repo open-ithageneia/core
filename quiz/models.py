@@ -64,6 +64,13 @@ class QuizCategory(TimeStampedModel):
 
 	code = models.CharField(max_length=32, primary_key=True)
 	name = models.CharField(max_length=64)
+	name_el = models.CharField(
+		"Greek name",
+		max_length=64,
+		blank=True,
+		default="",
+		help_text="Name shown to the user. Falls back to the English name when empty.",
+	)
 	order = models.PositiveSmallIntegerField(default=0)
 
 	class Meta:
@@ -72,6 +79,12 @@ class QuizCategory(TimeStampedModel):
 
 	def __str__(self):
 		return self.name or self.code
+
+	@property
+	def label(self):
+		"""The name to show the user: Greek if it has been filled in, otherwise
+		the English name (and the code as a last resort)."""
+		return self.name_el or self.name or self.code
 
 
 class ModelABCMeta(ModelBase, ABCMeta):

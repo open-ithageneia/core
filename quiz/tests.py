@@ -247,6 +247,29 @@ class CategorySamplingTests(TestCase):
 		)
 
 
+class CategoryNameTests(TestCase):
+	"""The Greek names shown to the user live on the category rows (seeded by
+	migration 0019), not in the frontend."""
+
+	def test_categories_are_labelled_in_greek(self):
+		labels = QuizService.category_labels()
+
+		self.assertEqual(labels[QuizCategory.GEOGRAPHY], "Γεωγραφία")
+		self.assertEqual(labels[QuizCategory.LISTENING], "Ακουστικό")
+
+	def test_the_english_name_stands_in_for_a_missing_translation(self):
+		category = QuizCategory.objects.create(code="TEST", name="Test", order=99)
+
+		self.assertEqual(category.label, "Test")
+
+	def test_options_carry_the_greek_name_as_their_label(self):
+		options = {
+			option["value"]: option["label"] for option in QuizService.categories()
+		}
+
+		self.assertEqual(options[QuizCategory.HISTORY], "Ιστορία")
+
+
 class ListeningAdminInlineTests(TestCase):
 	"""The admin saves a group before its inlines, so the formset — not
 	``Listening.full_clean()`` — is what validates the shape on admin saves."""

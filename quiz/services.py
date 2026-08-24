@@ -185,10 +185,24 @@ class QuizService:
 
 	@staticmethod
 	def categories():
+		"""Every category as a ``{value, label}`` option, in display order. The
+		label is the Greek name held on the row, so the client never has to know
+		what a category code is called."""
 		return [
-			{"value": category.code, "label": category.name}
+			{"value": category.code, "label": category.label}
 			for category in QuizCategory.objects.all()
 		]
+
+	@staticmethod
+	def category_labels():
+		"""Category code → the Greek name to display, for the whole table.
+
+		Quiz items travel to the client carrying only their category code, so the
+		client needs the mapping to name the category on a question card.
+		"""
+		return {
+			category.code: category.label for category in QuizCategory.objects.all()
+		}
 
 	@staticmethod
 	def _list(model, filterset_class, serializer_class, params=None):
