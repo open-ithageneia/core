@@ -159,8 +159,8 @@ class ZipImportMixin:
 
 @admin.register(QuizCategory)
 class QuizCategoryAdmin(admin.ModelAdmin):
-	list_display = ["code", "name", "order"]
-	list_editable = ["name", "order"]
+	list_display = ["code", "name", "name_el", "order"]
+	list_editable = ["name", "name_el", "order"]
 	ordering = ["order", "code"]
 
 

@@ -8,11 +8,7 @@ import { MultiSelect } from "@/components/ui/multi-select"
 import { useExitConfirmation } from "@/hooks/use-exit-confirmation"
 import { useIsAdmin } from "@/hooks/use-is-admin"
 import { getScoreColor } from "@/lib/score-color"
-import {
-	QUIZ_CATEGORY_LABELS,
-	QuizCategory,
-	StatementType,
-} from "@/types/enums"
+import { QuizCategory, StatementType } from "@/types/enums"
 import type { QuizData, QuizDataItem, StatementModel } from "@/types/models"
 
 type CategoryOption = {
@@ -100,12 +96,9 @@ function TrainingSetup({ categories }: { categories: CategoryOption[] }) {
 	// The listening category holds nothing but audio clips, which are reached
 	// through the Ακουστικά mode — offering it as a knowledge subject would only
 	// ever produce an empty test.
-	const categoryOptions = categories
-		.filter((c) => c.value !== QuizCategory.LISTENING)
-		.map((c) => ({
-			value: c.value,
-			label: QUIZ_CATEGORY_LABELS[c.value as QuizCategory] ?? c.label,
-		}))
+	const categoryOptions = categories.filter(
+		(c) => c.value !== QuizCategory.LISTENING,
+	)
 
 	function handleStart() {
 		const params: Record<string, string> = { amount }

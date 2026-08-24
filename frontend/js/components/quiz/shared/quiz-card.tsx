@@ -7,7 +7,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card"
-import { QUIZ_CATEGORY_LABELS, type QuizCategory } from "@/types/enums"
+import { useQuizCategoryLabel } from "@/hooks/use-quiz-category-label"
+import type { QuizCategory } from "@/types/enums"
 import AudioPromptButton from "./audio-prompt-button"
 import { useQuizResults } from "./quiz-results-context"
 
@@ -39,6 +40,7 @@ export default function QuizCard({
 }: QuizCardProps) {
 	const { badge: contextBadge } = useQuizResults()
 	const badge = badgeProp ?? contextBadge
+	const categoryLabel = useQuizCategoryLabel()
 
 	return (
 		<Card className="flex h-full w-full flex-col rounded-2xl shadow-sm p-1">
@@ -46,7 +48,7 @@ export default function QuizCard({
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-1">
 						<CardTitle>{title}</CardTitle>
-						<CardDescription>{QUIZ_CATEGORY_LABELS[category]}</CardDescription>
+						<CardDescription>{categoryLabel(category)}</CardDescription>
 					</div>
 					{badge}
 				</div>
