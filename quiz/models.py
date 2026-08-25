@@ -100,6 +100,11 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
 		related_name="%(class)ss",
 	)
 
+	test_number = models.SmallIntegerField(
+		blank=True,
+		default=0,
+	)
+
 	question_number = models.SmallIntegerField(
 		blank=True,
 		default=0,
