@@ -60,51 +60,55 @@ export default function MapPointer({
 	// answers sharing a polygon both have to be placeable on it.
 	const activeRegionIds = allRegionIds
 
+	// Kept out of the scrollable card body so the choices stay visible while the
+	// map is panned/scrolled, same as drag-and-drop and fill-in-the-blank.
+	const choicesBank = (
+		<div className="rounded-xl border bg-muted/30 p-2">
+			<div className="flex items-center gap-1 overflow-x-auto py-2">
+				{availableLabels.map((label, idx) => (
+					<button
+						key={`label-${label}-${idx}`}
+						type="button"
+						disabled={showValidation}
+						onClick={() => toggleLabelSelection(label)}
+						className={cn(
+							"shrink-0 select-none rounded-2xl transition-colors",
+							showValidation
+								? "cursor-not-allowed opacity-60"
+								: "cursor-pointer",
+						)}
+					>
+						<Badge
+							variant={selectedLabel === label ? "default" : "secondary"}
+							className={cn(
+								"rounded-2xl px-2 py-1 text-sm font-medium",
+								selectedLabel === label && "ring-2 ring-primary ring-offset-1",
+							)}
+						>
+							{label}
+						</Badge>
+					</button>
+				))}
+				{availableLabels.length === 0 && !showValidation && (
+					<span className="text-sm text-muted-foreground">
+						Όλες οι επιλογές έχουν τοποθετηθεί
+					</span>
+				)}
+			</div>
+		</div>
+	)
+
 	return (
 		<QuizCard
 			title={`Ερώτηση ${item_index}`}
 			category={item.category}
 			instruction={QUIZ_INSTRUCTIONS.MAP_POINTER}
 			promptText={item.content.prompt_text}
+			headerExtra={isDropMode && !showValidation ? choicesBank : null}
+			contentClassName="flex flex-col"
 		>
 			{isDropMode ? (
 				<>
-					{/* Choices bank */}
-					<div className="rounded-xl border bg-muted/30 p-2">
-						<div className="flex flex-wrap items-center gap-1.5">
-							{availableLabels.map((label, idx) => (
-								<button
-									key={`label-${label}-${idx}`}
-									type="button"
-									disabled={showValidation}
-									onClick={() => toggleLabelSelection(label)}
-									className={cn(
-										"shrink-0 select-none rounded-2xl transition-colors",
-										showValidation
-											? "cursor-not-allowed opacity-60"
-											: "cursor-pointer",
-									)}
-								>
-									<Badge
-										variant={selectedLabel === label ? "default" : "secondary"}
-										className={cn(
-											"rounded-2xl px-2 py-1 text-sm font-medium",
-											selectedLabel === label &&
-												"ring-2 ring-primary ring-offset-1",
-										)}
-									>
-										{label}
-									</Badge>
-								</button>
-							))}
-							{availableLabels.length === 0 && !showValidation && (
-								<span className="text-sm text-muted-foreground">
-									Όλες οι επιλογές έχουν τοποθετηθεί
-								</span>
-							)}
-						</div>
-					</div>
-
 					{selectedLabel && !showValidation && (
 						<p className="text-sm text-muted-foreground">
 							Επιλέξατε: <strong>{selectedLabel}</strong> — πατήστε σε μια
@@ -114,6 +118,7 @@ export default function MapPointer({
 
 					{/* Interactive map */}
 					<GreeceMap
+						fill
 						level={item.level}
 						regionLabels={dropRegionLabels}
 						activeRegionIds={selectedLabel ? activeRegionIds : undefined}
@@ -133,6 +138,7 @@ export default function MapPointer({
 				<>
 					{/* Interactive map — click any region to type your answer */}
 					<GreeceMap
+						fill
 						level={item.level}
 						regionLabels={typeRegionLabels}
 						validationMap={showValidation ? typeValidationMap : undefined}

@@ -8,6 +8,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card"
 import { useQuizCategoryLabel } from "@/hooks/use-quiz-category-label"
+import { cn } from "@/lib/utils"
 import type { QuizCategory } from "@/types/enums"
 import AudioPromptButton from "./audio-prompt-button"
 import { useQuizResults } from "./quiz-results-context"
@@ -23,6 +24,8 @@ type QuizCardProps = {
 	/** Overrides the default play limit of the audio prompt. */
 	promptAudioMaxPlays?: number
 	headerExtra?: ReactNode
+	/** Extra classes for the scrollable body, e.g. to lay children out as a column. */
+	contentClassName?: string
 	children: ReactNode
 }
 
@@ -36,6 +39,7 @@ export default function QuizCard({
 	promptAudioUrl,
 	promptAudioMaxPlays,
 	headerExtra,
+	contentClassName,
 	children,
 }: QuizCardProps) {
 	const { badge: contextBadge } = useQuizResults()
@@ -69,7 +73,12 @@ export default function QuizCard({
 
 			{headerExtra && <div className="shrink-0 px-2">{headerExtra}</div>}
 
-			<CardContent className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2 pt-0 mt-2">
+			<CardContent
+				className={cn(
+					"min-h-0 flex-1 space-y-2 overflow-y-auto p-2 pt-0 mt-2",
+					contentClassName,
+				)}
+			>
 				{promptAssetUrl && (
 					<img
 						src={promptAssetUrl}
