@@ -6,6 +6,7 @@ import {
 	type RegionFeature,
 	type RegionProperties,
 } from "@/geo/util"
+import { cn } from "@/lib/utils"
 
 /**
  * Per-region outcome after validation. ``alternative`` marks a region that
@@ -38,6 +39,11 @@ type GreeceMapProps = {
 	validationMap?: Map<string, RegionValidation>
 	disabled?: boolean
 	onRegionClick?: (regionId: string) => void
+	/**
+	 * Grow to fill the remaining height of a flex-column parent instead of
+	 * using the fixed default height.
+	 */
+	fill?: boolean
 }
 
 /** Escape text interpolated into the tooltip's HTML. */
@@ -131,6 +137,7 @@ export default function GreeceMap({
 	validationMap,
 	disabled,
 	onRegionClick,
+	fill,
 }: GreeceMapProps) {
 	const containerRef = useRef<HTMLDivElement>(null)
 	const mapRef = useRef<L.Map | null>(null)
@@ -276,6 +283,19 @@ export default function GreeceMap({
 		}
 	}, [hasBeenVisible, initMap])
 
+	// A filling map resizes with its parent — the choices bank appearing or
+	// disappearing changes the height, and Leaflet only watches the window.
+	useEffect(() => {
+		if (!containerRef.current) {
+			return
+		}
+		const observer = new ResizeObserver(() => {
+			mapRef.current?.invalidateSize()
+		})
+		observer.observe(containerRef.current)
+		return () => observer.disconnect()
+	}, [])
+
 	// Update styles and labels when state changes
 	useEffect(() => {
 		if (!geoLayerRef.current) {
@@ -329,7 +349,10 @@ export default function GreeceMap({
 	return (
 		<div
 			ref={containerRef}
-			className="h-[400px] w-full overflow-hidden rounded-xl"
+			className={cn(
+				"w-full overflow-hidden rounded-xl",
+				fill ? "min-h-[300px] flex-1" : "h-[400px]",
+			)}
 			style={{ background: "#f0f9ff" }}
 		/>
 	)
