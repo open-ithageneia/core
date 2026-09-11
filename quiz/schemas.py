@@ -454,10 +454,10 @@ class FillInTheBlankContent:
 	prompt_asset_id: int | None = None
 
 	def build_choices(self):
-		if self.has_multiple_choices:
+		if not self.show_answers_as_choices or self.has_multiple_choices:
 			return None
 
-		choices = self.extra_choices
+		choices = list(self.extra_choices)
 		visited_choices = set()
 		for text in self.texts:
 			for part in text.text_parts:
@@ -474,6 +474,7 @@ class FillInTheBlankContent:
 		from quiz.services import AssetService
 
 		return {
+			"show_answers_as_choices": self.show_answers_as_choices,
 			"has_multiple_choices": self.has_multiple_choices,
 			"prompt_instruction_choices": self.build_choices(),
 			"texts": [t.to_dict() for t in self.texts],

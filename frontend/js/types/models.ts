@@ -121,6 +121,7 @@ export interface FillBlankText {
 export interface FillInTheBlankContent {
 	prompt_asset_url?: string
 	prompt_instruction_choices?: string[]
+	show_answers_as_choices: boolean
 	has_multiple_choices: boolean
 	texts: FillBlankText[]
 }

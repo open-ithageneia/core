@@ -41,10 +41,14 @@ export function useFillInTheBlank(
 	}, [content.texts])
 
 	// Determine fill-in-the-blank variant:
-	// 1. "choices_shown" — prompt_instruction_choices is provided (drag & drop word bank)
+	// 1. "hidden" — show_answers_as_choices is false, user must type the answer
+	//    into every blank (normalized comparison)
 	// 2. "inline_choices" — has_multiple_choices is true (each blank has its own dropdown)
-	// 3. "hidden" — no choices shown at all, user must type (normalized comparison)
+	// 3. "choices_shown" — prompt_instruction_choices is provided (drag & drop word bank)
 	const variant = useMemo(() => {
+		if (!content.show_answers_as_choices) {
+			return "hidden" as const
+		}
 		if (content.has_multiple_choices) {
 			return "inline_choices" as const
 		}
@@ -55,7 +59,11 @@ export function useFillInTheBlank(
 			return "choices_shown" as const
 		}
 		return "hidden" as const
-	}, [content.has_multiple_choices, content.prompt_instruction_choices])
+	}, [
+		content.show_answers_as_choices,
+		content.has_multiple_choices,
+		content.prompt_instruction_choices,
+	])
 
 	// --- Drag-and-drop state for "choices_shown" variant ---
 	const wordBankValues = useMemo(
