@@ -48,7 +48,6 @@ INSTALLED_APPS = [
 	"django.contrib.staticfiles",
 	"django.contrib.sites",
 	# Installed apps
-	"django_jsonform",
 	"django_vite",
 	"import_export",
 	"inertia",
