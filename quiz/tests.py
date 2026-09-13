@@ -1,12 +1,13 @@
-import json
 from types import SimpleNamespace
 
+import tablib
 from django.contrib.admin.sites import site
 from django.contrib.admin.utils import flatten_fieldsets
 from django.contrib.auth import get_user_model
 from django.contrib.messages.storage.cookie import CookieStorage
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
+from django.db.utils import IntegrityError
 from django.forms.models import inlineformset_factory
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
@@ -18,36 +19,78 @@ from quiz.admin import (
 	ListeningQuestionFormSet,
 	ListeningQuestionInline,
 	MapPointerAdmin,
+	StatementChoiceFormSet,
+	StatementChoiceInline,
 )
+from importlib import import_module
 from quiz.models import (
+	DragAndDrop,
+	DragAndDropValue,
 	Listening,
 	ListeningPart,
+	MapArea,
 	MapPointer,
+	MapPointerAlternative,
+	MapPointerAnswer,
+	MapPointerAnswerArea,
+	MatchPair,
+	Matching,
+	OpenEnded,
+	OpenEndedAlternative,
+	OpenEndedAnswer,
 	QuizAsset,
 	QuizCategory,
 	Statement,
+	StatementChoice,
 )
-from quiz.schemas import AREA_NAME_CHOICES_BY_LEVEL, MapPointerContent
-from quiz.serializers import ListeningSerializer, MapPointerSerializer
+from quiz.resources import MatchingResource, StatementResource
+from quiz.serializers import (
+	DragAndDropSerializer,
+	ListeningSerializer,
+	MapPointerSerializer,
+	MatchingSerializer,
+	OpenEndedSerializer,
+	StatementSerializer,
+)
 from quiz.services import QuizService
 
+# The migration owns the only copy of the legacy-shape parsers now. Its module
+# name starts with a digit, so it can only be reached through importlib.
+_0021 = import_module("quiz.migrations.0021_normalize_quiz_content")
 
-def _true_false_content(*statements):
-	return {
-		"choices": [
-			{"text": text, "is_correct": is_correct} for text, is_correct in statements
+
+def _true_false(*statements, **kwargs):
+	"""A true/false statement with its choices, as rows."""
+	statement = Statement.objects.create(
+		type=Statement.StatementType.TRUE_FALSE, **kwargs
+	)
+	StatementChoice.objects.bulk_create(
+		[
+			StatementChoice(
+				statement=statement, text=text, is_correct=is_correct, order=order
+			)
+			for order, (text, is_correct) in enumerate(statements)
 		]
-	}
+	)
+	return statement
 
 
-def _multiple_choice_content(prompt):
-	return {
-		"prompt_text": prompt,
-		"choices": [
-			{"text": "A", "is_correct": True},
-			{"text": "B", "is_correct": False},
-		],
-	}
+def _multiple_choice(prompt, **kwargs):
+	statement = Statement.objects.create(
+		type=Statement.StatementType.MULTIPLE_CHOICE, prompt_text=prompt, **kwargs
+	)
+	StatementChoice.objects.bulk_create(
+		[
+			StatementChoice(statement=statement, text="A", is_correct=True, order=0),
+			StatementChoice(statement=statement, text="B", is_correct=False, order=1),
+		]
+	)
+	return statement
+
+
+def _areas(level, count):
+	"""The first *count* areas of *level*, seeded by migration 0021."""
+	return list(MapArea.objects.filter(level=int(level)).order_by("name")[:count])
 
 
 class ListeningTests(TestCase):
@@ -62,21 +105,20 @@ class ListeningTests(TestCase):
 			listening=self.group, description="Σημειώστε σωστό ή λάθος"
 		)
 		self.part_b = ListeningPart.objects.create(listening=self.group)
-		self.true_false = Statement.objects.create(
-			type=Statement.StatementType.TRUE_FALSE,
+		self.true_false = _true_false(
+			("first", True),
+			("second", False),
 			listening=self.group,
 			part=self.part_a,
 			order=0,
-			content=_true_false_content(("first", True), ("second", False)),
 		)
 		# Created out of order, to prove ``order`` drives the output.
 		self.multiple_choice = [
-			Statement.objects.create(
-				type=Statement.StatementType.MULTIPLE_CHOICE,
+			_multiple_choice(
+				f"question {index}",
 				listening=self.group,
 				part=self.part_b,
 				order=index,
-				content=_multiple_choice_content(f"question {index}"),
 			)
 			for index in (2, 1)
 		]
@@ -97,8 +139,19 @@ class ListeningTests(TestCase):
 			[question["id"] for question in data["parts"][1]["questions"]],
 			[self.multiple_choice[1].id, self.multiple_choice[0].id],
 		)
-		# No JSON content column on the group itself.
+		# The group itself has no content object of its own.
 		self.assertNotIn("content", data)
+
+	def test_a_question_carries_its_choices(self):
+		data = ListeningSerializer(self.group).data
+
+		self.assertEqual(
+			data["parts"][0]["questions"][0]["content"]["choices"],
+			[
+				{"is_correct": True, "text": "first", "asset_url": None},
+				{"is_correct": False, "text": "second", "asset_url": None},
+			],
+		)
 
 	def test_serializes_the_description_of_each_part(self):
 		data = ListeningSerializer(self.group).data
@@ -149,12 +202,7 @@ class ListeningTests(TestCase):
 		self.assertEqual(len(data["parts"][0]["questions"]), 3)
 
 	def test_rejects_a_second_true_false_question(self):
-		Statement.objects.create(
-			type=Statement.StatementType.TRUE_FALSE,
-			listening=self.group,
-			order=9,
-			content=_true_false_content(("extra", True)),
-		)
+		_true_false(("extra", True), listening=self.group, order=9)
 
 		with self.assertRaises(ValidationError):
 			self.group.full_clean()
@@ -172,10 +220,7 @@ class ListeningTests(TestCase):
 		Listening.objects.create(audio=self.asset).full_clean()
 
 	def test_questions_are_never_sampled_standalone(self):
-		standalone = Statement.objects.create(
-			type=Statement.StatementType.MULTIPLE_CHOICE,
-			content=_multiple_choice_content("standalone"),
-		)
+		standalone = _multiple_choice("standalone")
 
 		sampled = QuizService.get_by_category(category="", amount=50)
 		statement_ids = {
@@ -205,31 +250,208 @@ class ListeningTests(TestCase):
 		self.assertFalse(Statement.objects.filter(listening_id=self.group.id).exists())
 
 
+class ContentShapeTests(TestCase):
+	"""The shape each serializer emits is the contract the frontend is written
+	against, so it is asserted literally rather than round-tripped."""
+
+	def test_statement_content(self):
+		asset = QuizAsset.objects.create(
+			title="pic", image=ContentFile(b"img", name="pic.png")
+		)
+		statement = Statement.objects.create(
+			type=Statement.StatementType.MULTIPLE_CHOICE,
+			prompt_text="Ποια είναι σωστή;",
+			prompt_image=asset,
+		)
+		StatementChoice.objects.create(
+			statement=statement, text="A", is_correct=True, order=0
+		)
+		StatementChoice.objects.create(
+			statement=statement, image=asset, is_correct=False, order=1
+		)
+
+		content = StatementSerializer(statement).data["content"]
+
+		self.assertEqual(content["prompt_text"], "Ποια είναι σωστή;")
+		self.assertTrue(content["prompt_asset_url"].endswith(".png"))
+		self.assertIsNone(content["prompt_audio_url"])
+		self.assertEqual(content["choices"][0]["text"], "A")
+		self.assertIsNone(content["choices"][0]["asset_url"])
+		# A choice with only an image reports no text, as it always has.
+		self.assertIsNone(content["choices"][1]["text"])
+		self.assertTrue(content["choices"][1]["asset_url"].endswith(".png"))
+
+	def test_an_absent_prompt_is_null_not_empty(self):
+		"""``prompt_text`` is a ``blank=True`` column but the client has always
+		been handed ``null`` when there is no prompt."""
+		statement = _true_false(("x", True))
+
+		self.assertIsNone(StatementSerializer(statement).data["content"]["prompt_text"])
+
+	def test_drag_and_drop_content_is_two_columns(self):
+		question = DragAndDrop.objects.create(
+			left_title="Ποταμοί", right_title="Λίμνες"
+		)
+		DragAndDropValue.objects.bulk_create(
+			[
+				DragAndDropValue(
+					question=question,
+					side=DragAndDropValue.Side.LEFT,
+					text="Αλιάκμονας",
+					order=0,
+				),
+				DragAndDropValue(
+					question=question,
+					side=DragAndDropValue.Side.RIGHT,
+					text="Κερκίνη",
+					order=0,
+				),
+			]
+		)
+
+		self.assertEqual(
+			DragAndDropSerializer(question).data["content"],
+			[
+				{"title": "Ποταμοί", "values": ["Αλιάκμονας"]},
+				{"title": "Λίμνες", "values": ["Κερκίνη"]},
+			],
+		)
+
+	def test_matching_ids_are_regenerated_from_the_pairs(self):
+		"""``id``/``matched_id`` are not stored — the pair row is the pairing, and
+		the numbering the client expects is rebuilt on the way out."""
+		question = Matching.objects.create(left_title="A", right_title="B")
+		MatchPair.objects.bulk_create(
+			[
+				MatchPair(question=question, left_text="l1", right_text="r1", order=0),
+				MatchPair(question=question, left_text="l2", right_text="r2", order=1),
+			]
+		)
+
+		columns = MatchingSerializer(question).data["content"]["columns"]
+
+		self.assertEqual(
+			[(i["id"], i["matched_id"]) for i in columns[0]["items"]], [(1, 3), (2, 4)]
+		)
+		self.assertEqual(
+			[(i["id"], i["matched_id"]) for i in columns[1]["items"]], [(3, 1), (4, 2)]
+		)
+
+	def test_open_ended_texts_are_lists_of_alternatives(self):
+		question = OpenEnded.objects.create(
+			prompt_text="Ονομάστε δύο", min_correct_answers=1
+		)
+		answer = OpenEndedAnswer.objects.create(question=question, order=0)
+		OpenEndedAlternative.objects.bulk_create(
+			[
+				OpenEndedAlternative(answer=answer, text="Αθήνα", order=0),
+				OpenEndedAlternative(answer=answer, text="Αθηνα", order=1),
+			]
+		)
+
+		self.assertEqual(
+			OpenEndedSerializer(question).data["content"]["texts"],
+			[["Αθήνα", "Αθηνα"]],
+		)
+
+
+class StatementChoiceTests(TestCase):
+	def test_a_choice_needs_text_or_an_image(self):
+		"""Enforced by the database now, not by the importer quietly skipping it."""
+		statement = _true_false(("x", True))
+
+		with self.assertRaises(IntegrityError):
+			StatementChoice.objects.create(statement=statement, text="", order=5)
+
+	def test_multiple_choice_needs_a_correct_choice(self):
+		statement = Statement.objects.create(
+			type=Statement.StatementType.MULTIPLE_CHOICE
+		)
+		StatementChoice.objects.create(
+			statement=statement, text="A", is_correct=False, order=0
+		)
+
+		with self.assertRaises(ValidationError):
+			statement.full_clean()
+
+	def test_a_question_being_created_is_not_judged_on_choices_it_cannot_have(self):
+		"""The parent is saved before its inlines, so a brand new question has no
+		choices yet — the formset is what gates that case."""
+		Statement.objects.create(type=Statement.StatementType.MULTIPLE_CHOICE)
+
+	def test_deleting_a_statement_deletes_its_choices(self):
+		statement = _true_false(("x", True))
+		statement.delete()
+
+		self.assertFalse(StatementChoice.objects.exists())
+
+
+class StatementChoiceFormSetTests(TestCase):
+	"""Where the "needs a correct choice" rule is enforced on admin saves, since
+	the model cannot see the choices at the time the parent is saved."""
+
+	def _formset(self, statement, *choices):
+		FormSet = inlineformset_factory(
+			Statement,
+			StatementChoice,
+			formset=StatementChoiceFormSet,
+			fields=StatementChoiceInline.fields,
+			extra=0,
+		)
+		data = {
+			"choices-TOTAL_FORMS": str(len(choices)),
+			"choices-INITIAL_FORMS": "0",
+			"choices-MIN_NUM_FORMS": "0",
+			"choices-MAX_NUM_FORMS": "1000",
+		}
+		for index, (text, is_correct) in enumerate(choices):
+			data[f"choices-{index}-order"] = str(index)
+			data[f"choices-{index}-text"] = text
+			if is_correct:
+				data[f"choices-{index}-is_correct"] = "on"
+		return FormSet(data, instance=statement, prefix="choices")
+
+	def test_accepts_a_multiple_choice_question_with_a_correct_choice(self):
+		statement = Statement(type=Statement.StatementType.MULTIPLE_CHOICE)
+		formset = self._formset(statement, ("A", True), ("B", False))
+
+		self.assertTrue(formset.is_valid(), formset.errors)
+
+	def test_rejects_a_multiple_choice_question_with_no_correct_choice(self):
+		statement = Statement(type=Statement.StatementType.MULTIPLE_CHOICE)
+		formset = self._formset(statement, ("A", False), ("B", False))
+
+		self.assertFalse(formset.is_valid())
+		self.assertIn("at least one correct choice", str(formset.non_form_errors()))
+
+	def test_a_question_with_no_choices_yet_is_allowed(self):
+		"""Choices can be added on a second pass."""
+		statement = Statement(type=Statement.StatementType.MULTIPLE_CHOICE)
+
+		self.assertTrue(self._formset(statement).is_valid())
+
+
 class CategorySamplingTests(TestCase):
 	"""The training page sends its category multi-select as one comma-separated
 	value, so sampling has to honour every code in it."""
 
 	def setUp(self):
-		self.statements = {
-			code: Statement.objects.create(
-				type=Statement.StatementType.MULTIPLE_CHOICE,
-				category_id=code,
-				content=_multiple_choice_content(code),
-			)
-			for code in (
-				QuizCategory.GEOGRAPHY,
-				QuizCategory.CIVICS,
-				QuizCategory.HISTORY,
-			)
-		}
+		for code in (
+			QuizCategory.GEOGRAPHY,
+			QuizCategory.CIVICS,
+			QuizCategory.HISTORY,
+		):
+			_multiple_choice(f"{code} question", category_id=code)
 
 	def _sampled_categories(self, category):
-		sampled = QuizService.get_by_category(category=category, amount=50)
-		return {item["category"] for item in sampled}
+		return {
+			item["category"]
+			for item in QuizService.get_by_category(category=category, amount=50)
+		}
 
 	def test_a_single_category_is_honoured(self):
 		self.assertEqual(
-			self._sampled_categories(QuizCategory.HISTORY), {QuizCategory.HISTORY}
+			self._sampled_categories(QuizCategory.GEOGRAPHY), {QuizCategory.GEOGRAPHY}
 		)
 
 	def test_several_categories_are_honoured(self):
@@ -248,26 +470,33 @@ class CategorySamplingTests(TestCase):
 
 
 class CategoryNameTests(TestCase):
-	"""The Greek names shown to the user live on the category rows (seeded by
-	migration 0019), not in the frontend."""
+	def setUp(self):
+		self.geography = QuizCategory.objects.get(code=QuizCategory.GEOGRAPHY)
 
 	def test_categories_are_labelled_in_greek(self):
-		labels = QuizService.category_labels()
+		self.geography.name_el = "Γεωγραφία"
+		self.geography.save()
 
-		self.assertEqual(labels[QuizCategory.GEOGRAPHY], "Γεωγραφία")
-		self.assertEqual(labels[QuizCategory.LISTENING], "Ακουστικό")
+		self.assertEqual(
+			QuizService.category_labels()[QuizCategory.GEOGRAPHY], "Γεωγραφία"
+		)
 
 	def test_the_english_name_stands_in_for_a_missing_translation(self):
-		category = QuizCategory.objects.create(code="TEST", name="Test", order=99)
+		self.geography.name_el = ""
+		self.geography.save()
 
-		self.assertEqual(category.label, "Test")
+		self.assertEqual(
+			QuizService.category_labels()[QuizCategory.GEOGRAPHY], self.geography.name
+		)
 
 	def test_options_carry_the_greek_name_as_their_label(self):
+		self.geography.name_el = "Γεωγραφία"
+		self.geography.save()
+
 		options = {
 			option["value"]: option["label"] for option in QuizService.categories()
 		}
-
-		self.assertEqual(options[QuizCategory.HISTORY], "Ιστορία")
+		self.assertEqual(options[QuizCategory.GEOGRAPHY], "Γεωγραφία")
 
 
 class ListeningAdminInlineTests(TestCase):
@@ -281,23 +510,6 @@ class ListeningAdminInlineTests(TestCase):
 		self.group = Listening.objects.create(audio=self.asset)
 		self.part_a = ListeningPart.objects.create(listening=self.group)
 		self.part_b = ListeningPart.objects.create(listening=self.group)
-
-	@staticmethod
-	def _posted_content():
-		"""Content in the shape the admin posts it: django-jsonform's form
-		validator requires every key declared in the schema to be present, which
-		is more than the stored shape needs. Both question types share the schema.
-		"""
-		choice_count = 2
-		return {
-			"prompt_text": "question",
-			"prompt_asset_id": None,
-			"prompt_audio_asset_id": None,
-			"choices": [
-				{"text": f"choice {index}", "asset_id": None, "is_correct": index == 0}
-				for index in range(choice_count)
-			],
-		}
 
 	def _formset(self, *types, with_parts=True):
 		FormSet = inlineformset_factory(
@@ -324,7 +536,7 @@ class ListeningAdminInlineTests(TestCase):
 					),
 					f"questions-{index}-order": str(index),
 					f"questions-{index}-type": type_,
-					f"questions-{index}-content": json.dumps(self._posted_content()),
+					f"questions-{index}-prompt_text": "question",
 					f"questions-{index}-is_active": "on",
 				}
 			)
@@ -373,6 +585,11 @@ class ListeningAdminInlineTests(TestCase):
 
 		self.assertFalse(formset.is_valid())
 		self.assertIn("part_position", formset.errors[0])
+
+	def test_choices_are_not_edited_on_the_inline(self):
+		"""Django has no nested inlines, so a listening question's choices are
+		edited on the question's own page — the inline links to it instead."""
+		self.assertNotIn("choices", ListeningQuestionInline.fields)
 
 
 class ListeningAdminSaveTests(TestCase):
@@ -431,9 +648,7 @@ class ListeningAdminSaveTests(TestCase):
 					f"questions-{index}-part_position": str(position),
 					f"questions-{index}-order": str(index),
 					f"questions-{index}-type": type_,
-					f"questions-{index}-content": json.dumps(
-						ListeningAdminInlineTests._posted_content()
-					),
+					f"questions-{index}-prompt_text": "question",
 					f"questions-{index}-is_active": "on",
 				}
 			)
@@ -494,7 +709,6 @@ class ListeningAdminSaveTests(TestCase):
 			username="admin", email="admin@example.com", password="password"
 		)
 		self.client.force_login(admin_user)
-		content = json.dumps(ListeningAdminInlineTests._posted_content())
 
 		add_page = self.client.get(reverse("admin:quiz_listening_add"))
 		self.assertEqual(add_page.status_code, 200)
@@ -519,12 +733,12 @@ class ListeningAdminSaveTests(TestCase):
 				"questions-0-part_position": "1",
 				"questions-0-order": "0",
 				"questions-0-type": Statement.StatementType.TRUE_FALSE,
-				"questions-0-content": content,
+				"questions-0-prompt_text": "σωστό ή λάθος",
 				"questions-0-is_active": "on",
 				"questions-1-part_position": "2",
 				"questions-1-order": "0",
 				"questions-1-type": Statement.StatementType.MULTIPLE_CHOICE,
-				"questions-1-content": content,
+				"questions-1-prompt_text": "επιλέξτε",
 				"questions-1-is_active": "on",
 			},
 		)
@@ -548,12 +762,7 @@ class ListeningAdminSaveTests(TestCase):
 		group = Listening.objects.create(audio=self.asset)
 		ListeningPart.objects.create(listening=group)
 		part_b = ListeningPart.objects.create(listening=group)
-		question = Statement.objects.create(
-			type=Statement.StatementType.MULTIPLE_CHOICE,
-			listening=group,
-			part=part_b,
-			content=_multiple_choice_content("question"),
-		)
+		question = _multiple_choice("question", listening=group, part=part_b)
 
 		form = ListeningQuestionForm(instance=question)
 
@@ -589,8 +798,6 @@ class FixedCategoryAdminTests(TestCase):
 		)
 
 	def test_a_clip_and_its_questions_are_filed_under_listening(self):
-		content = json.dumps(ListeningAdminInlineTests._posted_content())
-
 		response = self.client.post(
 			reverse("admin:quiz_listening_add"),
 			{
@@ -611,12 +818,12 @@ class FixedCategoryAdminTests(TestCase):
 				"questions-0-part_position": "1",
 				"questions-0-order": "0",
 				"questions-0-type": Statement.StatementType.TRUE_FALSE,
-				"questions-0-content": content,
+				"questions-0-prompt_text": "σωστό ή λάθος",
 				"questions-0-is_active": "on",
 				"questions-1-part_position": "2",
 				"questions-1-order": "0",
 				"questions-1-type": Statement.StatementType.MULTIPLE_CHOICE,
-				"questions-1-content": content,
+				"questions-1-prompt_text": "επιλέξτε",
 				"questions-1-is_active": "on",
 			},
 		)
@@ -631,24 +838,25 @@ class FixedCategoryAdminTests(TestCase):
 
 	def test_a_map_question_is_filed_under_geography(self):
 		level = MapPointer.MapLevel.PREFECTURE_UNIT
-		content = {
-			"prompt_text": "Πού βρίσκεται;",
-			"show_answers": True,
-			"min_correct_answers": 1,
-			"texts": [
-				{
-					"alternatives": ["Αλιάκμονας"],
-					"areas": AREA_NAME_CHOICES_BY_LEVEL[int(level)][:1],
-				}
-			],
-		}
+		area = _areas(level, 1)[0]
 
 		response = self.client.post(
 			reverse("admin:quiz_mappointer_add"),
 			{
 				"level": str(int(level)),
-				"content": json.dumps(content),
+				"prompt_text": "Πού βρίσκεται;",
+				"min_correct_answers": "1",
+				"show_answers": "on",
+				"test_number": "0",
+				"question_number": "0",
 				"is_active": "on",
+				"answers-TOTAL_FORMS": "1",
+				"answers-INITIAL_FORMS": "0",
+				"answers-MIN_NUM_FORMS": "0",
+				"answers-MAX_NUM_FORMS": "1000",
+				"answers-0-order": "0",
+				"answers-0-alternatives": "Αλιάκμονας",
+				"answers-0-areas": [str(area.pk)],
 			},
 		)
 
@@ -660,101 +868,128 @@ class MapPointerContentTests(TestCase):
 	"""An answer may accept several areas — e.g. a river crossing prefectures."""
 
 	LEVEL = MapPointer.MapLevel.PREFECTURE_UNIT
-	# Two prefecture units the Αλιάκμονας flows through, plus an unrelated one.
-	AREAS = AREA_NAME_CHOICES_BY_LEVEL[int(LEVEL)][:3]
 
-	def _content(self, *groups, min_correct_answers=1):
-		return {
-			"prompt_text": "Πού βρίσκεται;",
-			"show_answers": True,
-			"min_correct_answers": min_correct_answers,
-			"texts": [
-				{"alternatives": alternatives, "areas": areas}
-				for alternatives, areas in groups
-			],
-		}
+	def setUp(self):
+		# Three prefecture units: two the river runs through, plus an unrelated one.
+		self.areas = _areas(self.LEVEL, 3)
+		self.names = [area.name for area in self.areas]
 
-	def _create(self, *groups, **kwargs):
-		return MapPointer.objects.create(
-			level=self.LEVEL, content=self._content(*groups, **kwargs)
+	def _create(self, *groups, min_correct_answers=1):
+		quiz = MapPointer.objects.create(
+			level=self.LEVEL,
+			prompt_text="Πού βρίσκεται;",
+			show_answers=True,
+			min_correct_answers=min_correct_answers,
 		)
+		for order, (alternatives, areas) in enumerate(groups):
+			answer = MapPointerAnswer.objects.create(question=quiz, order=order)
+			MapPointerAlternative.objects.bulk_create(
+				[
+					MapPointerAlternative(answer=answer, text=text, order=index)
+					for index, text in enumerate(alternatives)
+				]
+			)
+			for index, area in enumerate(areas):
+				MapPointerAnswerArea.objects.create(
+					answer=answer, area=area, order=index
+				)
+		quiz.full_clean()
+		return quiz
 
 	def test_an_answer_keeps_every_area_it_accepts(self):
-		quiz = self._create((["Αλιάκμονας"], self.AREAS[:2]))
+		quiz = self._create((["Αλιάκμονας"], self.areas[:2]))
 
-		self.assertEqual(quiz.content_model.texts[0].areas, self.AREAS[:2])
 		self.assertEqual(
 			MapPointerSerializer(quiz).data["content"]["texts"],
-			[{"alternatives": ["Αλιάκμονας"], "areas": self.AREAS[:2]}],
+			[{"alternatives": ["Αλιάκμονας"], "areas": self.names[:2]}],
 		)
-
-	def test_a_legacy_single_area_is_read_as_a_one_item_list(self):
-		quiz = MapPointer(
-			level=self.LEVEL,
-			content={
-				"prompt_text": "Πού βρίσκεται;",
-				"show_answers": True,
-				"min_correct_answers": 1,
-				"texts": [{"alternatives": ["Αλιάκμονας"], "area": self.AREAS[0]}],
-			},
-		)
-		quiz.save()
-
-		self.assertEqual(quiz.content_model.texts[0].areas, [self.AREAS[0]])
-
-	def test_a_legacy_area_object_is_read_as_a_one_item_list(self):
-		content = MapPointerContent.from_json(
-			{
-				"show_answers": True,
-				"min_correct_answers": 1,
-				"texts": [
-					{"alternatives": ["Αλιάκμονας"], "area": {"name": self.AREAS[0]}}
-				],
-			}
-		)
-
-		self.assertEqual(content.texts[0].areas, [self.AREAS[0]])
 
 	def test_rejects_an_area_outside_the_map_level(self):
+		other_level = _areas(MapPointer.MapLevel.REGION, 1)[0]
+
 		with self.assertRaises(ValidationError):
-			self._create((["Αλιάκμονας"], [self.AREAS[0], "Ουτοπία"]))
+			self._create((["Αλιάκμονας"], [self.areas[0], other_level]))
 
 	def test_rejects_the_same_area_twice_in_one_answer(self):
+		"""A unique constraint now, rather than a Python loop looking for dupes."""
+		with self.assertRaises(IntegrityError):
+			self._create((["Αλιάκμονας"], [self.areas[0], self.areas[0]]))
+
+	def test_rejects_more_required_answers_than_exist(self):
 		with self.assertRaises(ValidationError):
-			self._create((["Αλιάκμονας"], [self.AREAS[0], self.AREAS[0]]))
+			self._create((["Αλιάκμονας"], self.areas[:1]), min_correct_answers=2)
 
 	def test_two_answers_may_share_an_area(self):
 		"""Two rivers can run through the same prefecture; the polygon accepts
 		each of them and holds one label per answer placed on it."""
 		quiz = self._create(
-			(["Αλιάκμονας"], [self.AREAS[0], self.AREAS[1]]),
-			(["Αξιός"], [self.AREAS[1], self.AREAS[2]]),
+			(["Αλιάκμονας"], [self.areas[0], self.areas[1]]),
+			(["Αξιός"], [self.areas[1], self.areas[2]]),
 			min_correct_answers=2,
 		)
 
 		self.assertEqual(
-			[group.areas for group in quiz.content_model.texts],
-			[[self.AREAS[0], self.AREAS[1]], [self.AREAS[1], self.AREAS[2]]],
+			[g["areas"] for g in MapPointerSerializer(quiz).data["content"]["texts"]],
+			[[self.names[0], self.names[1]], [self.names[1], self.names[2]]],
 		)
 
 	def test_two_answers_may_share_their_only_area(self):
 		quiz = self._create(
-			(["Αλιάκμονας"], [self.AREAS[0]]),
-			(["Αξιός"], [self.AREAS[0]]),
+			(["Αλιάκμονας"], [self.areas[0]]),
+			(["Αξιός"], [self.areas[0]]),
 			min_correct_answers=2,
 		)
 
 		self.assertEqual(
-			[group.areas for group in quiz.content_model.texts],
-			[[self.AREAS[0]], [self.AREAS[0]]],
+			[g["areas"] for g in MapPointerSerializer(quiz).data["content"]["texts"]],
+			[[self.names[0]], [self.names[0]]],
 		)
+
+	def test_deleting_a_question_deletes_its_answers(self):
+		quiz = self._create((["Αλιάκμονας"], self.areas[:1]))
+		quiz.delete()
+
+		self.assertFalse(MapPointerAnswer.objects.exists())
+		self.assertFalse(MapPointerAnswerArea.objects.exists())
+
+	def test_an_area_in_use_cannot_be_deleted(self):
+		"""The point of the table: a rename or a split can no longer silently
+		invalidate the answers pointing at it."""
+		self._create((["Αλιάκμονας"], self.areas[:1]))
+
+		with self.assertRaises(Exception):
+			self.areas[0].delete()
+
+
+class MapAreaTests(TestCase):
+	def test_areas_are_seeded_for_every_level(self):
+		"""Migration 0021 seeds them, so a fresh database already has them."""
+		for level in MapPointer.MapLevel:
+			self.assertTrue(
+				MapArea.objects.filter(level=int(level)).exists(), f"level {level}"
+			)
+
+	def test_the_search_name_is_folded(self):
+		"""Greek is routinely typed without its tonos, so the picker matches on a
+		folded copy of the name."""
+		area = MapArea.objects.filter(name="Άθως").first()
+
+		self.assertIsNotNone(area)
+		# casefold() also normalises the final sigma, which is fine: the typed
+		# query goes through the same folding, so the two still meet.
+		self.assertEqual(area.search_name, "αθωσ")
+
+	def test_a_name_is_unique_within_its_level(self):
+		area = MapArea.objects.first()
+
+		with self.assertRaises(IntegrityError):
+			MapArea.objects.create(level=area.level, name=area.name)
 
 
 class MapPointerAreaPickerTests(TestCase):
-	"""The area lists run to hundreds of names, so the admin offers a
-	type-to-search picker instead of a plain dropdown. django-jsonform's
-	autocomplete widget fetches the matches from an endpoint as the editor
-	types — it does not filter the schema's enum client-side."""
+	"""The area lists run to hundreds of names, so the picker is a real queryset
+	scoped to the question's map level — which is what replaced the JSON-schema
+	enum and the client-side script that used to rewrite it."""
 
 	LEVEL = MapPointer.MapLevel.PREFECTURE_UNIT
 
@@ -764,117 +999,244 @@ class MapPointerAreaPickerTests(TestCase):
 		)
 		self.client.force_login(self.admin_user)
 
-	def _search(self, query, level=None):
-		url = reverse(
-			"admin:quiz_mappointer_area_options",
-			kwargs={"level": int(level if level is not None else self.LEVEL)},
-		)
-		return self.client.get(url, {"query": query})
+	def _answer_formset(self, obj=None):
+		request = RequestFactory().get("/")
+		request.user = self.admin_user
+		inline = MapPointerAdmin(MapPointer, site).get_inline_instances(request, obj)[0]
+		return inline.get_formset(request, obj)
 
-	def test_the_add_page_wires_the_picker_to_this_level_s_options(self):
-		page = self.client.get(reverse("admin:quiz_mappointer_add"))
+	def test_the_add_page_offers_the_default_level_s_areas(self):
+		formset = self._answer_formset()
 
-		self.assertEqual(page.status_code, 200)
-		areas = MapPointerContent.build_schema(
-			MapPointerContent.DEFAULT_LEVEL, area_options_url="/areas/4/"
-		)["properties"]["texts"]["items"]["properties"]["areas"]
-		self.assertEqual(areas["items"]["widget"], "multiselect-autocomplete")
-		self.assertEqual(areas["items"]["handler"], "/areas/4/")
-		# The saved area names still have to come from the level's own list.
+		# An unbound formset with extra=0 has no forms, so the empty form — the one
+		# the "add another" button clones — is what carries the picker.
+		areas = formset(instance=MapPointer()).empty_form.fields["areas"].queryset
+		default_level = MapPointer._meta.get_field("level").default
+
 		self.assertEqual(
-			areas["items"]["enum"],
-			AREA_NAME_CHOICES_BY_LEVEL[MapPointerContent.DEFAULT_LEVEL],
-		)
-		rendered = page.content.decode()
-		self.assertIn("multiselect-autocomplete", rendered)
-		self.assertIn(
-			reverse(
-				"admin:quiz_mappointer_area_options",
-				kwargs={"level": MapPointerContent.DEFAULT_LEVEL},
-			),
-			rendered,
+			set(areas.values_list("level", flat=True)), {int(default_level)}
 		)
 
-	def test_searching_returns_the_matching_area_names(self):
-		response = self._search("ΙΩΑΝΝ")
+	def test_the_change_page_offers_that_question_s_level(self):
+		quiz = MapPointer.objects.create(level=self.LEVEL, min_correct_answers=1)
+
+		formset = self._answer_formset(quiz)
+		areas = formset(instance=quiz).empty_form.fields["areas"].queryset
+
+		self.assertEqual(set(areas.values_list("level", flat=True)), {int(self.LEVEL)})
+
+	def test_searching_is_accent_and_case_insensitive(self):
+		"""Greek is routinely typed without its tonos; the folded column is what
+		the admin search matches on."""
+		response = self.client.get(
+			reverse("admin:quiz_maparea_changelist"), {"q": "αθως"}
+		)
 
 		self.assertEqual(response.status_code, 200)
-		self.assertEqual(response.json()["results"], ["ΙΩΑΝΝΙΝΩΝ"])
-
-	def test_searching_ignores_case(self):
-		self.assertEqual(self._search("ιωανν").json()["results"], ["ΙΩΑΝΝΙΝΩΝ"])
-
-	def test_searching_ignores_accents(self):
-		"""Greek is routinely typed without its tonos."""
-		results = self._search("αθως", level=MapPointer.MapLevel.MUNICIPALITY).json()[
-			"results"
-		]
-
-		self.assertEqual(results, ["Άθως"])
-
-	def test_a_query_matching_nothing_returns_no_options(self):
-		self.assertEqual(self._search("Ουτοπίας").json()["results"], [])
-
-	def test_a_blank_query_lists_the_whole_level(self):
-		"""Nothing typed yet means "show me everything" — the picker seeds its
-		search box with a space so the list can be browsed as well as searched."""
-		everything = AREA_NAME_CHOICES_BY_LEVEL[int(self.LEVEL)]
-
-		self.assertEqual(self._search(" ").json()["results"], everything)
-		self.assertEqual(self._search("").json()["results"], everything)
-
-	def test_the_typed_text_is_matched_ignoring_surrounding_space(self):
-		"""The seeded space sits in front of whatever the editor types next."""
-		self.assertEqual(self._search(" ιωανν ").json()["results"], ["ΙΩΑΝΝΙΝΩΝ"])
-
-	def test_every_match_is_returned(self):
-		"""A common stem matches many areas; none of them may be dropped."""
-		results = self._search("αγιου", level=MapPointer.MapLevel.MUNICIPALITY).json()[
-			"results"
-		]
-
-		self.assertEqual(
-			results,
-			[
-				"ΑγίουΒασιλείου",
-				"ΑγίουΔημητρίου",
-				"ΑγίουΕυστρατίου",
-				"ΑγίουΝικολάου",
-				"Μώλου-ΑγίουΚωνσταντίνου",
-				"Νίκαιας-ΑγίουΙωάννηΡέντη",
-			],
-		)
-
-	def test_an_unknown_level_is_not_found(self):
-		self.assertEqual(self._search("Ιωάνν", level=99).status_code, 404)
+		self.assertIn("Άθως", response.content.decode())
 
 	def test_the_admin_saves_an_answer_with_several_picked_areas(self):
-		"""End to end through jsonform's own validation of the picked values."""
-		areas = AREA_NAME_CHOICES_BY_LEVEL[int(self.LEVEL)][:3]
-		content = {
-			"prompt_text": "Ποιον νομό διασχίζει ο Αλιάκμονας;",
-			"show_answers": True,
-			"min_correct_answers": 1,
-			"texts": [{"alternatives": ["Αλιάκμονας"], "areas": areas}],
-		}
+		areas = _areas(self.LEVEL, 3)
 
 		response = self.client.post(
 			reverse("admin:quiz_mappointer_add"),
 			{
 				"level": str(int(self.LEVEL)),
-				"content": json.dumps(content),
+				"prompt_text": "Ποιον νομό διασχίζει ο Αλιάκμονας;",
+				"min_correct_answers": "1",
+				"show_answers": "on",
+				"test_number": "0",
+				"question_number": "0",
 				"is_active": "on",
+				"answers-TOTAL_FORMS": "1",
+				"answers-INITIAL_FORMS": "0",
+				"answers-MIN_NUM_FORMS": "0",
+				"answers-MAX_NUM_FORMS": "1000",
+				"answers-0-order": "0",
+				"answers-0-alternatives": "Αλιάκμονας",
+				"answers-0-areas": [str(area.pk) for area in areas],
 			},
 		)
 
 		self.assertEqual(response.status_code, 302, getattr(response, "context", None))
 		quiz = MapPointer.objects.get()
-		self.assertEqual(quiz.content_model.texts[0].areas, areas)
+		self.assertEqual(
+			MapPointerSerializer(quiz).data["content"]["texts"][0]["areas"],
+			[area.name for area in areas],
+		)
 
-	def test_the_options_are_closed_to_non_staff(self):
+	def test_alternatives_are_saved_one_per_line(self):
+		area = _areas(self.LEVEL, 1)[0]
+
+		self.client.post(
+			reverse("admin:quiz_mappointer_add"),
+			{
+				"level": str(int(self.LEVEL)),
+				"prompt_text": "Πού;",
+				"min_correct_answers": "1",
+				"show_answers": "on",
+				"test_number": "0",
+				"question_number": "0",
+				"is_active": "on",
+				"answers-TOTAL_FORMS": "1",
+				"answers-INITIAL_FORMS": "0",
+				"answers-MIN_NUM_FORMS": "0",
+				"answers-MAX_NUM_FORMS": "1000",
+				"answers-0-order": "0",
+				"answers-0-alternatives": "Αλιάκμονας\nαλιακμονας\n",
+				"answers-0-areas": [str(area.pk)],
+			},
+		)
+
+		quiz = MapPointer.objects.get()
+		self.assertEqual(
+			MapPointerSerializer(quiz).data["content"]["texts"][0]["alternatives"],
+			["Αλιάκμονας", "αλιακμονας"],
+		)
+
+	def test_the_area_list_is_closed_to_non_staff(self):
 		self.client.logout()
 
-		response = self._search("Ιωάνν")
+		response = self.client.get(reverse("admin:quiz_maparea_changelist"))
 
 		self.assertNotEqual(response.status_code, 200)
-		self.assertNotIn("Ιωάννινα", response.content.decode())
+
+
+class LegacyContentParsingTests(TestCase):
+	"""The shapes ``content`` accumulated over the years are absorbed by migration
+	0021 and then gone. These assert the migration's own frozen parsers, which is
+	where that tolerance now lives and dies."""
+
+	def test_a_legacy_single_area_string_becomes_a_one_item_list(self):
+		self.assertEqual(_0021._parse_areas("Ιωαννίνων"), ["Ιωαννίνων"])
+
+	def test_a_legacy_area_object_becomes_a_one_item_list(self):
+		self.assertEqual(_0021._parse_areas({"name": "Ιωαννίνων"}), ["Ιωαννίνων"])
+
+	def test_a_missing_area_becomes_an_empty_list(self):
+		self.assertEqual(_0021._parse_areas(None), [])
+
+	def test_a_legacy_single_text_answer_becomes_one_alternative(self):
+		self.assertEqual(_0021._parse_alternatives({"text": "Αθήνα"}), ["Αθήνα"])
+
+	def test_a_bare_string_answer_becomes_one_alternative(self):
+		self.assertEqual(_0021._parse_alternatives("Αθήνα"), ["Αθήνα"])
+
+	def test_a_legacy_bare_list_of_columns_is_read_as_columns(self):
+		columns = [{"title": "A", "items": []}, {"title": "B", "items": []}]
+
+		self.assertEqual(_0021._matching_columns(columns), columns)
+		self.assertEqual(_0021._matching_columns({"columns": columns}), columns)
+
+
+class ImportExportRoundTripTests(TestCase):
+	"""The importer writes child rows in ``after_save_instance`` now, and a
+	re-import rewrites them wholesale. Exporting what was just imported is the
+	cheapest way to catch a row that went missing on the way through."""
+
+	def _import(self, resource, headers, row):
+		dataset = tablib.Dataset(headers=headers)
+		dataset.append(row)
+		result = resource.import_data(dataset, raise_errors=True)
+		self.assertFalse(result.has_errors(), result.row_errors())
+		return result
+
+	def test_a_statement_survives_import_then_export(self):
+		resource = StatementResource()
+		headers = [
+			"id",
+			"type",
+			"category",
+			"prompt_text",
+			"choice1_text",
+			"choice1_is_correct",
+			"choice2_text",
+			"choice2_is_correct",
+		]
+		row = [
+			"",
+			Statement.StatementType.MULTIPLE_CHOICE,
+			QuizCategory.GEOGRAPHY,
+			"Ποια είναι σωστή;",
+			"A",
+			"true",
+			"B",
+			"false",
+		]
+
+		self._import(resource, headers, row)
+
+		statement = Statement.objects.get()
+		self.assertEqual(
+			[(c.text, c.is_correct) for c in statement.choices.all()],
+			[("A", True), ("B", False)],
+		)
+
+		exported = resource.export(queryset=Statement.objects.all())
+		self.assertEqual(exported[0][3], "Ποια είναι σωστή;")
+		self.assertEqual(exported[0][10:16], ("A", "", "true", "B", "", "false"))
+
+	def test_reimporting_replaces_the_choices_rather_than_adding_to_them(self):
+		resource = StatementResource()
+		headers = ["id", "type", "category", "choice1_text", "choice1_is_correct"]
+		self._import(
+			resource,
+			headers,
+			[
+				"",
+				Statement.StatementType.TRUE_FALSE,
+				QuizCategory.GEOGRAPHY,
+				"A",
+				"true",
+			],
+		)
+		statement = Statement.objects.get()
+
+		self._import(
+			resource,
+			headers,
+			[
+				str(statement.pk),
+				Statement.StatementType.TRUE_FALSE,
+				QuizCategory.GEOGRAPHY,
+				"B",
+				"true",
+			],
+		)
+
+		self.assertEqual([c.text for c in Statement.objects.get().choices.all()], ["B"])
+
+	def test_a_matching_question_survives_import_then_export(self):
+		resource = MatchingResource()
+		headers = ["id", "category", "left_title", "right_title", "items"]
+		row = [
+			"",
+			QuizCategory.GEOGRAPHY,
+			"Ποταμοί",
+			"Νομοί",
+			"Αλιάκμονας_Ημαθίας | Αξιός_Πέλλας",
+		]
+
+		self._import(resource, headers, row)
+
+		question = Matching.objects.get()
+		self.assertEqual(
+			[(p.left_text, p.right_text) for p in question.pairs.all()],
+			[("Αλιάκμονας", "Ημαθίας"), ("Αξιός", "Πέλλας")],
+		)
+
+		exported = resource.export(queryset=Matching.objects.all())
+		self.assertEqual(exported[0][4], "Αλιάκμονας_Ημαθίας | Αξιός_Πέλλας")
+
+	def test_an_imported_matching_question_serializes_with_matching_ids(self):
+		resource = MatchingResource()
+		self._import(
+			resource,
+			["id", "category", "left_title", "right_title", "items"],
+			["", QuizCategory.GEOGRAPHY, "A", "B", "l1_r1 | l2_r2"],
+		)
+
+		columns = MatchingSerializer(Matching.objects.get()).data["content"]["columns"]
+
+		self.assertEqual([i["id"] for i in columns[0]["items"]], [1, 2])
+		self.assertEqual([i["matched_id"] for i in columns[0]["items"]], [3, 4])

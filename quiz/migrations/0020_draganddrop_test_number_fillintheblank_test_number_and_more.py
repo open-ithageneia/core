@@ -4,45 +4,44 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+	dependencies = [
+		("quiz", "0019_quizcategory_name_el"),
+	]
 
-    dependencies = [
-        ('quiz', '0019_quizcategory_name_el'),
-    ]
-
-    operations = [
-        migrations.AddField(
-            model_name='draganddrop',
-            name='test_number',
-            field=models.SmallIntegerField(blank=True, default=0),
-        ),
-        migrations.AddField(
-            model_name='fillintheblank',
-            name='test_number',
-            field=models.SmallIntegerField(blank=True, default=0),
-        ),
-        migrations.AddField(
-            model_name='listening',
-            name='test_number',
-            field=models.SmallIntegerField(blank=True, default=0),
-        ),
-        migrations.AddField(
-            model_name='mappointer',
-            name='test_number',
-            field=models.SmallIntegerField(blank=True, default=0),
-        ),
-        migrations.AddField(
-            model_name='matching',
-            name='test_number',
-            field=models.SmallIntegerField(blank=True, default=0),
-        ),
-        migrations.AddField(
-            model_name='openended',
-            name='test_number',
-            field=models.SmallIntegerField(blank=True, default=0),
-        ),
-        migrations.AddField(
-            model_name='statement',
-            name='test_number',
-            field=models.SmallIntegerField(blank=True, default=0),
-        ),
-    ]
+	operations = [
+		migrations.AddField(
+			model_name="draganddrop",
+			name="test_number",
+			field=models.SmallIntegerField(blank=True, default=0),
+		),
+		migrations.AddField(
+			model_name="fillintheblank",
+			name="test_number",
+			field=models.SmallIntegerField(blank=True, default=0),
+		),
+		migrations.AddField(
+			model_name="listening",
+			name="test_number",
+			field=models.SmallIntegerField(blank=True, default=0),
+		),
+		migrations.AddField(
+			model_name="mappointer",
+			name="test_number",
+			field=models.SmallIntegerField(blank=True, default=0),
+		),
+		migrations.AddField(
+			model_name="matching",
+			name="test_number",
+			field=models.SmallIntegerField(blank=True, default=0),
+		),
+		migrations.AddField(
+			model_name="openended",
+			name="test_number",
+			field=models.SmallIntegerField(blank=True, default=0),
+		),
+		migrations.AddField(
+			model_name="statement",
+			name="test_number",
+			field=models.SmallIntegerField(blank=True, default=0),
+		),
+	]

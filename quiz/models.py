@@ -1,46 +1,50 @@
 import os
+import re
+import unicodedata
 import uuid
-from abc import abstractmethod, ABCMeta
+from abc import ABCMeta
+from collections import namedtuple
 
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.base import ModelBase
-from django.urls import reverse
-from django_jsonform.models.fields import JSONField
 
 from open_ithageneia.models import ActivatableModel, TimeStampedModel
 
 from .managers import AbstractQuizManager, StatementManager
-from .schemas import (
-	StatementChoiceContent,
-	DragAndDropContent,
-	MatchingContent,
-	FillInTheBlankContent,
-	OpenEndedContent,
-	MapPointerContent,
-	AREA_NAME_CHOICES_BY_LEVEL,
-)
 
 
-def _map_pointer_content_schema(instance=None):
-	"""Dynamic django-jsonform schema: scope the ``areas`` enum to the map
-	level of the instance being edited (falls back to the default level on
-	the admin "add" form where no instance is bound)."""
-	level = int(getattr(instance, "level", None) or MapPointerContent.DEFAULT_LEVEL)
-	return MapPointerContent.build_schema(
-		level,
-		# The area picker searches within one level, so the level is part of the
-		# endpoint it queries (see MapPointerAdmin.area_options_view).
-		area_options_url=reverse(
-			"admin:quiz_mappointer_area_options", kwargs={"level": level}
-		),
+def fold_for_search(text: str) -> str:
+	"""Lowercase and strip accents so area names match however they are typed
+	(Greek is routinely typed without its tonos)."""
+	stripped = "".join(
+		char
+		for char in unicodedata.normalize("NFD", text or "")
+		if not unicodedata.combining(char)
 	)
+	return unicodedata.normalize("NFC", stripped).strip().casefold()
 
 
 def get_quiz_asset_upload_to(instance, filename):
 	_, ext = os.path.splitext(filename)
 
 	return f"quizzes/assets/{uuid.uuid4()}{ext}"
+
+
+class MapLevel(models.IntegerChoices):
+	"""Administrative division levels the map questions can be asked at.
+
+	Module-level rather than nested in ``MapPointer`` because ``MapArea`` — which
+	is declared first, since map answers point at it — needs the same choices.
+	``MapPointer.MapLevel`` is kept as an alias so existing references and
+	migration 0017's ``choices=`` keep resolving.
+	"""
+
+	DECENTRALIZED_ADMIN = 1, "Decentralized administration (Αποκεντρωμένη διοίκηση)"
+	REGION = 2, "Region (Περιφέρεια)"
+	PREFECTURE_UNIT = 3, "Prefecture unit (Νομός / Νησί)"
+	MUNICIPALITY = 4, "Municipality and islands (Δήμος και νησιά)"
+	GEOGRAPHIC_DEPARTMENT = 5, "Geographic department (Γεωγραφικό διαμέρισμα)"
 
 
 class QuizAsset(TimeStampedModel):
@@ -53,6 +57,46 @@ class QuizAsset(TimeStampedModel):
 
 	class Meta:
 		verbose_name_plural = "Quiz Assets"
+
+
+class MapArea(models.Model):
+	"""One named area of the map, at one administrative level.
+
+	Rows are generated from the GeoJSON the frontend draws (see
+	``MAP_LEVEL_SOURCES`` and the ``sync_map_areas`` command) — ``name`` must stay
+	byte-identical to the property the frontend matches answers against in
+	``geo/util.ts``, which is why it is not edited by hand.
+
+	This replaces the enum that used to be built by reading five GeoJSON files at
+	module import: a renamed or split feature is now a row with real foreign keys
+	pointing at it, so the questions it breaks can actually be found.
+	"""
+
+	level = models.PositiveSmallIntegerField(choices=MapLevel.choices)
+	name = models.CharField(max_length=255)
+	search_name = models.CharField(
+		max_length=255,
+		db_index=True,
+		editable=False,
+		help_text="Accent-stripped, casefolded name, for the area picker.",
+	)
+
+	class Meta:
+		ordering = ["level", "name"]
+		verbose_name = "Map area"
+		verbose_name_plural = "Map areas"
+		constraints = [
+			models.UniqueConstraint(
+				fields=["level", "name"], name="unique_map_area_per_level"
+			),
+		]
+
+	def __str__(self):
+		return f"{self.name} (level {self.level})"
+
+	def save(self, *args, **kwargs):
+		self.search_name = fold_for_search(self.name)
+		super().save(*args, **kwargs)
 
 
 class QuizCategory(TimeStampedModel):
@@ -91,6 +135,21 @@ class ModelABCMeta(ModelBase, ABCMeta):
 	pass
 
 
+def validate_min_correct_answers(min_correct: int, total: int):
+	"""Shared rule for the two types that ask for *some* of their answers.
+
+	Lives here rather than being copy-pasted into each type's validation, which
+	is where it was before.
+	"""
+	if min_correct < 1:
+		raise ValidationError("min_correct_answers must be at least 1.")
+	if min_correct > total:
+		raise ValidationError(
+			f"min_correct_answers ({min_correct}) cannot exceed "
+			f"the number of available answers ({total})."
+		)
+
+
 class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
 	category = models.ForeignKey(
 		QuizCategory,
@@ -110,29 +169,39 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
 		default=0,
 	)
 
-	_cached_content_model = None
-
-	@abstractmethod
-	def _parse_content(self):
-		"""Parse and validate self.content into the typed dataclass.
-		Subclasses implement this. Must raise ValidationError on bad data."""
-		pass
-
-	@property
-	def content_model(self):
-		if self._cached_content_model is None:
-			self._cached_content_model = self._parse_content()
-		return self._cached_content_model
+	# The prompt is a single-valued scalar on every type that has one, so it is a
+	# column rather than a key inside a blob: it can be searched, ordered by, and
+	# — for the assets — protected by a real foreign key.
+	prompt_text = models.TextField(blank=True, default="")
+	prompt_image = models.ForeignKey(
+		QuizAsset,
+		on_delete=models.PROTECT,
+		null=True,
+		blank=True,
+		related_name="+",
+		help_text="Image shown with the question.",
+	)
+	prompt_audio = models.ForeignKey(
+		QuizAsset,
+		on_delete=models.PROTECT,
+		null=True,
+		blank=True,
+		related_name="+",
+		help_text="Audio played with the question.",
+	)
 
 	def clean(self):
 		super().clean()
-		# Reset cache and reparse to validate against current content.
-		self._cached_content_model = None
-		self._cached_content_model = self._parse_content()
 		self._validate_content()
 
 	def _validate_content(self):
-		"""Override for extra business-rule checks beyond structural parsing."""
+		"""Override for business-rule checks.
+
+		Anything that counts child rows has to guard on ``self.pk``: a row being
+		created has no children yet, and the admin saves a parent before its
+		inlines. The inline formsets are the gate for admin saves — see
+		``ListeningQuestionFormSet``, which has always worked this way.
+		"""
 		pass
 
 	def save(self, *args, **kwargs):
@@ -227,10 +296,6 @@ class Statement(AbstractQuiz):
 		default=StatementType.TRUE_FALSE,
 	)
 
-	content = JSONField(
-		blank=True, default=dict, schema=StatementChoiceContent.STATEMENT_CONTENT_SCHEMA
-	)
-
 	listening = models.ForeignKey(
 		"Listening",
 		on_delete=models.CASCADE,
@@ -271,54 +336,53 @@ class Statement(AbstractQuiz):
 
 	objects = StatementManager()
 
-	@staticmethod
-	def get_asset_image(asset_id):
-		if not asset_id:
-			return None
-
-		try:
-			return QuizAsset.objects.get(id=asset_id).image
-		except QuizAsset.DoesNotExist:
-			return None
-
-	@staticmethod
-	def get_asset_audio(asset_id):
-		if not asset_id:
-			return None
-
-		try:
-			return QuizAsset.objects.get(id=asset_id).audio
-		except QuizAsset.DoesNotExist:
-			return None
-
-	def get_choices_with_images(self):
-		choices = self.content.get("choices", None)
-
-		if not choices:
-			return None
-
-		asset_ids = [
-			choice.get("asset_id") for choice in choices if choice.get("asset_id")
-		]
-		assets = QuizAsset.objects.in_bulk(asset_ids)
-
-		for choice in choices:
-			asset_id = choice.get("asset_id")
-			asset = assets.get(asset_id)
-			choice["image"] = asset.image if asset else None
-
-		return choices
-
-	def _parse_content(self):
-		return StatementChoiceContent.from_json(self.content)
-
 	def _validate_content(self):
-		data = self.content_model
+		# Choices are rows now, so a statement being created has none yet and the
+		# admin saves the parent before the inline. ``StatementChoiceFormSet`` is
+		# the gate there; this catches programmatic edits.
+		if not self.pk:
+			return
 		if self.type == self.StatementType.MULTIPLE_CHOICE:
-			if not any(choice.is_correct for choice in data.choices):
+			if not self.choices.filter(is_correct=True).exists():
 				raise ValidationError(
 					"Multiple-choice questions must have at least one correct choice."
 				)
+
+
+class StatementChoice(models.Model):
+	"""One selectable answer of a ``Statement``."""
+
+	statement = models.ForeignKey(
+		Statement,
+		on_delete=models.CASCADE,
+		related_name="choices",
+	)
+	text = models.TextField(blank=True, default="")
+	image = models.ForeignKey(
+		QuizAsset,
+		on_delete=models.PROTECT,
+		null=True,
+		blank=True,
+		related_name="+",
+	)
+	is_correct = models.BooleanField(default=False)
+	order = models.PositiveSmallIntegerField(default=0)
+
+	class Meta:
+		ordering = ["order", "id"]
+		verbose_name = "Statement choice"
+		verbose_name_plural = "Statement choices"
+		constraints = [
+			# A choice the candidate cannot see is a bug, and the importer already
+			# silently skipped these. Now the database says so.
+			models.CheckConstraint(
+				condition=~models.Q(text="") | models.Q(image__isnull=False),
+				name="statement_choice_has_text_or_image",
+			),
+		]
+
+	def __str__(self):
+		return self.text or f"choice {self.pk}"
 
 
 def validate_listening_question_types(types):
@@ -356,9 +420,10 @@ class Listening(AbstractQuiz):
 	The parts are ``ListeningPart`` rows (``parts``), each holding the
 	description that introduces it. The questions are ordinary ``Statement`` rows
 	linked through ``Statement.listening`` — one ``TRUE_FALSE`` statement and N
-	``MULTIPLE_CHOICE`` ones — each pointing at the part it belongs to. Nothing
-	about the group itself is free-form, so it has real columns instead of a JSON
-	``content`` field.
+	``MULTIPLE_CHOICE`` ones — each pointing at the part it belongs to.
+
+	This type was already relational before the rest caught up; it is the shape
+	the others have now been converted to.
 	"""
 
 	INSTRUCTION_TEXT = "Ακούστε το ηχητικό και απαντήστε στις ερωτήσεις"
@@ -389,12 +454,6 @@ class Listening(AbstractQuiz):
 	def audio_url(self):
 		return self.audio.audio.url if self.audio_id and self.audio.audio else None
 
-	def _parse_content(self):
-		# This type has no JSON content — the questions come from the reverse
-		# ``questions`` relation and everything else is a column. ``AbstractQuiz``
-		# still calls this from ``clean()``, so it has to return something.
-		return None
-
 	def _validate_content(self):
 		# A group being created has no questions yet, and the admin saves the
 		# parent before its inlines, so this only catches programmatic edits.
@@ -409,117 +468,416 @@ class Listening(AbstractQuiz):
 class DragAndDrop(AbstractQuiz):
 	INSTRUCTION_TEXT = "Σύρετε και αποθέστε στη σωστή θέση"
 
-	content = JSONField(
-		blank=True, default=list, schema=DragAndDropContent.DRAG_AND_DROP_CONTENT_SCHEMA
-	)
+	# Exactly two columns, always — so they are two columns on the row rather
+	# than a table that would need a "there must be exactly 2" constraint.
+	left_title = models.TextField(blank=True, default="")
+	right_title = models.TextField(blank=True, default="")
 
 	class Meta:
 		verbose_name_plural = "Drag And Drop"
 
-	def _parse_content(self):
-		return DragAndDropContent.from_json(self.content)
+
+class DragAndDropValue(models.Model):
+	class Side(models.TextChoices):
+		LEFT = "LEFT", "Left"
+		RIGHT = "RIGHT", "Right"
+
+	question = models.ForeignKey(
+		DragAndDrop,
+		on_delete=models.CASCADE,
+		related_name="values",
+	)
+	side = models.CharField(max_length=5, choices=Side.choices)
+	text = models.TextField()
+	order = models.PositiveSmallIntegerField(default=0)
+
+	class Meta:
+		ordering = ["side", "order", "id"]
+		verbose_name = "Drag and drop value"
+		verbose_name_plural = "Drag and drop values"
+
+	def __str__(self):
+		return self.text
 
 
 class Matching(AbstractQuiz):
 	INSTRUCTION_TEXT = "Αντιστοιχίστε τα σωστά ζεύγη"
 
-	content = JSONField(
-		blank=True, default=dict, schema=MatchingContent.MATCHING_CONTENT_SCHEMA
-	)
-
-	def _parse_content(self):
-		return MatchingContent.from_json(self.content)
+	left_title = models.TextField(blank=True, default="")
+	right_title = models.TextField(blank=True, default="")
 
 	class Meta:
 		verbose_name_plural = "Matching"
 
 
+class MatchPair(models.Model):
+	"""One correct pairing of a ``Matching`` question.
+
+	The row *is* the pairing. The ``id``/``matched_id`` integers the client works
+	with carried no meaning of their own — the importer synthesised them from the
+	loop index — so they are regenerated on the way out instead of stored.
+	"""
+
+	question = models.ForeignKey(
+		Matching,
+		on_delete=models.CASCADE,
+		related_name="pairs",
+	)
+	left_text = models.TextField(blank=True, default="")
+	left_image = models.ForeignKey(
+		QuizAsset,
+		on_delete=models.PROTECT,
+		null=True,
+		blank=True,
+		related_name="+",
+	)
+	right_text = models.TextField(blank=True, default="")
+	right_image = models.ForeignKey(
+		QuizAsset,
+		on_delete=models.PROTECT,
+		null=True,
+		blank=True,
+		related_name="+",
+	)
+	order = models.PositiveSmallIntegerField(default=0)
+
+	class Meta:
+		ordering = ["order", "id"]
+		verbose_name = "Match pair"
+		verbose_name_plural = "Match pairs"
+
+	def __str__(self):
+		left = self.left_text or self.left_image_id
+		right = self.right_text or self.right_image_id
+		return f"{left} → {right}"
+
+
 class FillInTheBlank(AbstractQuiz):
+	"""Sentences with blanks the candidate fills in.
+
+	The sentence text stays a single string holding the authoring DSL
+	(``<{{answer}}*, {{other}}>``) — that is markup, not data. Exploding its parse
+	tree into tables would mean either storing derived rows that have to be
+	re-derived on every edit, or making authors fill in formsets instead of
+	typing a sentence. The structure *around* the sentences is relational like
+	everything else.
+	"""
+
 	INSTRUCTION_TEXT = "Συμπληρώστε τα κενά"
 
-	content = JSONField(
-		blank=True,
-		default=dict,
-		schema=FillInTheBlankContent.FILL_IN_THE_BLANK_CONTENT_SCHEMA,
-	)
+	show_answers_as_choices = models.BooleanField(default=False)
 
 	class Meta:
 		verbose_name_plural = "Fill in the blank"
 
-	def _parse_content(self):
-		return FillInTheBlankContent.from_json(self.content)
+	def instruction_choices(self, parsed):
+		"""The word bank offered above the question, or ``None``.
+
+		There is no bank when the question does not ask for one, and none when a
+		blank already offers its own options inline — the answers would give those
+		away. Identical choice groups contribute once: the same blank repeated
+		across sentences is one option, not several.
+
+		*parsed* is the already-parsed texts, so the sentences are walked once per
+		serialization rather than once here and again for the parts.
+		"""
+		if not self.show_answers_as_choices:
+			return None
+		if any(text.has_multiple_choices for text in parsed):
+			return None
+
+		choices = [choice.text for choice in self.extra_choices.all()]
+		seen = set()
+		for text in parsed:
+			for group in text.choice_groups:
+				if group and group not in seen:
+					seen.add(group)
+					choices.extend(group)
+		return choices
+
+
+# What ``FillInTheBlankText.parse()`` yields: the sentence broken into display
+# parts, whether any blank offers a real choice between options, and the choice
+# groups the question needs to build its instruction list. One parse, three
+# answers — they all come from the same walk over the markup.
+ParsedText = namedtuple("ParsedText", "parts has_multiple_choices choice_groups")
+
+
+class FillInTheBlankText(models.Model):
+	"""One sentence of a fill-in-the-blank question.
+
+	The text is markup, not data: ``<{{answer}}*, {{other}}>`` marks a blank, and
+	the ``*`` marks the correct option. It stays one string because that is how
+	authors write it — exploding the parse tree into tables would mean either
+	storing derived rows to re-derive on every edit, or making authors fill in a
+	formset instead of typing a sentence. Parsing it is this model's job.
+	"""
+
+	BLANK_PATTERN = re.compile(r"<(.+?)>")
+	CHOICE_PATTERN = re.compile(r"\{\{(.+?)\}\}(\*?)")
+
+	question = models.ForeignKey(
+		FillInTheBlank,
+		on_delete=models.CASCADE,
+		related_name="texts",
+	)
+	text = models.TextField(
+		help_text=(
+			"Use <{{answer1}}*, {{answer2}}> for blanks, marking the correct one "
+			"with *. E.g. Η Κως συνορεύει με <{{την Τουρκία}}*>"
+		),
+	)
+	order = models.PositiveSmallIntegerField(default=0)
+
+	class Meta:
+		ordering = ["order", "id"]
+		verbose_name = "Fill in the blank text"
+		verbose_name_plural = "Fill in the blank texts"
+
+	def __str__(self):
+		return self.text
+
+	def clean(self):
+		super().clean()
+		# Parsing is the validation: the markup either yields blanks with exactly
+		# one correct choice each, or it raises.
+		self.parse()
+
+	def parse(self) -> ParsedText:
+		"""Break the sentence into its display parts.
+
+		Raises ``ValidationError`` on malformed markup, which is what makes this
+		double as the field's validation.
+		"""
+		raw_blanks = self.BLANK_PATTERN.findall(self.text)
+
+		if not raw_blanks:
+			raise ValidationError(
+				f"{self.text}: no blanks found. Use <({{{{answer}}}}*)> syntax."
+			)
+
+		has_multiple_choices = False
+		for blank in raw_blanks:
+			choices = self.CHOICE_PATTERN.findall(blank)
+
+			if not choices:
+				raise ValidationError(
+					f"{blank}: invalid blank — must contain at least one {{{{choice}}}}."
+				)
+
+			for choice_text, _marker in choices:
+				if not choice_text.strip():
+					raise ValidationError(
+						f"{choice_text}: blank contains an empty choice."
+					)
+
+			correct = [c for c, marker in choices if marker == "*"]
+
+			if len(correct) == 0:
+				raise ValidationError(
+					f"blank '<({blank})>' has no correct answer. Mark exactly one with *."
+				)
+
+			if len(choices) > 1 and len(correct) == 1:
+				has_multiple_choices = True
+
+		parts = []
+		choice_groups = []
+		# split() alternates literal text and blank contents.
+		for index, chunk in enumerate(self.BLANK_PATTERN.split(self.text)):
+			if index % 2 == 0:
+				if chunk:
+					parts.append({"text": chunk, "is_blank": False})
+				continue
+
+			choices = [
+				{"text": text, "is_correct": marker == "*"}
+				for text, marker in self.CHOICE_PATTERN.findall(chunk)
+			]
+			# A blank shows no text of its own — that is the point of it.
+			parts.append({"text": None, "is_blank": True, "choices": choices})
+			choice_groups.append(tuple(choice["text"] for choice in choices))
+
+		return ParsedText(parts, has_multiple_choices, choice_groups)
+
+
+class FillInTheBlankExtraChoice(models.Model):
+	"""A decoy offered alongside the real answers when the question shows its
+	answers as a choice list."""
+
+	question = models.ForeignKey(
+		FillInTheBlank,
+		on_delete=models.CASCADE,
+		related_name="extra_choices",
+	)
+	text = models.TextField()
+	order = models.PositiveSmallIntegerField(default=0)
+
+	class Meta:
+		ordering = ["order", "id"]
+		verbose_name = "Fill in the blank extra choice"
+		verbose_name_plural = "Fill in the blank extra choices"
+
+	def __str__(self):
+		return self.text
 
 
 class OpenEnded(AbstractQuiz):
-	content = JSONField(
-		blank=True,
-		default=dict,
-		schema=OpenEndedContent.OPEN_ENDED_CONTENT_SCHEMA,
-	)
+	min_correct_answers = models.PositiveSmallIntegerField(default=1)
 
 	class Meta:
 		verbose_name_plural = "Open Ended"
 
-	def _parse_content(self):
-		return OpenEndedContent.from_json(self.content)
-
 	def _validate_content(self):
-		data = self.content_model
-		if data.min_correct_answers < 1:
-			raise ValidationError("min_correct_answers must be at least 1.")
-		if data.min_correct_answers > len(data.texts):
-			raise ValidationError(
-				f"min_correct_answers ({data.min_correct_answers}) cannot exceed "
-				f"the number of available answers ({len(data.texts)})."
-			)
+		if not self.pk:
+			return
+		validate_min_correct_answers(self.min_correct_answers, self.answers.count())
+
+
+class OpenEndedAnswer(models.Model):
+	"""One thing the candidate has to name. Its ``alternatives`` are the spellings
+	and phrasings that all count as naming it."""
+
+	question = models.ForeignKey(
+		OpenEnded,
+		on_delete=models.CASCADE,
+		related_name="answers",
+	)
+	order = models.PositiveSmallIntegerField(default=0)
+
+	class Meta:
+		ordering = ["order", "id"]
+		verbose_name = "Open ended answer"
+		verbose_name_plural = "Open ended answers"
+
+	def __str__(self):
+		first = self.alternatives.first()
+		return first.text if first else f"answer {self.pk}"
+
+
+class OpenEndedAlternative(models.Model):
+	answer = models.ForeignKey(
+		OpenEndedAnswer,
+		on_delete=models.CASCADE,
+		related_name="alternatives",
+	)
+	text = models.TextField()
+	order = models.PositiveSmallIntegerField(default=0)
+
+	class Meta:
+		ordering = ["order", "id"]
+		verbose_name = "Open ended alternative"
+		verbose_name_plural = "Open ended alternatives"
+
+	def __str__(self):
+		return self.text
 
 
 class MapPointer(AbstractQuiz):
 	INSTRUCTION_TEXT = "Τοποθετήστε κάθε επιλογή στη σωστή περιοχή του χάρτη"
 
-	class MapLevel(models.IntegerChoices):
-		DECENTRALIZED_ADMIN = 1, "Decentralized administration (Αποκεντρωμένη διοίκηση)"
-		REGION = 2, "Region (Περιφέρεια)"
-		PREFECTURE_UNIT = 3, "Prefecture unit (Νομός / Νησί)"
-		MUNICIPALITY = 4, "Municipality and islands (Δήμος και νησιά)"
-		GEOGRAPHIC_DEPARTMENT = 5, "Geographic department (Γεωγραφικό διαμέρισμα)"
+	# Kept as an alias so ``MapPointer.MapLevel`` still resolves for callers and
+	# for migration 0017's ``choices=``.
+	MapLevel = MapLevel
 
 	level = models.PositiveSmallIntegerField(
 		choices=MapLevel.choices,
 		default=MapLevel.MUNICIPALITY,
 		help_text="Administrative division level used for the map.",
 	)
-
-	content = JSONField(
-		blank=True,
-		default=dict,
-		schema=_map_pointer_content_schema,
-	)
+	show_answers = models.BooleanField(default=True)
+	min_correct_answers = models.PositiveSmallIntegerField(default=1)
 
 	class Meta:
 		verbose_name_plural = "Map Pointer"
 
-	def _parse_content(self):
-		return MapPointerContent.from_json(self.content)
-
 	def _validate_content(self):
-		data = self.content_model
-		if data.min_correct_answers < 1:
-			raise ValidationError("min_correct_answers must be at least 1.")
-		if data.min_correct_answers > len(data.texts):
+		if not self.pk:
+			return
+		validate_min_correct_answers(self.min_correct_answers, self.answers.count())
+		# The areas an answer points at have to exist at this question's level.
+		# This used to compare strings against an enum built from GeoJSON at import
+		# time; now it is a join, so changing the level surfaces what it breaks.
+		wrong = (
+			MapPointerAnswerArea.objects.filter(answer__question=self)
+			.exclude(area__level=self.level)
+			.select_related("area")
+			.first()
+		)
+		if wrong:
 			raise ValidationError(
-				f"min_correct_answers ({data.min_correct_answers}) cannot exceed "
-				f"the number of available answers ({len(data.texts)})."
+				f"Area '{wrong.area.name}' is not a valid level-{self.level} area."
 			)
-		valid_areas = set(AREA_NAME_CHOICES_BY_LEVEL[int(self.level)])
-		for group in data.texts:
-			label = group.alternatives[0] if group.alternatives else ""
-			if len(set(group.areas)) != len(group.areas):
-				raise ValidationError(
-					f"Answer '{label}' lists the same area more than once."
-				)
-			for area in group.areas:
-				if area not in valid_areas:
-					raise ValidationError(
-						f"Area '{area}' is not a valid level-{self.level} area."
-					)
+
+
+class MapPointerAnswer(models.Model):
+	question = models.ForeignKey(
+		MapPointer,
+		on_delete=models.CASCADE,
+		related_name="answers",
+	)
+	order = models.PositiveSmallIntegerField(default=0)
+
+	class Meta:
+		ordering = ["order", "id"]
+		verbose_name = "Map pointer answer"
+		verbose_name_plural = "Map pointer answers"
+
+	def __str__(self):
+		first = self.alternatives.first()
+		return first.text if first else f"answer {self.pk}"
+
+
+class MapPointerAlternative(models.Model):
+	answer = models.ForeignKey(
+		MapPointerAnswer,
+		on_delete=models.CASCADE,
+		related_name="alternatives",
+	)
+	text = models.TextField()
+	order = models.PositiveSmallIntegerField(default=0)
+
+	class Meta:
+		ordering = ["order", "id"]
+		verbose_name = "Map pointer alternative"
+		verbose_name_plural = "Map pointer alternatives"
+
+	def __str__(self):
+		return self.text
+
+
+class MapPointerAnswerArea(models.Model):
+	"""An area one answer may be placed on.
+
+	More than one is allowed because a single answer can legitimately span
+	several areas (e.g. a river crossing many prefectures) — placing the label on
+	any of them counts as correct. Two answers may also share an area.
+
+	An explicit row rather than a plain ``ManyToManyField`` so the authoring order
+	survives: the client is handed the areas in the order they were entered.
+	"""
+
+	answer = models.ForeignKey(
+		MapPointerAnswer,
+		on_delete=models.CASCADE,
+		related_name="areas",
+	)
+	area = models.ForeignKey(
+		MapArea,
+		on_delete=models.PROTECT,
+		related_name="answers",
+	)
+	order = models.PositiveSmallIntegerField(default=0)
+
+	class Meta:
+		ordering = ["order", "id"]
+		verbose_name = "Map pointer answer area"
+		verbose_name_plural = "Map pointer answer areas"
+		constraints = [
+			models.UniqueConstraint(
+				fields=["answer", "area"], name="unique_area_per_map_pointer_answer"
+			),
+		]
+
+	def __str__(self):
+		return self.area.name

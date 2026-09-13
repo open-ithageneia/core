@@ -1,8 +1,6 @@
 import logging
 import random
 
-from django.db import connection
-
 from .filters import (
 	DragAndDropFilter,
 	FillInTheBlankFilter,
@@ -19,7 +17,6 @@ from .models import (
 	MapPointer,
 	Matching,
 	OpenEnded,
-	QuizAsset,
 	QuizCategory,
 	Statement,
 )
@@ -35,147 +32,20 @@ from .serializers import (
 
 logger = logging.getLogger(__name__)
 
-# Only models with a JSON ``content`` column — the raw-SQL helpers below select
-# it directly, so ``Listening`` (which has none) is intentionally absent.
-QUIZ_MODELS = [Statement, Matching, DragAndDrop, FillInTheBlank, OpenEnded, MapPointer]
-
-
-def get_random_quiz_items_alt(category: str, amount: int):
-	"""
-	Return `amount` random active quiz items across all quiz models for the given
-	category. All rows from the different tables are UNIONed and a random sample is
-	taken from the combined result, which favors tables with larger datasets.
-	"""
-
-	union_parts = []
-	params = []
-
-	for model in QUIZ_MODELS:
-		model_table = model._meta.db_table
-
-		union_parts.append(f"""
-            SELECT
-                m.id,
-                m.category,
-                m.content,
-                '{model.__name__}' AS quiz_type
-            FROM {model_table} m
-            WHERE m.category = %s
-            AND m.is_active = TRUE
-        """)
-
-		params.append(category)
-
-	sql = f"""
-        SELECT id, category, content, quiz_type
-        FROM (
-            {" UNION ALL ".join(union_parts)}
-        ) combined
-        ORDER BY RANDOM()
-        LIMIT %s
-    """
-
-	params.append(amount)
-
-	with connection.cursor() as cursor:
-		cursor.execute(sql, params)
-		columns = [col[0] for col in cursor.description]
-		rows = cursor.fetchall()
-
-	logger.debug(
-		"get_random_quiz_items_alt: category=%s amount=%s returned %d rows",
-		category,
-		amount,
-		len(rows),
-	)
-
-	return [dict(zip(columns, row)) for row in rows]
-
-
-def get_random_quiz_items(category: str, amount: int, quiz_type: str = ""):
-	"""
-	Return `amount` random active quiz items for the given category using a
-	balanced sampling strategy. Each quiz table first contributes a random
-	subset of rows, the results are UNIONed, shuffled, and the final `amount` items
-	are returned. The Statement table uses `2 * amount` to account for its two
-	question subtypes (True/False and Multiple Choice).
-
-	If `quiz_type` is provided, only that model's table is queried.
-	"""
-
-	# Map quiz_type string to model class
-	QUIZ_TYPE_MAP = {model.__name__: model for model in QUIZ_MODELS}
-
-	if quiz_type and quiz_type in QUIZ_TYPE_MAP:
-		models_to_query = [QUIZ_TYPE_MAP[quiz_type]]
-	else:
-		models_to_query = QUIZ_MODELS
-
-	union_parts = []
-	params = []
-
-	for model in models_to_query:
-		model_table = model._meta.db_table
-
-		per_model_amount = amount * 2 if model is Statement else amount
-
-		if category:
-			cat_list = [c.strip() for c in category.split(",") if c.strip()]
-		else:
-			cat_list = []
-
-		if cat_list:
-			placeholders = ", ".join(["%s"] * len(cat_list))
-			category_clause = f"AND m.category IN ({placeholders})"
-		else:
-			category_clause = ""
-
-		union_parts.append(f"""
-            SELECT * FROM (
-                SELECT
-                    m.id,
-                    m.category,
-                    m.content,
-                    '{model.__name__}' AS quiz_type
-                FROM {model_table} m
-                WHERE m.is_active = TRUE
-                {category_clause}
-                ORDER BY RANDOM()
-                LIMIT %s
-            )
-        """)
-
-		if cat_list:
-			params.extend(cat_list)
-		params.append(per_model_amount)
-
-	sql = f"""
-        SELECT id, category, content, quiz_type
-        FROM (
-            {" UNION ALL ".join(union_parts)}
-        ) combined
-        ORDER BY RANDOM()
-        LIMIT %s
-    """
-
-	params.append(amount)
-
-	with connection.cursor() as cursor:
-		cursor.execute(sql, params)
-		columns = [col[0] for col in cursor.description]
-		rows = cursor.fetchall()
-
-	logger.debug(
-		"get_random_quiz_items: category=%s amount=%s returned %d rows",
-		category,
-		amount,
-		len(rows),
-	)
-
-	return [dict(zip(columns, row)) for row in rows]
-
 
 class QuizService:
+	@staticmethod
+	def with_content(queryset, serializer_class):
+		"""Apply the prefetches the serializer's ``to_dict()`` will walk.
+
+		Content used to be one JSON column, so a list cost one query. It is rows
+		now, which is only as cheap if the relations are fetched up front — hence
+		``content_prefetch`` on each serializer, applied here rather than repeated
+		at each call site.
+		"""
+		prefetch = getattr(serializer_class, "content_prefetch", ())
+		return queryset.prefetch_related(*prefetch) if prefetch else queryset
+
 	@staticmethod
 	def statement_types():
 		return [
@@ -207,7 +77,9 @@ class QuizService:
 	@staticmethod
 	def _list(model, filterset_class, serializer_class, params=None):
 		qs = filterset_class(params, queryset=model.objects.all()).qs
-		return serializer_class(qs, many=True).data
+		return serializer_class(
+			QuizService.with_content(qs, serializer_class), many=True
+		).data
 
 	@staticmethod
 	def statement_list(params=None):
@@ -255,7 +127,15 @@ class QuizService:
 			if model is Statement:
 				base_qs = base_qs.filter(listening__isnull=True)
 			qs = filterset_class(p, queryset=base_qs.distinct()).qs
-			return serializer_class(qs.order_by("?")[:n], many=True).data
+			# Slice first, then prefetch: prefetching the whole filtered table to
+			# keep n rows would fetch every child row in it.
+			sampled = QuizService.with_content(
+				model.objects.filter(
+					pk__in=list(qs.order_by("?").values_list("pk", flat=True)[:n])
+				),
+				serializer_class,
+			)
+			return serializer_class(sampled, many=True).data
 
 		return {
 			"true_false": sample(
@@ -345,7 +225,16 @@ class QuizService:
 			if model is Listening:
 				base_qs = base_qs.select_related("audio")
 			qs = filterset_class(filter_params, queryset=base_qs.distinct()).qs
-			sampled = qs.order_by("?")[:per_model_amount]
+			# Pick the ids first so the prefetch only loads the children of the
+			# rows actually being served.
+			sampled_ids = list(
+				qs.order_by("?").values_list("pk", flat=True)[:per_model_amount]
+			)
+			sampled = QuizService.with_content(
+				model.objects.filter(pk__in=sampled_ids), serializer_class
+			)
+			if model is Listening:
+				sampled = sampled.select_related("audio")
 			serialized = serializer_class(sampled, many=True).data
 			quiz_type_name = model.__name__
 			for entry in serialized:
@@ -354,19 +243,3 @@ class QuizService:
 
 		random.shuffle(items)
 		return items[:amount]
-
-
-class AssetService:
-	@staticmethod
-	def resolve_asset_url(asset_id):
-		asset = QuizAsset.objects.filter(id=asset_id).first()
-		if asset and asset.image:
-			return asset.image.url
-		return None
-
-	@staticmethod
-	def resolve_audio_asset_url(asset_id):
-		asset = QuizAsset.objects.filter(id=asset_id).first()
-		if asset and asset.audio:
-			return asset.audio.url
-		return None

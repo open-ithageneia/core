@@ -7,6 +7,9 @@ requires-python = ">=3.12"
 dependencies = [
 	"django-environ~=0.12.0",
 	"django~=6.0.0",
+	# No longer used by any model or widget, but migration 0001 imports
+	# ``django_jsonform.models.fields.JSONField`` — removing this breaks
+	# ``migrate`` on a fresh database.
 	"django-jsonform~=2.23.0",
 	"django-vite~=3.1.0",
 	"inertia-django~=1.2.0",
