@@ -37,7 +37,9 @@ export const DEFAULT_MAP_LEVEL = 4
 // ── Process GeoJSON ────────────────────────────────────────────────────────
 // Each source file uses different property keys for the Greek name, Latin
 // name and id, so map them into our compact { name, name_latin, id } shape.
-// Keys must stay in sync with quiz/schemas.py MAP_LEVEL_SOURCES.
+// The Greek-name key must stay in sync with MapArea.LEVEL_SOURCES in
+// quiz/models.py, which is what `manage.py sync_map_areas` reads the area
+// names with; migration 0022 carries its own frozen copy of the same map.
 type SourceKeys = { nameKey: string; latinKey: string; idKey: string }
 
 function processLevel(

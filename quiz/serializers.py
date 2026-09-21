@@ -1,30 +1,51 @@
+"""Assembly of the ``content`` object each quiz type sends to the client.
+
+This is the contract. ``frontend/js/types/models.ts`` is written against the
+output of ``get_content()`` below, so a change here is a change to the client's
+input whether or not one was intended. ``quiz/test_wire_format.py`` is what
+proves a change didn't happen: it runs a corpus of content shapes through the
+real migration and compares the result against the pre-refactor serializer.
+
+Every serializer declares ``content_prefetch``: the related rows its
+``get_content()`` walks. ``QuizService.with_content`` applies them, so the
+prefetching lives next to the code that needs it instead of at each call site.
+"""
+
 from rest_framework import serializers
 
 from .models import (
 	DragAndDrop,
+	DragAndDropValue,
 	FillInTheBlank,
 	Listening,
 	MapPointer,
 	Matching,
+	OpenEnded,
 	QuizAsset,
 	QuizCategory,
 	Statement,
-	OpenEnded,
 )
 
 
-class ParsedContentMixin:
-	"""Override ``to_representation`` so the raw JSON ``content`` field is
-	replaced by the structured output of ``content_model.to_dict()``.
+def image_url(asset):
+	return asset.image_url if asset else None
 
-	Works for every ``AbstractQuiz`` subclass — no per-model overrides
-	needed.  The mixin must come *before* ``ModelSerializer`` in the MRO."""
 
-	def to_representation(self, instance):
-		data = super().to_representation(instance)
-		if hasattr(instance, "content_model"):
-			data["content"] = instance.content_model.to_dict()
-		return data
+def audio_url(asset):
+	return asset.audio_url if asset else None
+
+
+def text_or_none(value):
+	"""A text column as the wire format has always carried it.
+
+	These fields were JSON keys before they were columns, and an unset one came
+	back as ``null`` — most visibly on ``Matching.prompt_text``, which is null on
+	every row. A column cannot be absent, so empty stands in for unset and is
+	reported the same way. The one behaviour this does not preserve is a value
+	deliberately stored as an empty string, which now reports as null too; both
+	are falsy to the client, and the original JSON is still on the row.
+	"""
+	return value or None
 
 
 class QuizAssetSerializer(serializers.ModelSerializer):
@@ -33,7 +54,11 @@ class QuizAssetSerializer(serializers.ModelSerializer):
 		fields = ["id", "title", "image"]
 
 
-class StatementSerializer(ParsedContentMixin, serializers.ModelSerializer):
+class StatementSerializer(serializers.ModelSerializer):
+	content = serializers.SerializerMethodField()
+
+	content_prefetch = ("choices__image", "prompt_image", "prompt_audio")
+
 	class Meta:
 		model = Statement
 		fields = [
@@ -46,16 +71,37 @@ class StatementSerializer(ParsedContentMixin, serializers.ModelSerializer):
 			"updated_at",
 		]
 
+	def get_content(self, obj):
+		return {
+			"choices": [
+				{
+					"is_correct": choice.is_correct,
+					"text": text_or_none(choice.text),
+					"asset_url": image_url(choice.image),
+				}
+				for choice in obj.choices.all()
+			],
+			"prompt_text": text_or_none(obj.prompt_text),
+			"prompt_asset_url": image_url(obj.prompt_image),
+			"prompt_audio_url": audio_url(obj.prompt_audio),
+		}
+
 
 class ListeningSerializer(serializers.ModelSerializer):
 	"""Serializes a listening question and its parts.
 
-	Deliberately *not* using ``ParsedContentMixin``: this model has no JSON
-	``content`` field, so there is nothing to parse.
+	This type has no ``content`` of its own — its questions are plain statements,
+	so the client receives them under ``parts`` instead.
 	"""
 
 	audio_url = serializers.ReadOnlyField()
 	parts = serializers.SerializerMethodField()
+
+	content_prefetch = (
+		"parts__questions__choices__image",
+		"parts__questions__prompt_image",
+		"parts__questions__prompt_audio",
+	)
 
 	class Meta:
 		model = Listening
@@ -72,18 +118,16 @@ class ListeningSerializer(serializers.ModelSerializer):
 		]
 
 	def get_parts(self, obj):
-		"""The sections the exam is split into, in order, each with its description
-		and the questions that belong to it.
+		"""The sections the exam is split into, in order, each with its
+		description and the questions that belong to it.
 
 		Parts have no name of their own — the client labels them Α, Β, … by their
-		position here, so the order matters. Parts with no questions are left out.
-		Ordered explicitly rather than via a prefetch so the order holds however
-		the serializer is called; a listening question has a handful of parts at
-		most.
+		position here, so the order matters. Parts with no questions are left
+		out.
 		"""
 		parts = []
-		for part in obj.parts.order_by("id"):
-			questions = list(part.questions.order_by("order", "id"))
+		for part in obj.parts.all():
+			questions = list(part.questions.all())
 			if not questions:
 				continue
 			parts.append(
@@ -96,7 +140,11 @@ class ListeningSerializer(serializers.ModelSerializer):
 		return parts
 
 
-class DragAndDropSerializer(ParsedContentMixin, serializers.ModelSerializer):
+class DragAndDropSerializer(serializers.ModelSerializer):
+	content = serializers.SerializerMethodField()
+
+	content_prefetch = ("values",)
+
 	class Meta:
 		model = DragAndDrop
 		fields = [
@@ -108,8 +156,35 @@ class DragAndDropSerializer(ParsedContentMixin, serializers.ModelSerializer):
 			"updated_at",
 		]
 
+	def get_content(self, obj):
+		# A bare two-element list, one entry per column — the shape the client's
+		# `DragAndDropContent` tuple type is written against.
+		values = list(obj.values.all())
+		return [
+			{
+				"title": obj.left_title,
+				"values": [
+					value.text
+					for value in values
+					if value.side == DragAndDropValue.Side.LEFT
+				],
+			},
+			{
+				"title": obj.right_title,
+				"values": [
+					value.text
+					for value in values
+					if value.side == DragAndDropValue.Side.RIGHT
+				],
+			},
+		]
 
-class MatchingSerializer(ParsedContentMixin, serializers.ModelSerializer):
+
+class MatchingSerializer(serializers.ModelSerializer):
+	content = serializers.SerializerMethodField()
+
+	content_prefetch = ("pairs__left_image", "pairs__right_image")
+
 	class Meta:
 		model = Matching
 		fields = [
@@ -121,8 +196,58 @@ class MatchingSerializer(ParsedContentMixin, serializers.ModelSerializer):
 			"updated_at",
 		]
 
+	def get_content(self, obj):
+		# ``id``/``matched_id`` are regenerated from the row order rather than
+		# stored: a pair row already *is* the pairing, and these numbers only ever
+		# existed so the client could link one column's item to the other's. Left
+		# item i gets id i+1 and points at i+1+n, which is what the importer
+		# synthesised from the pair index before the rows existed.
+		left_sequence = list(obj.pairs.all())
+		total = len(left_sequence)
+		# The right column is ordered on its own, so that a question whose right
+		# column is shuffled does not come back sorted into the answer.
+		right_sequence = sorted(
+			left_sequence, key=lambda pair: (pair.right_order, pair.order, pair.pk)
+		)
+		left_position = {pair.pk: index for index, pair in enumerate(left_sequence)}
+		right_position = {pair.pk: index for index, pair in enumerate(right_sequence)}
 
-class FillInTheBlankSerializer(ParsedContentMixin, serializers.ModelSerializer):
+		return {
+			"prompt_text": text_or_none(obj.prompt_text),
+			"columns": [
+				{
+					"title": text_or_none(obj.left_title),
+					"items": [
+						{
+							"text": text_or_none(pair.left_text),
+							"asset_url": image_url(pair.left_image),
+							"id": index + 1,
+							"matched_id": right_position[pair.pk] + 1 + total,
+						}
+						for index, pair in enumerate(left_sequence)
+					],
+				},
+				{
+					"title": text_or_none(obj.right_title),
+					"items": [
+						{
+							"text": text_or_none(pair.right_text),
+							"asset_url": image_url(pair.right_image),
+							"id": index + 1 + total,
+							"matched_id": left_position[pair.pk] + 1,
+						}
+						for index, pair in enumerate(right_sequence)
+					],
+				},
+			],
+		}
+
+
+class FillInTheBlankSerializer(serializers.ModelSerializer):
+	content = serializers.SerializerMethodField()
+
+	content_prefetch = ("texts__parts__choices", "extra_choices", "prompt_image")
+
 	class Meta:
 		model = FillInTheBlank
 		fields = [
@@ -134,8 +259,42 @@ class FillInTheBlankSerializer(ParsedContentMixin, serializers.ModelSerializer):
 			"updated_at",
 		]
 
+	def get_content(self, obj):
+		# The parts are rows now, derived from the authored sentence when it is
+		# saved, so this only has to shape them — no regex at request time.
+		texts = list(obj.texts.all())
+		return {
+			"show_answers_as_choices": obj.show_answers_as_choices,
+			"has_multiple_choices": any(text.has_multiple_choices for text in texts),
+			"prompt_instruction_choices": obj.instruction_choices(),
+			"texts": [
+				{"parts": [self._part(part) for part in text.parts.all()]}
+				for text in texts
+			],
+			"prompt_asset_url": image_url(obj.prompt_image),
+		}
 
-class OpenEndedSerializer(ParsedContentMixin, serializers.ModelSerializer):
+	@staticmethod
+	def _part(part):
+		# A blank sends no text: revealing the answer is the client's decision,
+		# made from the choices.
+		shaped = {
+			"text": None if part.is_blank else part.text,
+			"is_blank": part.is_blank,
+		}
+		if part.is_blank:
+			shaped["choices"] = [
+				{"text": choice.text, "is_correct": choice.is_correct}
+				for choice in part.choices.all()
+			]
+		return shaped
+
+
+class OpenEndedSerializer(serializers.ModelSerializer):
+	content = serializers.SerializerMethodField()
+
+	content_prefetch = ("answers__alternatives", "prompt_image")
+
 	class Meta:
 		model = OpenEnded
 		fields = [
@@ -147,8 +306,23 @@ class OpenEndedSerializer(ParsedContentMixin, serializers.ModelSerializer):
 			"updated_at",
 		]
 
+	def get_content(self, obj):
+		return {
+			"min_correct_answers": obj.min_correct_answers,
+			"prompt_text": text_or_none(obj.prompt_text),
+			"texts": [
+				[alternative.text for alternative in answer.alternatives.all()]
+				for answer in obj.answers.all()
+			],
+			"prompt_asset_url": image_url(obj.prompt_image),
+		}
 
-class MapPointerSerializer(ParsedContentMixin, serializers.ModelSerializer):
+
+class MapPointerSerializer(serializers.ModelSerializer):
+	content = serializers.SerializerMethodField()
+
+	content_prefetch = ("answers__alternatives", "answers__area_links__area")
+
 	class Meta:
 		model = MapPointer
 		fields = [
@@ -160,6 +334,27 @@ class MapPointerSerializer(ParsedContentMixin, serializers.ModelSerializer):
 			"created_at",
 			"updated_at",
 		]
+
+	def get_content(self, obj):
+		texts = []
+		for answer in obj.answers.all():
+			group = {
+				"alternatives": [
+					alternative.text for alternative in answer.alternatives.all()
+				]
+			}
+			# ``areas`` is omitted rather than sent empty when an answer has none.
+			areas = [link.area.name for link in answer.area_links.all()]
+			if areas:
+				group["areas"] = areas
+			texts.append(group)
+
+		return {
+			"show_answers": obj.show_answers,
+			"min_correct_answers": obj.min_correct_answers,
+			"prompt_text": text_or_none(obj.prompt_text),
+			"texts": texts,
+		}
 
 
 class ExerciseQuerySerializer(serializers.Serializer):

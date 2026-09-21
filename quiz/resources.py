@@ -6,17 +6,24 @@ from io import BytesIO
 from pathlib import PurePosixPath
 
 from django.core.files.base import ContentFile
+from django.db.models import Count, Max
 from import_export import resources
 
 from quiz.models import (
 	DragAndDrop,
+	DragAndDropValue,
 	FillInTheBlank,
+	FillInTheBlankText,
 	Listening,
 	ListeningPart,
 	Matching,
+	MatchPair,
+	OpenEnded,
+	OpenEndedAlternative,
+	OpenEndedAnswer,
 	QuizAsset,
 	Statement,
-	OpenEnded,
+	StatementChoice,
 )
 
 # ---------------------------------------------------------------------------
@@ -169,12 +176,57 @@ class AbstractQuizResource(resources.ModelResource):
 	Subclasses must set ``Meta.model`` and may extend ``Meta.fields``.
 	They should also define ``EXPORT_HEADERS`` (list of column names) and
 	override ``get_export_row(instance)`` → list of cell values.
+
+	**The spreadsheet columns are unchanged by the move to content tables.**
+	What changed is where they are written: the question's own columns are set
+	in ``before_save_instance``, and its child rows in ``save_content``, which
+	runs after the instance has a pk to point at.
 	"""
 
 	EXPORT_HEADERS: list[str] = []
 
+	#: related rows ``get_export_row`` reads, fetched up front.
+	export_prefetch: tuple = ()
+
 	# ------------------------------------------------------------------
-	# Export: flatten JSON content back into the same columns used by import
+	# Import
+	# ------------------------------------------------------------------
+
+	def before_import_row(self, row, **kwargs):
+		super().before_import_row(row, **kwargs)
+		self.validate_content(row)
+
+	def validate_content(self, row):
+		"""Reject a malformed content cell before anything is written.
+
+		``save_content`` runs from ``after_save_instance`` — after the question
+		row is saved and its old children deleted — so a cell that first fails
+		there leaves a question with none of its content behind whenever
+		``IMPORT_EXPORT_USE_TRANSACTIONS`` is off. Parsing here is also what
+		puts the error in the admin's import preview rather than at confirm
+		time.
+		"""
+
+	def save_content(self, instance, row):
+		"""Write the question's child rows. Called once *instance* has a pk.
+
+		Replace, don't merge: ``skip_unchanged = False`` means every import
+		rewrites a question's content wholesale, which is the semantics these
+		sheets have always had. A re-import of the same row therefore clears the
+		old children first.
+		"""
+
+	def after_save_instance(self, instance, row, **kwargs):
+		super().after_save_instance(instance, row, **kwargs)
+		self.save_content(instance, row)
+		# The rules that span child rows can only see them now. Before the
+		# content tables the whole question was validated in one ``save()``,
+		# because it was one column; re-running validation here keeps a bad
+		# sheet failing the import rather than landing half-valid.
+		instance.full_clean()
+
+	# ------------------------------------------------------------------
+	# Export: flatten content rows back into the same columns used by import
 	# ------------------------------------------------------------------
 
 	def get_export_row(self, instance) -> list:
@@ -184,6 +236,14 @@ class AbstractQuizResource(resources.ModelResource):
 		"""
 		raise NotImplementedError
 
+	def get_export_headers_for(self, queryset) -> list:
+		"""The columns this export will carry.
+
+		A hook for the types whose width depends on the data being exported;
+		most are a fixed list.
+		"""
+		return self.EXPORT_HEADERS
+
 	def export(self, *args, queryset=None, **kwargs):
 		"""Build a tablib Dataset with flat import-compatible columns."""
 		import tablib
@@ -191,25 +251,48 @@ class AbstractQuizResource(resources.ModelResource):
 		if queryset is None:
 			queryset = self.get_queryset()
 
-		headers = self.EXPORT_HEADERS
+		headers = self.get_export_headers_for(queryset)
 		if not headers:
 			# Fallback to default behaviour if subclass doesn't define headers
 			return super().export(*args, queryset=queryset, **kwargs)
 
+		if self.export_prefetch:
+			queryset = queryset.prefetch_related(*self.export_prefetch)
+
 		dataset = tablib.Dataset(headers=headers)
-		for instance in queryset.iterator():
+		# chunk_size is what lets ``iterator()`` honour the prefetches above.
+		for instance in queryset.iterator(chunk_size=200):
 			dataset.append(self.get_export_row(instance))
 
 		return dataset
 
 	class Meta:
-		fields = ("id", "category", "content")
+		fields = ("id", "category")
 		skip_unchanged = False
 		abstract = True
 
 
+def _choice_columns(count) -> list:
+	"""The ``choiceN_*`` column-triples for *count* choices."""
+	return [
+		column
+		for index in range(1, count + 1)
+		for column in (
+			f"choice{index}_text",
+			f"choice{index}_image",
+			f"choice{index}_is_correct",
+		)
+	]
+
+
 class StatementResource(AbstractQuizResource):
-	EXPORT_HEADERS = [
+	# How many choice column-triples an ordinary sheet carries. Every row has to
+	# be exactly as wide as the header or tablib rejects it, so a question
+	# holding more than this widens the whole sheet rather than losing the
+	# extras — see ``get_export_headers_for``.
+	MIN_EXPORT_CHOICES = 4
+
+	BASE_HEADERS = [
 		"id",
 		"type",
 		"category",
@@ -220,12 +303,14 @@ class StatementResource(AbstractQuizResource):
 		"part",
 		"part_description",
 		"order",
-		*[
-			col
-			for i in range(1, 5)
-			for col in (f"choice{i}_text", f"choice{i}_image", f"choice{i}_is_correct")
-		],
 	]
+
+	EXPORT_HEADERS = [*BASE_HEADERS, *_choice_columns(MIN_EXPORT_CHOICES)]
+
+	#: Width of the export being built, set by ``get_export_headers_for``.
+	_export_choices = MIN_EXPORT_CHOICES
+
+	export_prefetch = ("choices", "part")
 
 	class Meta(AbstractQuizResource.Meta):
 		model = Statement
@@ -233,7 +318,6 @@ class StatementResource(AbstractQuizResource):
 			"id",
 			"type",
 			"category",
-			"content",
 		)
 
 	choice_pattern = re.compile(r"choice(\d+)_text")
@@ -250,6 +334,7 @@ class StatementResource(AbstractQuizResource):
 		return sorted(numbers)
 
 	def build_choices(self, row):
+		"""The choices the sheet describes, as unsaved ``StatementChoice`` rows."""
 		choices = []
 
 		for i in self.get_choice_numbers(row):
@@ -257,39 +342,41 @@ class StatementResource(AbstractQuizResource):
 			image_data = row.get(f"choice{i}_image")
 			is_correct = row.get(f"choice{i}_is_correct")
 
+			# A column pair with neither text nor image is an unused slot in the
+			# sheet, not an empty choice.
 			if not text and _is_blank(image_data):
 				continue
 
-			choice = {
-				"text": text or "",
-				"is_correct": _parse_bool(is_correct),
-			}
-
-			asset_id = _import_image_column(image_data, title=f"Choice {i}")
-			if asset_id is not None:
-				choice["asset_id"] = asset_id
-
-			choices.append(choice)
+			choices.append(
+				StatementChoice(
+					text=text or "",
+					is_correct=_parse_bool(is_correct),
+					image_id=_import_image_column(image_data, title=f"Choice {i}"),
+					order=len(choices),
+				)
+			)
 
 		return choices
 
 	def before_save_instance(self, instance, row, **kwargs):
-		choices = self.build_choices(row)
-
-		instance.content = {
-			"prompt_text": row.get("prompt_text") or "",
-			"prompt_asset_id": _import_image_column(
-				row.get("prompt_image"), title="Prompt"
-			),
-			"prompt_audio_asset_id": _import_audio_column(
-				row.get("prompt_audio"), title="Prompt audio"
-			),
-			"choices": choices,
-		}
+		instance.prompt_text = row.get("prompt_text") or ""
+		instance.prompt_image_id = _import_image_column(
+			row.get("prompt_image"), title="Prompt"
+		)
+		instance.prompt_audio_id = _import_audio_column(
+			row.get("prompt_audio"), title="Prompt audio"
+		)
 
 		instance.listening_id = self._resolve_listening(row)
 		instance.part = self._resolve_part(row, instance.listening_id)
 		instance.order = self._resolve_order(row)
+
+	def save_content(self, instance, row):
+		instance.choices.all().delete()
+		choices = self.build_choices(row)
+		for choice in choices:
+			choice.statement = instance
+		StatementChoice.objects.bulk_create(choices)
 
 	@staticmethod
 	def _resolve_listening(row) -> int | None:
@@ -360,27 +447,45 @@ class StatementResource(AbstractQuizResource):
 	# Export
 	# ------------------------------------------------------------------
 
-	def get_export_row(self, instance):
-		content = instance.content or {}
-		choices = content.get("choices", [])
+	def get_export_headers_for(self, queryset) -> list:
+		"""Widen the sheet when some question holds more choices than the usual
+		four.
 
+		Truncating the row to a fixed four would be silent data loss: nothing
+		caps a question at four choices, the extras would simply not be in the
+		sheet, and re-importing it deletes them for good — ``save_content``
+		replaces a question's choices wholesale. Import already reads however
+		many ``choiceN_*`` columns it is given.
+		"""
+		widest = queryset.annotate(_choices=Count("choices")).aggregate(
+			Max("_choices")
+		)["_choices__max"]
+		self._export_choices = max(self.MIN_EXPORT_CHOICES, widest or 0)
+		return [*self.BASE_HEADERS, *_choice_columns(self._export_choices)]
+
+	def get_export_row(self, instance):
 		row = [
 			instance.id,
 			instance.type,
 			instance.category_id,
-			content.get("prompt_text", ""),
-			content.get("prompt_asset_id", "") or "",
-			content.get("prompt_audio_asset_id", "") or "",
+			instance.prompt_text,
+			instance.prompt_image_id or "",
+			instance.prompt_audio_id or "",
 			instance.listening_id or "",
 			instance.part.position if instance.part_id else "",
 			instance.part.description if instance.part_id else "",
 			instance.order,
 		]
 
-		for choice in choices:
-			row.append(choice.get("text", ""))
-			row.append(choice.get("asset_id", "") or "")
-			row.append("true" if choice.get("is_correct") else "false")
+		choices = list(instance.choices.all())
+		for index in range(self._export_choices):
+			if index < len(choices):
+				choice = choices[index]
+				row.append(choice.text)
+				row.append(choice.image_id or "")
+				row.append("true" if choice.is_correct else "false")
+			else:
+				row.extend(["", "", ""])
 
 		return row
 
@@ -395,44 +500,51 @@ class DragAndDropResource(AbstractQuizResource):
 		"right_values",
 	]
 
+	export_prefetch = ("values",)
+
 	class Meta(AbstractQuizResource.Meta):
 		model = DragAndDrop
 
 	def before_save_instance(self, instance, row, **kwargs):
-		left_values = [
-			v.strip() for v in row.get("left_values", "").split(",") if v.strip()
-		]
-		right_values = [
-			v.strip() for v in row.get("right_values", "").split(",") if v.strip()
-		]
+		instance.left_title = row.get("left_title", "") or ""
+		instance.right_title = row.get("right_title", "") or ""
 
-		instance.content = [
-			{
-				"title": row.get("left_title", ""),
-				"values": left_values,
-			},
-			{
-				"title": row.get("right_title", ""),
-				"values": right_values,
-			},
-		]
+	def save_content(self, instance, row):
+		instance.values.all().delete()
+
+		def split(column):
+			return [v.strip() for v in (row.get(column) or "").split(",") if v.strip()]
+
+		DragAndDropValue.objects.bulk_create(
+			[
+				DragAndDropValue(
+					question=instance, side=side, text=text, order=position
+				)
+				for side, column in (
+					(DragAndDropValue.Side.LEFT, "left_values"),
+					(DragAndDropValue.Side.RIGHT, "right_values"),
+				)
+				for position, text in enumerate(split(column))
+			]
+		)
 
 	# ------------------------------------------------------------------
 	# Export
 	# ------------------------------------------------------------------
 
 	def get_export_row(self, instance):
-		content = instance.content or []
-		left = content[0] if len(content) > 0 else {}
-		right = content[1] if len(content) > 1 else {}
+		values = list(instance.values.all())
+
+		def joined(side):
+			return ", ".join(value.text for value in values if value.side == side)
 
 		return [
 			instance.id,
 			instance.category_id,
-			left.get("title", ""),
-			right.get("title", ""),
-			", ".join(left.get("values", [])),
-			", ".join(right.get("values", [])),
+			instance.left_title,
+			instance.right_title,
+			joined(DragAndDropValue.Side.LEFT),
+			joined(DragAndDropValue.Side.RIGHT),
 		]
 
 
@@ -447,7 +559,10 @@ class MatchingResource(AbstractQuizResource):
 		"left_title",
 		"right_title",
 		"items",
+		"right_order",
 	]
+
+	export_prefetch = ("pairs",)
 
 	class Meta(AbstractQuizResource.Meta):
 		model = Matching
@@ -457,102 +572,128 @@ class MatchingResource(AbstractQuizResource):
 			return item[len(self.ASSET_PREFIX) :], True
 		return item, False
 
-	@staticmethod
-	def get_item_object(identifier, item, is_asset, matched_id):
-		obj = {
-			"id": identifier,
-			"matched_id": matched_id,
-		}
+	def parse_right_order(self, row, count) -> list:
+		"""The ``right_order`` column: where each pair's right item sits in its
+		own column, given in the same order as ``items``.
 
-		if is_asset:
-			obj["asset_id"] = int(item.strip())
-		else:
-			obj["text"] = item.strip()
+		Blank — which is what every sheet written before the column existed
+		says — means the right column runs parallel to the left.
+		"""
+		raw = row.get("right_order", "") or ""
+		positions = [value.strip() for value in str(raw).split(",") if value.strip()]
+		if not positions:
+			return []
+		if len(positions) != count:
+			raise ValueError(
+				f"'right_order' gives {len(positions)} positions for {count} "
+				f"pairs. Give one per pair, in the same order as 'items'."
+			)
+		try:
+			return [int(float(position)) for position in positions]
+		except ValueError:
+			raise ValueError(
+				f"Invalid right_order '{raw}'. Expected whole numbers separated "
+				f"by commas."
+			) from None
 
-		return obj
+	def extract_pairs(self, pairs, right_order=()):
+		"""Turn the ``left_right | left_right`` cell into unsaved ``MatchPair`` rows.
 
-	def extract_pairs(self, pairs):
-		left_objects = []
-		right_objects = []
+		This used to synthesise an ``id`` and ``matched_id`` per side from the
+		pair's index — bookkeeping the row itself now carries.
+		"""
+		rows = []
 
-		for idx, pair in enumerate(pairs, start=1):
+		for index, pair in enumerate(pairs):
 			if self.ITEM_PAIR_SEPARATOR not in pair:
 				raise ValueError(
-					f"Item '{pair}' is not in the expected 'left{self.ITEM_PAIR_SEPARATOR}right' format."
+					f"Item '{pair}' is not in the expected "
+					f"'left{self.ITEM_PAIR_SEPARATOR}right' format."
 				)
 			left_item, right_item = pair.split(self.ITEM_PAIR_SEPARATOR, maxsplit=1)
 
-			left_item, is_left_item_asset = self.parse_pair_item(left_item)
-			right_item, is_right_item_asset = self.parse_pair_item(right_item)
+			left_item, left_is_asset = self.parse_pair_item(left_item)
+			right_item, right_is_asset = self.parse_pair_item(right_item)
 
-			left_obj = self.get_item_object(
-				idx, left_item, is_left_item_asset, idx + len(pairs)
+			# The sheet pairs left_right, so the two columns run parallel
+			# unless ``right_order`` places the right item somewhere else.
+			match_pair = MatchPair(
+				order=index,
+				right_order=right_order[index] if right_order else index,
 			)
-			right_obj = self.get_item_object(
-				idx + len(pairs), right_item, is_right_item_asset, idx
-			)
+			if left_is_asset:
+				match_pair.left_image_id = int(left_item.strip())
+			else:
+				match_pair.left_text = left_item.strip()
+			if right_is_asset:
+				match_pair.right_image_id = int(right_item.strip())
+			else:
+				match_pair.right_text = right_item.strip()
 
-			left_objects.append(left_obj)
-			right_objects.append(right_obj)
+			rows.append(match_pair)
 
-		return left_objects, right_objects
+		return rows
 
 	def before_save_instance(self, instance, row, **kwargs):
-		raw_pairs = row.get("items", "")
-		if not raw_pairs:
-			raw_pairs = ""
-		pairs = [v.strip() for v in raw_pairs.split(self.ITEM_SEPARATOR) if v.strip()]
+		instance.left_title = row.get("left_title", "") or ""
+		instance.right_title = row.get("right_title", "") or ""
 
-		left_objects, right_objects = self.extract_pairs(pairs)
+	def split_items(self, row) -> list:
+		"""The ``items`` cell, split into one ``left_right`` string per pair."""
+		raw_pairs = row.get("items", "") or ""
+		return [
+			value.strip()
+			for value in raw_pairs.split(self.ITEM_SEPARATOR)
+			if value.strip()
+		]
 
-		instance.content = {
-			"columns": [
-				{
-					"title": row.get("left_title", ""),
-					"items": left_objects,
-				},
-				{
-					"title": row.get("right_title", ""),
-					"items": right_objects,
-				},
-			],
-		}
+	def validate_content(self, row):
+		# Parsing is pure, so doing it once here and again in ``save_content``
+		# costs nothing and keeps neither of them holding state for the other.
+		pairs = self.split_items(row)
+		self.extract_pairs(pairs, self.parse_right_order(row, len(pairs)))
+
+	def save_content(self, instance, row):
+		instance.pairs.all().delete()
+
+		pairs = self.split_items(row)
+		match_pairs = self.extract_pairs(pairs, self.parse_right_order(row, len(pairs)))
+		for match_pair in match_pairs:
+			match_pair.question = instance
+		MatchPair.objects.bulk_create(match_pairs)
 
 	# ------------------------------------------------------------------
 	# Export
 	# ------------------------------------------------------------------
 
-	def _serialize_item(self, item: dict) -> str:
-		"""Convert a single item dict back to its string representation."""
-		if "asset_id" in item:
-			return f"{self.ASSET_PREFIX}{item['asset_id']}"
-		return item.get("text", "")
+	def _serialize_item(self, text, image_id) -> str:
+		"""Convert one side of a pair back to its string representation."""
+		if image_id:
+			return f"{self.ASSET_PREFIX}{image_id}"
+		return text
 
 	def get_export_row(self, instance):
-		content = instance.content or {}
-		columns = content.get("columns", []) if isinstance(content, dict) else content
-		left = columns[0] if len(columns) > 0 else {}
-		right = columns[1] if len(columns) > 1 else {}
-
-		left_items = left.get("items", [])
-		right_items = right.get("items", [])
-
-		# Build a mapping from left item id → right item (via matched_id)
-		right_by_matched = {item.get("matched_id"): item for item in right_items}
-
-		pairs = []
-		for left_item in left_items:
-			left_str = self._serialize_item(left_item)
-			right_item = right_by_matched.get(left_item.get("id"), {})
-			right_str = self._serialize_item(right_item)
-			pairs.append(f"{left_str}{self.ITEM_PAIR_SEPARATOR}{right_str}")
+		# The row is the pairing, so the left → right mapping no longer has to be
+		# rebuilt by matching ids across the two columns.
+		rows = list(instance.pairs.all())
+		pairs = [
+			f"{self._serialize_item(pair.left_text, pair.left_image_id)}"
+			f"{self.ITEM_PAIR_SEPARATOR}"
+			f"{self._serialize_item(pair.right_text, pair.right_image_id)}"
+			for pair in rows
+		]
 
 		return [
 			instance.id,
 			instance.category_id,
-			left.get("title", ""),
-			right.get("title", ""),
+			instance.left_title,
+			instance.right_title,
 			f" {self.ITEM_SEPARATOR} ".join(pairs),
+			# Written out even when the columns are parallel: the pairing is in
+			# ``items`` and this is the only thing carrying where the right item
+			# actually sits, so a re-import that had to guess would flatten a
+			# deliberately shuffled column back into the answer.
+			",".join(str(pair.right_order) for pair in rows),
 		]
 
 
@@ -568,46 +709,53 @@ class FillInTheBlankResource(AbstractQuizResource):
 		*[f"text_{i}" for i in range(1, 6)],
 	]
 
+	export_prefetch = ("texts",)
+
 	class Meta(AbstractQuizResource.Meta):
 		model = FillInTheBlank
 
 	def before_save_instance(self, instance, row, **kwargs):
-		texts = []
-		i = 1
-		while f"text_{i}" in row and row[f"text_{i}"]:
-			texts.append({"text": row[f"text_{i}"]})
-			i += 1
+		instance.show_answers_as_choices = _parse_bool(
+			row.get("show_answers_as_choices", False)
+		)
+		instance.prompt_image_id = _import_image_column(
+			row.get("prompt_image"), title="Prompt"
+		)
 
-		instance.content = {
-			"show_answers_as_choices": _parse_bool(
-				row.get("show_answers_as_choices", False)
-			),
-			"prompt_asset_id": _import_image_column(
-				row.get("prompt_image"), title="Prompt"
-			),
-			"texts": texts,
-		}
+	def save_content(self, instance, row):
+		instance.texts.all().delete()
+		# The sheet has no extra-choices column, so an import clears them — the
+		# same thing it has always done, back when it rewrote the whole blob.
+		instance.extra_choices.all().delete()
+
+		position = 1
+		while f"text_{position}" in row and row[f"text_{position}"]:
+			# Saved one at a time rather than bulk-created: ``save()`` validates the
+			# markup and derives the sentence's parts, and ``bulk_create`` does
+			# neither. A question has a handful of sentences at most.
+			FillInTheBlankText(
+				question=instance,
+				text=row[f"text_{position}"],
+				order=position - 1,
+			).save()
+			position += 1
 
 	# ------------------------------------------------------------------
 	# Export
 	# ------------------------------------------------------------------
 
 	def get_export_row(self, instance):
-		content = instance.content or {}
-		texts = content.get("texts", [])
+		texts = [text.text for text in instance.texts.all()]
 
 		row = [
 			instance.id,
 			instance.category_id,
-			"true" if content.get("show_answers_as_choices") else "false",
-			content.get("prompt_asset_id", "") or "",
+			"true" if instance.show_answers_as_choices else "false",
+			instance.prompt_image_id or "",
 		]
 
-		for i in range(self.MAX_EXPORT_TEXTS):
-			if i < len(texts):
-				row.append(texts[i].get("text", ""))
-			else:
-				row.append("")
+		for index in range(self.MAX_EXPORT_TEXTS):
+			row.append(texts[index] if index < len(texts) else "")
 
 		return row
 
@@ -622,59 +770,62 @@ class OpenEndedResource(AbstractQuizResource):
 		"min_correct_answers",
 	]
 
+	export_prefetch = ("answers__alternatives",)
+
 	class Meta(AbstractQuizResource.Meta):
 		model = OpenEnded
 
-	def before_save_instance(self, instance, row, **kwargs):
-		raw_texts = row.get("texts", "")
-		texts = []
-		for v in raw_texts.split(","):
-			v = v.strip()
-			if not v:
+	@staticmethod
+	def _parse_texts(row):
+		"""``"a|b, c"`` → ``[["a", "b"], ["c"]]`` — comma separates answers, pipe
+		separates the spellings that all count as the same one."""
+		answers = []
+		for chunk in (row.get("texts", "") or "").split(","):
+			chunk = chunk.strip()
+			if not chunk:
 				continue
-			# Support pipe-separated alternatives: "word1|word2"
-			alternatives = [a.strip() for a in v.split("|") if a.strip()]
+			alternatives = [alt.strip() for alt in chunk.split("|") if alt.strip()]
 			if alternatives:
-				texts.append({"alternatives": alternatives})
+				answers.append(alternatives)
+		return answers
+
+	def before_save_instance(self, instance, row, **kwargs):
+		instance.prompt_text = row.get("prompt_text") or ""
+		instance.prompt_image_id = _import_image_column(
+			row.get("prompt_image"), title="Prompt"
+		)
 		min_correct_answers = row.get("min_correct_answers")
 		if not min_correct_answers:
-			min_correct_answers = len(texts)
+			min_correct_answers = len(self._parse_texts(row)) or 1
+		instance.min_correct_answers = int(min_correct_answers)
 
-		instance.content = {
-			"prompt_text": row.get("prompt_text") or "",
-			"prompt_asset_id": _import_image_column(
-				row.get("prompt_image"), title="Prompt"
-			),
-			"texts": texts,
-			"min_correct_answers": int(min_correct_answers),
-		}
+	def save_content(self, instance, row):
+		instance.answers.all().delete()
+
+		for position, alternatives in enumerate(self._parse_texts(row)):
+			answer = OpenEndedAnswer.objects.create(question=instance, order=position)
+			OpenEndedAlternative.objects.bulk_create(
+				[
+					OpenEndedAlternative(answer=answer, text=text, order=index)
+					for index, text in enumerate(alternatives)
+				]
+			)
 
 	# ------------------------------------------------------------------
 	# Export
 	# ------------------------------------------------------------------
 
 	def get_export_row(self, instance):
-		content = instance.content or {}
-		texts = content.get("texts", [])
-
-		# Serialize texts back to comma-separated, with pipe for alternatives
-		text_parts = []
-		for t in texts:
-			if isinstance(t, dict):
-				alternatives = t.get("alternatives", [])
-				if alternatives:
-					text_parts.append("|".join(alternatives))
-				else:
-					# Fallback for old format with "text" key
-					text_parts.append(t.get("text", ""))
-			else:
-				text_parts.append(str(t))
+		text_parts = [
+			"|".join(alternative.text for alternative in answer.alternatives.all())
+			for answer in instance.answers.all()
+		]
 
 		return [
 			instance.id,
 			instance.category_id,
-			content.get("prompt_text", ""),
-			content.get("prompt_asset_id", "") or "",
+			instance.prompt_text,
+			instance.prompt_image_id or "",
 			", ".join(text_parts),
-			content.get("min_correct_answers", ""),
+			instance.min_correct_answers,
 		]
