@@ -1,15 +1,13 @@
 import copy
 import logging
-import re
-import unicodedata
 import zipfile
 
 from django import forms
 from django.contrib import admin, messages
-from django.core.exceptions import PermissionDenied
+from django.contrib.admin.widgets import AutocompleteSelectMultiple
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.http import Http404, JsonResponse
-from django.urls import path
+from django.db.models import Count
+from django.urls import reverse
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 from import_export.admin import ImportExportModelAdmin
@@ -18,30 +16,36 @@ from open_ithageneia.utils import get_admin_image_thumb_preview
 
 from .models import (
 	DragAndDrop,
+	DragAndDropValue,
 	FillInTheBlank,
+	FillInTheBlankExtraChoice,
+	FillInTheBlankText,
 	Listening,
 	ListeningPart,
+	MapArea,
 	MapPointer,
+	MapPointerAlternative,
+	MapPointerAnswer,
+	MapPointerAnswerArea,
 	Matching,
-	Statement,
+	MatchPair,
+	OpenEnded,
+	OpenEndedAlternative,
+	OpenEndedAnswer,
 	QuizAsset,
 	QuizCategory,
-	OpenEnded,
+	Statement,
+	StatementChoice,
 	validate_listening_question_types,
 )
 from .resources import (
-	FillInTheBlankResource,
-	StatementResource,
 	DragAndDropResource,
+	FillInTheBlankResource,
 	MatchingResource,
+	OpenEndedResource,
+	StatementResource,
 	clear_image_store,
 	load_images_from_zip,
-	OpenEndedResource,
-)
-from .schemas import (
-	AREA_NAME_CHOICES_BY_LEVEL,
-	FillBlankText,
-	MapPointerTextGroup,
 )
 
 logger = logging.getLogger(__name__)
@@ -77,15 +81,19 @@ class FixedCategoryFormMixin:
 		self.instance.category_id = self.fixed_category
 
 
-def _fold_for_search(text: str) -> str:
-	"""Lowercase and strip accents so area names match however they are typed
-	(Greek is routinely typed without its tonos)."""
-	stripped = "".join(
-		char
-		for char in unicodedata.normalize("NFD", text)
-		if not unicodedata.combining(char)
-	)
-	return unicodedata.normalize("NFC", stripped).strip().casefold()
+class LinesField(forms.CharField):
+	"""A textarea holding one item per line.
+
+	The types that accept a written answer store each alternative spelling as its
+	own row, but authors think of them as a short list they type out. The rows
+	stay the storage; this is only how they are edited.
+	"""
+
+	widget = forms.Textarea(attrs={"rows": 3, "cols": 60})
+
+	def clean(self, value):
+		value = super().clean(value)
+		return [line.strip() for line in (value or "").splitlines() if line.strip()]
 
 
 class ZipImportMixin:
@@ -136,7 +144,6 @@ class ZipImportMixin:
 			elif not any(
 				name_lower.endswith(ext) for ext in self._SPREADSHEET_EXTENSIONS
 			):
-				from django.contrib import messages
 				from django.http import HttpResponseRedirect
 
 				messages.error(
@@ -197,8 +204,49 @@ class QuizAssetAdmin(ImportExportModelAdmin):
 		return get_admin_image_thumb_preview(obj.image)
 
 
+@admin.register(MapArea)
+class MapAreaAdmin(admin.ModelAdmin):
+	"""Read-only on purpose.
+
+	Rows are generated from the GeoJSON by ``manage.py sync_map_areas``, and the
+	name has to stay byte-identical to the property the client matches against —
+	editing one here would break the match silently. The registration exists so
+	the answer picker can autocomplete against it.
+	"""
+
+	list_display = ["name", "level", "answer_count"]
+	list_filter = ["level"]
+	search_fields = ["name", "search_name"]
+	ordering = ["level", "name"]
+
+	def has_add_permission(self, request):
+		return False
+
+	def has_change_permission(self, request, obj=None):
+		return False
+
+	def has_delete_permission(self, request, obj=None):
+		return False
+
+	def get_queryset(self, request):
+		# ``answer_count`` is a column on a changelist that pages 100 rows at a
+		# time, and level 4 is every municipality in the country — counting per
+		# row is 100 extra queries a page.
+		return (
+			super().get_queryset(request).annotate(_answer_count=Count("answer_links"))
+		)
+
+	@admin.display(description="Answers using it")
+	def answer_count(self, instance):
+		return instance._answer_count
+
+
 class AbstractQuizAdmin(ZipImportMixin, ImportExportModelAdmin):
 	skip_export_form = True
+
+	# The question itself. Types that ask it differently — ``DragAndDrop`` asks
+	# nothing, ``Listening`` asks with a clip — override this.
+	prompt_fields = ("prompt_text",)
 
 	list_display = [
 		"id",
@@ -223,22 +271,88 @@ class AbstractQuizAdmin(ZipImportMixin, ImportExportModelAdmin):
 		"created_at",
 		"updated_at",
 	]
-	fieldsets = (
-		(None, {"fields": ("category", "test_number", "question_number", "is_active", "content")}),
-		(
-			"Other information",
-			{
-				"classes": ("collapse",),
-				"fields": ("created_at", "updated_at"),
-			},
-		),
-	)
 	readonly_fields = ["created_at", "updated_at"]
+
+	@classmethod
+	def base_fieldsets(cls, *, extra_fields=(), prompt_fields=None, category=True):
+		"""The shared page layout, with each type's own fields folded in.
+
+		Built rather than written out because every quiz admin wants the same
+		three sections in the same order and differs only in what goes into the
+		first one.
+		"""
+		fields = ["category"] if category else []
+		fields += ["test_number", "question_number", "is_active"]
+		fields += list(extra_fields)
+		prompt = list(cls.prompt_fields if prompt_fields is None else prompt_fields)
+		sections = [(None, {"fields": tuple(fields)})]
+		if prompt:
+			sections.append(("Question", {"fields": tuple(prompt)}))
+		sections.append(
+			(
+				"Other information",
+				{
+					"classes": ("collapse",),
+					"fields": ("created_at", "updated_at"),
+				},
+			)
+		)
+		return tuple(sections)
+
+	def get_queryset(self, request):
+		# The list page renders every question's answer, so the rows it is built
+		# from are worth fetching up front rather than one query per question.
+		qs = super().get_queryset(request)
+		related = getattr(self, "list_prefetch", ())
+		return qs.prefetch_related(*related) if related else qs
+
+
+class StatementChoiceFormSet(forms.BaseInlineFormSet):
+	"""Repeats ``Statement._validate_content`` for admin saves.
+
+	The rule counts choices, and the admin saves the question before its inlines,
+	so the model check cannot see them on a create. This is where it bites.
+	"""
+
+	def clean(self):
+		super().clean()
+		if any(self.errors):
+			return
+
+		live = [
+			form.cleaned_data
+			for form in self.forms
+			if form.cleaned_data and not form.cleaned_data.get("DELETE")
+		]
+		if self.instance.type != Statement.StatementType.MULTIPLE_CHOICE:
+			return
+
+		# Deliberately no early return on an empty ``live``: marking every choice
+		# for deletion has to fail here as well. The model rule reads rows the
+		# admin only writes after the parent is saved, so an emptied
+		# multiple-choice question would otherwise save cleanly and be served
+		# with nothing to choose from.
+		if not any(choice.get("is_correct") for choice in live):
+			raise forms.ValidationError(
+				"Multiple-choice questions must have at least one correct choice."
+			)
+
+
+class StatementChoiceInline(admin.TabularInline):
+	model = StatementChoice
+	formset = StatementChoiceFormSet
+	extra = 0
+	fields = ["order", "text", "image", "is_correct"]
+	autocomplete_fields = ["image"]
+	ordering = ["order", "id"]
 
 
 @admin.register(Statement)
 class StatementAdmin(AbstractQuizAdmin):
 	resource_classes = [StatementResource]
+	inlines = [StatementChoiceInline]
+	prompt_fields = ("prompt_text", "prompt_image", "prompt_audio")
+	list_prefetch = ("choices__image", "prompt_image", "prompt_audio")
 	list_display = [
 		"id",
 		"type",
@@ -251,53 +365,53 @@ class StatementAdmin(AbstractQuizAdmin):
 		"created_at",
 		"updated_at",
 	]
+	# A real column and a real join: searching choice text used to be impossible
+	# through the JSON blob and carried a TODO saying so.
 	search_fields = AbstractQuizAdmin.search_fields + [
-		"content__prompt_text",
-		"content__prompt_asset_id",
-		# "content__choices__text", # not working, TODO: Check it
+		"prompt_text",
+		"choices__text",
 	]
 	list_filter = ["type"] + AbstractQuizAdmin.list_filter
-	autocomplete_fields = ["listening", "part"]
-	fieldsets = (
-		(
-			AbstractQuizAdmin.fieldsets[0][0],
-			{
-				"fields": (
-					"type",
-					*AbstractQuizAdmin.fieldsets[0][1]["fields"],
-				)
-			},
-		),
-		(
-			"Listening question",
-			{
-				"description": (
-					"Only for statements that are part of a listening question. "
-					"Edit these from the Listening page instead."
-				),
-				"fields": ("listening", "part", "order"),
-			},
-		),
-		AbstractQuizAdmin.fieldsets[1],
-	)
+	autocomplete_fields = ["listening", "part", "prompt_image", "prompt_audio"]
 	readonly_fields = ["created_at", "updated_at"]
 
-	@admin.display(description="Prompt preview", ordering="content__prompt_text")
-	def prompt_preview(self, instance):
-		prompt_text = instance.content.get("prompt_text", "")
-		prompt_asset_id = instance.content.get("prompt_asset_id", None)
-		prompt_audio_asset_id = instance.content.get("prompt_audio_asset_id", None)
-
-		image_thumb_preview = get_admin_image_thumb_preview(
-			instance.get_asset_image(prompt_asset_id)
+	def get_fieldsets(self, request, obj=None):
+		return self.base_fieldsets(extra_fields=("type",))[:1] + (
+			(
+				"Question",
+				{"fields": ("prompt_text", "prompt_image", "prompt_audio")},
+			),
+			(
+				"Listening question",
+				{
+					"description": (
+						"Only for statements that are part of a listening question. "
+						"Edit these from the Listening page instead."
+					),
+					"fields": ("listening", "part", "order"),
+				},
+			),
+			(
+				"Other information",
+				{
+					"classes": ("collapse",),
+					"fields": ("created_at", "updated_at"),
+				},
+			),
 		)
 
-		audio = instance.get_asset_audio(prompt_audio_asset_id)
+	@admin.display(description="Prompt preview", ordering="prompt_text")
+	def prompt_preview(self, instance):
+		image_thumb_preview = get_admin_image_thumb_preview(
+			instance.prompt_image.image if instance.prompt_image else None
+		)
+
+		audio = instance.prompt_audio.audio if instance.prompt_audio else None
 		audio_preview = (
 			format_html('<audio controls src="{}"></audio>', audio.url) if audio else ""
 		)
 
-		if not prompt_text and not image_thumb_preview and not audio_preview:
+		if not instance.prompt_text and not image_thumb_preview and not audio_preview:
 			return None
 
 		return format_html_join(
@@ -307,12 +421,12 @@ class StatementAdmin(AbstractQuizAdmin):
 			"  <span>{}</span>"
 			"  <span>{}</span>"
 			"</div>",
-			((prompt_text, image_thumb_preview, audio_preview),),
+			((instance.prompt_text, image_thumb_preview, audio_preview),),
 		)
 
 	@admin.display(description="Answer")
 	def answer_preview(self, instance):
-		choices = instance.get_choices_with_images()
+		choices = list(instance.choices.all())
 
 		if not choices:
 			return None
@@ -326,9 +440,11 @@ class StatementAdmin(AbstractQuizAdmin):
 			"</div>",
 			(
 				(
-					"✅" if bool(choice.get("is_correct")) else "◻️",
-					choice.get("text", ""),
-					get_admin_image_thumb_preview(choice.get("image", None)),
+					"✅" if choice.is_correct else "◻️",
+					choice.text,
+					get_admin_image_thumb_preview(
+						choice.image.image if choice.image else None
+					),
 				)
 				for choice in choices
 			),
@@ -370,7 +486,7 @@ class ListeningQuestionForm(FixedCategoryFormMixin, forms.ModelForm):
 
 	class Meta:
 		model = Statement
-		fields = ["order", "type", "content", "is_active"]
+		fields = ["order", "type", "prompt_text", "is_active"]
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
@@ -414,9 +530,47 @@ class ListeningQuestionInline(admin.StackedInline):
 	formset = ListeningQuestionFormSet
 	extra = 0
 	ordering = ["part_id", "order", "id"]
-	fields = ["part_position", "order", "type", "content", "is_active"]
+	fields = [
+		"part_position",
+		"order",
+		"type",
+		"prompt_text",
+		"choices_summary",
+		"is_active",
+	]
+	readonly_fields = ["choices_summary"]
 	verbose_name = "Question"
 	verbose_name_plural = "Questions (1 True/False + N multiple choice)"
+
+	@admin.display(description="Choices")
+	def choices_summary(self, instance):
+		"""The question's choices, with a link to where they can be edited.
+
+		Choices are rows on the statement, and a statement is already an inline
+		here — Django does not do inlines inside inlines, so they are listed
+		read-only and edited on the statement's own page.
+		"""
+		if not instance.pk:
+			return "Save the question first, then add its choices."
+		choices = list(instance.choices.all())
+		listed = (
+			format_html_join(
+				"",
+				"<li>{} {}</li>",
+				(
+					("✅" if choice.is_correct else "◻️", choice.text)
+					for choice in choices
+				),
+			)
+			if choices
+			else mark_safe("<li><em>none yet</em></li>")
+		)
+		return format_html(
+			'<ul style="margin:0;padding-left:18px;">{}</ul>'
+			'<a href="{}" target="_blank">Edit choices →</a>',
+			listed,
+			reverse("admin:quiz_statement_change", args=[instance.pk]),
+		)
 
 	def get_formset(self, request, obj=None, **kwargs):
 		"""Offer one position per part of the group being edited. The field is
@@ -543,7 +697,7 @@ class ListeningAdmin(admin.ModelAdmin):
 			super()
 			.get_queryset(request)
 			.select_related("audio")
-			.prefetch_related("parts", "questions")
+			.prefetch_related("parts", "questions__choices")
 		)
 
 	@admin.display(description="Audio")
@@ -556,208 +710,364 @@ class ListeningAdmin(admin.ModelAdmin):
 		return instance.questions.count()
 
 
+class DragAndDropValueInline(admin.TabularInline):
+	model = DragAndDropValue
+	extra = 0
+	fields = ["side", "order", "text"]
+	ordering = ["side", "order", "id"]
+
+
 @admin.register(DragAndDrop)
 class DragAndDropAdmin(AbstractQuizAdmin):
 	resource_classes = [DragAndDropResource]
+	inlines = [DragAndDropValueInline]
+	# The question is the two columns themselves — there is no prompt.
+	prompt_fields = ()
+	list_prefetch = ("values",)
+
+	def get_fieldsets(self, request, obj=None):
+		return self.base_fieldsets(extra_fields=("left_title", "right_title"))
 
 	@admin.display(description="Answer")
 	def answer_preview(self, instance):
-		content = getattr(instance, "content", [])
+		values = list(instance.values.all())
 
-		if not isinstance(content, list) or len(content) != 2:
-			return format_html(
-				"<em>Invalid content shape (expected 2 columns).</em>", None
+		def render_col(title, side):
+			items_html = format_html_join(
+				"",
+				"<li>{}</li>",
+				((value.text,) for value in values if value.side == side),
 			)
-
-		def render_col(col):
-			title = col.get("title", "")
-			values = col.get("values", [])
-
-			items_html = (
-				format_html_join("", "<li>{}</li>", ((v,) for v in values))
-				if isinstance(values, list)
-				else ""
-			)
-
 			return format_html(
 				"""
-				<div style="
-					flex: 1;
-					padding: 12px;
-					border: 1px solid #e6e6fa;
-					border-radius: 8px;
-				">
-					<div style="font-weight: 600; margin-bottom: 8px;">{}</div>
-					<ul style="margin: 0; padding-left: 18px;">{}</ul>
-				</div>
-				""",
+                <div style="
+                    flex: 1;
+                    padding: 12px;
+                    border: 1px solid #e6e6fa;
+                    border-radius: 8px;
+                ">
+                    <div style="font-weight: 600; margin-bottom: 8px;">{}</div>
+                    <ul style="margin: 0; padding-left: 18px;">{}</ul>
+                </div>
+                """,
 				title,
 				items_html,
 			)
 
-		left_html = render_col(instance.content[0])
-		right_html = render_col(instance.content[1])
-
 		return format_html(
 			"""
-			<div style="display:flex; gap: 12px; align-items: flex-start; max-width: 900px;">
-				{} {}
-			</div>
-			""",
-			left_html,
-			right_html,
+            <div style="display:flex; gap: 12px; align-items: flex-start; max-width: 900px;">
+                {} {}
+            </div>
+            """,
+			render_col(instance.left_title, DragAndDropValue.Side.LEFT),
+			render_col(instance.right_title, DragAndDropValue.Side.RIGHT),
 		)
+
+
+class MatchPairInline(admin.TabularInline):
+	model = MatchPair
+	extra = 0
+	fields = [
+		"order",
+		"left_text",
+		"left_image",
+		"right_order",
+		"right_text",
+		"right_image",
+	]
+	autocomplete_fields = ["left_image", "right_image"]
+	ordering = ["order", "id"]
+	verbose_name = "Pair"
+	verbose_name_plural = (
+		"Pairs — one row is one matching. 'Order' places the left item, "
+		"'right order' the right one: give them different orders to stop the "
+		"right column running parallel to the left."
+	)
 
 
 @admin.register(Matching)
 class MatchingAdmin(AbstractQuizAdmin):
 	resource_classes = [MatchingResource]
+	inlines = [MatchPairInline]
+	list_prefetch = ("pairs__left_image", "pairs__right_image")
+
+	def get_fieldsets(self, request, obj=None):
+		return self.base_fieldsets(extra_fields=("left_title", "right_title"))
 
 	@admin.display(description="Answer")
 	def answer_preview(self, instance):
-		content = getattr(instance, "content", [])
+		pairs = list(instance.pairs.all())
+		# The two columns are ordered independently, so the right one is sorted
+		# the way the serializer sorts it. Drawing both in left order would show
+		# a page the candidate never sees — and a shuffled right column is the
+		# whole point of ``right_order``.
+		# A row missing a side has no item in that column; see ``MatchPair``.
+		left_sequence = [pair for pair in pairs if pair.has_left]
+		right_sequence = sorted(
+			(pair for pair in pairs if pair.has_right),
+			key=lambda pair: (pair.right_order, pair.order, pair.pk),
+		)
 
-		if not isinstance(content, list) or len(content) != 2:
-			return format_html(
-				"<em>Invalid content shape (expected 2 columns).</em>", None
-			)
+		def label(text, image):
+			return text or (image.title if image else "")
 
-		def render_col(col, list_type="1"):
-			title = col.get("title", "")
-			items = col.get("items", [])
-
-			items_html = (
-				format_html_join(
-					"",
-					"<li>{}</li>",
-					((item.get("text", item.get("asset_id", "")),) for item in items),
-				)
-				if isinstance(items, list)
-				else ""
-			)
-
-			return [
-				format_html(
-					"""
-					<div style="
-						flex: 1;
-						padding: 12px;
-						border: 1px solid #e6e6fa;
-						border-radius: 8px;
-					">
-						<div style="font-weight: 600; margin-bottom: 8px;">{}</div>
-						<ol type="{}" style="margin: 0; padding-left: 18px;">{}</ol>
-					</div>
-					""",
-					title,
-					list_type,
-					items_html,
+		def render_col(title, list_type, sequence, side):
+			items_html = format_html_join(
+				"",
+				"<li>{}</li>",
+				(
+					(
+						label(pair.left_text, pair.left_image)
+						if side == "left"
+						else label(pair.right_text, pair.right_image),
+					)
+					for pair in sequence
 				),
-				items,
-			]
-
-		[left_html, left_items] = render_col(instance.content[0])
-		[right_html, right_items] = render_col(instance.content[1], list_type="A")
-
-		result_list = []
-
-		for left_item in left_items:
-			for right_item in right_items:
-				if left_item.get("id", None) == right_item.get("matched_id", None):
-					left_text = left_item.get("text", left_item.get("asset_id", ""))
-					right_text = right_item.get("text", right_item.get("asset_id", ""))
-					result_list.append(f"{left_text} → {right_text}")
-					break
-
-		result_list_html = (
-			format_html_join(
-				"", "<p><em>{}</em></p>", ((result,) for result in result_list)
 			)
-			if isinstance(result_list, list)
-			else ""
+			return format_html(
+				"""
+                <div style="
+                    flex: 1;
+                    padding: 12px;
+                    border: 1px solid #e6e6fa;
+                    border-radius: 8px;
+                ">
+                    <div style="font-weight: 600; margin-bottom: 8px;">{}</div>
+                    <ol type="{}" style="margin: 0; padding-left: 18px;">{}</ol>
+                </div>
+                """,
+				title,
+				list_type,
+				items_html,
+			)
+
+		# The row is the pairing, so this no longer has to reconstruct it by
+		# matching ids across the two columns.
+		result_list_html = format_html_join(
+			"",
+			"<p><em>{} → {}</em></p>",
+			(
+				(
+					label(pair.left_text, pair.left_image),
+					label(pair.right_text, pair.right_image),
+				)
+				for pair in pairs
+			),
 		)
 
 		return format_html(
 			"""
-			<div style="display:flex; gap: 12px; align-items: flex-start; max-width: 900px;">
-				{} {}
-			</div>
-			<div style="margin-top: 10px;">
-				{}
-			</div>
-			""",
-			left_html,
-			right_html,
+            <div style="display:flex; gap: 12px; align-items: flex-start; max-width: 900px;">
+                {} {}
+            </div>
+            <div style="margin-top: 10px;">
+                {}
+            </div>
+            """,
+			render_col(instance.left_title, "1", left_sequence, "left"),
+			render_col(instance.right_title, "A", right_sequence, "right"),
 			result_list_html,
 		)
+
+
+class FillInTheBlankTextInline(admin.TabularInline):
+	model = FillInTheBlankText
+	extra = 0
+	fields = ["order", "text"]
+	ordering = ["order", "id"]
+	verbose_name = "Sentence"
+	verbose_name_plural = (
+		"Sentences — mark blanks as <{{answer}}*>, with * on the correct choice"
+	)
+
+
+class FillInTheBlankExtraChoiceInline(admin.TabularInline):
+	model = FillInTheBlankExtraChoice
+	extra = 0
+	fields = ["order", "text"]
+	ordering = ["order", "id"]
+	verbose_name = "Extra choice"
+	verbose_name_plural = "Extra choices (distractors shown in the word bank)"
 
 
 @admin.register(FillInTheBlank)
 class FillInTheBlankAdmin(AbstractQuizAdmin):
 	resource_classes = [FillInTheBlankResource]
+	inlines = [FillInTheBlankTextInline, FillInTheBlankExtraChoiceInline]
+	prompt_fields = ("prompt_image",)
+	autocomplete_fields = ["prompt_image"]
+	list_prefetch = ("texts__parts__choices", "extra_choices", "prompt_image")
+
+	def get_fieldsets(self, request, obj=None):
+		return self.base_fieldsets(extra_fields=("show_answers_as_choices",))
 
 	@admin.display(description="Answer")
 	def answer_preview(self, instance):
-		texts = instance.content.get("texts", [])
+		sentences = list(instance.texts.all())
 
-		blank_pattern = FillBlankText.BLANK_PATTERN
-		choice_pattern = FillBlankText.CHOICE_PATTERN
+		def render(sentence):
+			"""The sentence with each blank's answer underlined in place.
 
-		def get_correct_answer(blank_content: str) -> str:
-			choices = choice_pattern.findall(blank_content)
-			correct = [text for text, marker in choices if marker == "*"]
-			return correct[0] if correct else "?"
-
-		def get_all_choices(blank_content: str) -> list[str]:
-			return [text for text, _ in choice_pattern.findall(blank_content)]
-
-		def render_text(text: str) -> str:
-			split_pattern = re.compile(r"<.+?>")
-			parts = split_pattern.split(text)
-			blanks = blank_pattern.findall(text)
+			Built from the derived rows rather than from the markup, so the page
+			also shows whether they actually got derived.
+			"""
 			out = []
-			for i, chunk in enumerate(parts):
-				out.append(format_html("{}", chunk))
-				if i < len(blanks):
-					correct = get_correct_answer(blanks[i])
-					all_choices = get_all_choices(blanks[i])
-					out.append(
-						format_html(
-							"<u><strong>{}</strong></u> ({})",
-							correct,
-							", ".join(all_choices),
-						)
+			for part in sentence.parts.all():
+				if not part.is_blank:
+					out.append(format_html("{}", part.text))
+					continue
+				choices = list(part.choices.all())
+				correct = next(
+					(choice.text for choice in choices if choice.is_correct), "?"
+				)
+				out.append(
+					format_html(
+						"<u><strong>{}</strong></u> ({})",
+						correct,
+						", ".join(choice.text for choice in choices),
 					)
-			return mark_safe("".join(str(x) for x in out))
+				)
+			return mark_safe("".join(str(part) for part in out))
 
 		all_correct = [
-			get_correct_answer(blank)
-			for t in texts
-			for blank in blank_pattern.findall(t.get("text", ""))
+			choice.text
+			for sentence in sentences
+			for part in sentence.parts.all()
+			for choice in part.choices.all()
+			if choice.is_correct
 		]
 
-		rendered_texts = [render_text(t.get("text", "")) for t in texts]
 		rendered_html_list = format_html_join(
-			"", "<p>{}</p>", ((html,) for html in rendered_texts)
+			"", "<p>{}</p>", ((render(sentence),) for sentence in sentences)
 		)
 
 		return format_html(
 			"""
-			<div>
-				<p><em>{}</em></p>
-			</div>
-			<div style="margin-top: 10px;">
-				{}
-			</div>
-			""",
+            <div>
+                <p><em>{}</em></p>
+            </div>
+            <div style="margin-top: 10px;">
+                {}
+            </div>
+            """,
 			", ".join(all_correct),
 			rendered_html_list,
 		)
 
 
+class AlternativesInlineForm(forms.ModelForm):
+	"""Edits an answer's alternative spellings as a block of lines.
+
+	``alternatives`` are rows on their own table, but a nested inline is not a
+	thing Django does — and typing them one per line is how an author thinks of
+	them anyway.
+	"""
+
+	alternatives_text = LinesField(
+		label="Alternatives",
+		required=True,
+		help_text="One spelling or phrasing per line. All of them count as correct.",
+	)
+
+	#: set by each subclass — the model holding one alternative.
+	alternative_model = None
+
+	class Meta:
+		fields = ["order"]
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		if self.instance.pk:
+			self.fields["alternatives_text"].initial = "\n".join(
+				self.instance.alternatives.values_list("text", flat=True)
+			)
+
+	def save(self, commit=True):
+		answer = super().save(commit=commit)
+		if commit:
+			self._save_alternatives(answer)
+		else:
+			# The formset saves the row itself; hook the children onto that.
+			original_save_m2m = getattr(self, "save_m2m", None)
+
+			def save_m2m():
+				if original_save_m2m:
+					original_save_m2m()
+				self._save_alternatives(answer)
+
+			self.save_m2m = save_m2m
+		return answer
+
+	def _save_alternatives(self, answer):
+		# Replace wholesale: the textarea is the whole list, so anything missing
+		# from it was removed.
+		answer.alternatives.all().delete()
+		self.alternative_model.objects.bulk_create(
+			[
+				self.alternative_model(answer=answer, text=text, order=index)
+				for index, text in enumerate(self.cleaned_data["alternatives_text"])
+			]
+		)
+
+
+class OpenEndedAnswerForm(AlternativesInlineForm):
+	alternative_model = OpenEndedAlternative
+
+	class Meta(AlternativesInlineForm.Meta):
+		model = OpenEndedAnswer
+
+
+class MinCorrectAnswersFormSet(forms.BaseInlineFormSet):
+	"""Repeats ``MinCorrectAnswersMixin._validate_min_correct_answers`` for admin
+	saves.
+
+	The rule counts the question's answers, and the admin saves the question
+	before its inlines — on a create there are none to count, so the model check
+	waves through any number at all.
+	"""
+
+	def clean(self):
+		super().clean()
+		if any(self.errors):
+			return
+
+		live = [
+			form
+			for form in self.forms
+			if form.cleaned_data and not form.cleaned_data.get("DELETE")
+		]
+		# An answerless question is allowed, the same way the model rule allows
+		# one: the answers can be added on a second pass.
+		if not live:
+			return
+
+		minimum = self.instance.min_correct_answers
+		if minimum > len(live):
+			raise forms.ValidationError(
+				f"min_correct_answers ({minimum}) cannot exceed the number of "
+				f"available answers ({len(live)})."
+			)
+
+
+class OpenEndedAnswerInline(admin.TabularInline):
+	model = OpenEndedAnswer
+	form = OpenEndedAnswerForm
+	formset = MinCorrectAnswersFormSet
+	extra = 0
+	fields = ["order", "alternatives_text"]
+	ordering = ["order", "id"]
+	verbose_name = "Accepted answer"
+	verbose_name_plural = "Accepted answers"
+
+
 @admin.register(OpenEnded)
 class OpenEndedAdmin(AbstractQuizAdmin):
 	resource_classes = [OpenEndedResource]
+	inlines = [OpenEndedAnswerInline]
+	prompt_fields = ("prompt_text", "prompt_image")
+	autocomplete_fields = ["prompt_image"]
+	list_prefetch = ("answers__alternatives", "prompt_image")
 	list_display = [
 		"id",
 		"category",
@@ -768,19 +1078,20 @@ class OpenEndedAdmin(AbstractQuizAdmin):
 		"updated_at",
 	]
 	search_fields = AbstractQuizAdmin.search_fields + [
-		"content__prompt_text",
+		"prompt_text",
+		"answers__alternatives__text",
 	]
 
-	@admin.display(description="Prompt", ordering="content__prompt_text")
-	def prompt_preview(self, instance):
-		prompt_text = instance.content.get("prompt_text", "")
-		prompt_asset_id = instance.content.get("prompt_asset_id", None)
+	def get_fieldsets(self, request, obj=None):
+		return self.base_fieldsets(extra_fields=("min_correct_answers",))
 
+	@admin.display(description="Prompt", ordering="prompt_text")
+	def prompt_preview(self, instance):
 		image_thumb_preview = get_admin_image_thumb_preview(
-			Statement.get_asset_image(prompt_asset_id)
+			instance.prompt_image.image if instance.prompt_image else None
 		)
 
-		if not prompt_text and not image_thumb_preview:
+		if not instance.prompt_text and not image_thumb_preview:
 			return None
 
 		return format_html_join(
@@ -789,73 +1100,136 @@ class OpenEndedAdmin(AbstractQuizAdmin):
 			"  <span>{}</span>"
 			"  <span>{}</span>"
 			"</div>",
-			((prompt_text, image_thumb_preview),),
+			((instance.prompt_text, image_thumb_preview),),
 		)
 
 	@admin.display(description="Answer")
 	def answer_preview(self, instance):
-		texts = instance.content.get("texts", [])
-		min_correct = instance.content.get("min_correct_answers", 0)
+		answers = list(instance.answers.all())
 
-		if not texts:
+		if not answers:
 			return None
 
-		answers = [t.get("text", "") if isinstance(t, dict) else str(t) for t in texts]
-
+		# Reads the alternatives directly. The old version looked for a "text"
+		# key that migration 0003 had already replaced, so every answer here
+		# rendered as an empty bullet.
 		answers_html = format_html_join(
 			"",
 			'<li style="margin:4px 0;">{}</li>',
-			((a,) for a in answers),
+			(
+				(", ".join(alt.text for alt in answer.alternatives.all()),)
+				for answer in answers
+			),
 		)
 
 		return format_html(
 			"""
-			<div>
-				<div style="margin-bottom:6px;">
-					<strong>Min correct:</strong> {}
-				</div>
-				<ol style="margin:0;padding-left:18px;">{}</ol>
-			</div>
-			""",
-			min_correct,
+            <div>
+                <div style="margin-bottom:6px;">
+                    <strong>Min correct:</strong> {}
+                </div>
+                <ol style="margin:0;padding-left:18px;">{}</ol>
+            </div>
+            """,
+			instance.min_correct_answers,
 			answers_html,
 		)
 
 
-class MapPointerAdminForm(forms.ModelForm):
-	class Meta:
-		model = MapPointer
-		fields = "__all__"
+class MapPointerAnswerForm(AlternativesInlineForm):
+	alternative_model = MapPointerAlternative
 
-	class Media:
-		# Ordering matters: our script must load *after* react-json-form.js
-		# (which defines `reactJsonForm`) and *before* index.js (which mounts
-		# the widget), so it can wrap `createForm` and capture the instance.
-		js = [
-			"django_jsonform/react-json-form.js",
-			"quiz/map_pointer_level.js",
-			"django_jsonform/index.js",
-		]
+	# A real autocomplete against ``MapArea``, which is what replaced the
+	# hand-written level picker: a schema enum rebuilt in JavaScript, its
+	# load-order hack, and the view that dumped every area name into the page.
+	# The widget is declared here rather than swapped in afterwards — a field
+	# wires its choices into the widget it is constructed with, and one assigned
+	# later renders against a bare list it cannot read.
+	areas = forms.ModelMultipleChoiceField(
+		queryset=MapArea.objects.all(),
+		required=False,
+		widget=AutocompleteSelectMultiple(
+			MapPointerAnswerArea._meta.get_field("area"), admin.site
+		),
+		help_text=(
+			"Every area this answer may be placed on — any one of them counts as "
+			"correct. They must all be at the question's map level."
+		),
+	)
+
+	class Meta(AlternativesInlineForm.Meta):
+		model = MapPointerAnswer
+		fields = ["order"]
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
-		# On a bound submission the dynamic `content` schema (and thus the
-		# `area` enum it validates against) must reflect the level the user
-		# just selected — not the saved/default level of the instance.
-		# Otherwise every non-default level fails jsonform's enum validation.
-		if self.is_bound and "content" in self.fields:
-			raw_level = self.data.get(self.add_prefix("level"))
-			if raw_level:
-				try:
-					self.instance.level = int(raw_level)
-				except (TypeError, ValueError):
-					pass
-			self.fields["content"].widget.instance = self.instance
+		if self.instance.pk:
+			self.fields["areas"].initial = MapArea.objects.filter(
+				answer_links__answer=self.instance
+			)
+
+	def _save_alternatives(self, answer):
+		super()._save_alternatives(answer)
+		answer.area_links.all().delete()
+		MapPointerAnswerArea.objects.bulk_create(
+			[
+				MapPointerAnswerArea(answer=answer, area=area, order=index)
+				for index, area in enumerate(self.cleaned_data.get("areas") or [])
+			]
+		)
+
+
+class MapPointerAnswerFormSet(MinCorrectAnswersFormSet):
+	"""Repeats ``MapPointer._validate_content``'s level rule for admin saves.
+
+	The model rule reads the areas linked to each answer, and those links are
+	written from ``save_related`` — after ``save_model`` has already run it. On a
+	create there is nothing linked yet either. Without this, an area from another
+	level can be saved onto an answer the client could then never match, and the
+	question fails to validate ever after on the link that was let in.
+
+	The error goes on the field rather than the formset so the offending row is
+	the one that lights up, and so the area can simply be removed and the
+	question saved again.
+	"""
+
+	def clean(self):
+		super().clean()
+		if any(self.errors):
+			return
+
+		level = self.instance.level
+		for form in self.forms:
+			if not form.cleaned_data or form.cleaned_data.get("DELETE"):
+				continue
+			areas = list(form.cleaned_data.get("areas") or [])
+			if not areas:
+				form.add_error("areas", "Choose at least one area for this answer.")
+				continue
+			wrong_level = sorted({area.name for area in areas if area.level != level})
+			if wrong_level:
+				form.add_error(
+					"areas",
+					f"These areas are not level-{level} areas: "
+					f"{', '.join(wrong_level)}.",
+				)
+
+
+class MapPointerAnswerInline(admin.TabularInline):
+	model = MapPointerAnswer
+	form = MapPointerAnswerForm
+	formset = MapPointerAnswerFormSet
+	extra = 0
+	fields = ["order", "alternatives_text", "areas"]
+	ordering = ["order", "id"]
+	verbose_name = "Answer"
+	verbose_name_plural = "Answers — each label and the areas it may be placed on"
 
 
 @admin.register(MapPointer)
 class MapPointerAdmin(AbstractQuizAdmin):
-	form = MapPointerAdminForm
+	inlines = [MapPointerAnswerInline]
+	list_prefetch = ("answers__alternatives", "answers__area_links__area")
 	list_display = [
 		"id",
 		"test_number",
@@ -869,91 +1243,36 @@ class MapPointerAdmin(AbstractQuizAdmin):
 	]
 	list_filter = ["level"] + without_category(AbstractQuizAdmin.list_filter)
 	search_fields = AbstractQuizAdmin.search_fields + [
-		"content__prompt_text",
+		"prompt_text",
+		"answers__alternatives__text",
 	]
+
 	# Map questions are always geography ones, so the picker is left off and the
 	# model default (GEOGRAPHY) stands.
-	fieldsets = (
-		(
-			AbstractQuizAdmin.fieldsets[0][0],
-			{
-				"fields": (
-					"level",
-					*without_category(AbstractQuizAdmin.fieldsets[0][1]["fields"]),
-				)
-			},
-		),
-		AbstractQuizAdmin.fieldsets[1],
-	)
+	def get_fieldsets(self, request, obj=None):
+		return self.base_fieldsets(
+			extra_fields=("level", "show_answers", "min_correct_answers"),
+			category=False,
+		)
 
-	def get_urls(self):
-		# Registered first so "area-options/…" is not swallowed by the admin's
-		# catch-all "<path:object_id>/" route.
-		return [
-			path(
-				"area-options/<int:level>/",
-				self.admin_site.admin_view(self.area_options_view),
-				name="quiz_mappointer_area_options",
-			),
-			*super().get_urls(),
-		]
-
-	def area_options_view(self, request, level):
-		"""Options for the searchable ``areas`` picker.
-
-		django-jsonform's autocomplete widget calls this with the typed text in
-		``query`` and expects ``{"results": [...]}``. Matching ignores case and
-		accents, so "ιωαννινα" finds "Ιωάννινα". A blank query lists the level's
-		areas in full so the picker can also be browsed — no level runs to more
-		than a few hundred names, and the popup scrolls."""
-		if not self.has_view_or_change_permission(request):
-			raise PermissionDenied
-		names = AREA_NAME_CHOICES_BY_LEVEL.get(level)
-		if names is None:
-			raise Http404(f"Unknown map level: {level}")
-		query = _fold_for_search(request.GET.get("query", ""))
-		if query:
-			names = [name for name in names if query in _fold_for_search(name)]
-		return JsonResponse({"results": names})
-
-	def get_form(self, request, obj=None, **kwargs):
-		"""Bind the instance so the dynamic ``content`` schema can scope the
-		area enum to the selected map level (see _map_pointer_content_schema).
-		This sets the schema for the *saved* level on initial render; live
-		switching is handled client-side by map_pointer_level.js."""
-		form = super().get_form(request, obj, **kwargs)
-		if "content" in form.base_fields:
-			form.base_fields["content"].widget.instance = obj
-		return form
-
-	def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
-		# Expose the per-level area names so the client-side script can rebuild
-		# the `area` dropdown when the level select changes.
-		extra_context = extra_context or {}
-		extra_context["map_pointer_area_names"] = AREA_NAME_CHOICES_BY_LEVEL
-		return super().changeform_view(request, object_id, form_url, extra_context)
-
-	@admin.display(description="Prompt", ordering="content__prompt_text")
+	@admin.display(description="Prompt", ordering="prompt_text")
 	def prompt_preview(self, instance):
-		return instance.content.get("prompt_text", "")
+		return instance.prompt_text
 
 	@admin.display(description="Answer")
 	def answer_preview(self, instance):
-		texts = instance.content.get("texts", [])
-		if not texts:
+		answers = list(instance.answers.all())
+		if not answers:
 			return None
-
-		parts = []
-		for t in texts:
-			if isinstance(t, dict):
-				alts = t.get("alternatives", [])
-				areas = MapPointerTextGroup.parse_areas(
-					t["areas"] if "areas" in t else t.get("area")
-				)
-				parts.append((", ".join(alts), " / ".join(areas)))
 
 		return format_html_join(
 			"",
 			'<div style="margin:4px 0;"><strong>{}</strong> → <code>{}</code></div>',
-			parts,
+			(
+				(
+					", ".join(alt.text for alt in answer.alternatives.all()),
+					" / ".join(link.area.name for link in answer.area_links.all()),
+				)
+				for answer in answers
+			),
 		)
