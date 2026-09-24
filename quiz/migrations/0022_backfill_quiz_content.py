@@ -153,7 +153,16 @@ def parse_blank_text(sentence):
 
 
 def text(value):
-    """Empty and absent were the same thing in the JSON; they are here too."""
+    """Empty and absent were the same thing in the JSON; they are here too.
+
+    A number — an Excel cell import-export stored as a float — becomes the
+    string the client displayed for it, which is JavaScript's: ``45.0`` showed
+    as ``45``, and ``0`` as ``0`` rather than nothing.
+    """
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    if isinstance(value, (int, float)):
+        return str(value)
     return value or ""
 
 

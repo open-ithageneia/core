@@ -672,7 +672,7 @@ class BackfillEquivalenceTests(TransactionTestCase):
 
 
 class KnownDeviationTests(TransactionTestCase):
-	"""The one place the output deliberately differs, asserted rather than hidden.
+	"""The places the output deliberately differs, asserted rather than hidden.
 
 	A JSON key that was absent came back as ``null``; a column cannot be absent,
 	so empty stands in for unset and is reported the same way. A value
@@ -708,4 +708,42 @@ class KnownDeviationTests(TransactionTestCase):
 		self.assertEqual(
 			actual["choices"],
 			reference_content("Statement", content)["choices"],
+		)
+
+	def test_a_numeric_choice_becomes_the_string_the_client_displayed(self):
+		"""Excel imports stored some choices as JSON numbers; a column holds text.
+
+		The old serializer sent the number and the client printed it the way
+		JavaScript does, so that printed form is what the row now holds.
+		"""
+		executor = MigrationExecutor(connection)
+		executor.loader.build_graph()
+		executor.migrate(MIGRATE_FROM)
+		old_apps = executor.loader.project_state(MIGRATE_FROM).apps
+
+		content = {
+			"prompt_text": "Πόσες;",
+			"choices": [
+				{"text": 45.0, "is_correct": False},
+				{"text": 0.05, "is_correct": False},
+				{"text": 0, "is_correct": False},
+				{"text": 1952, "is_correct": True},
+				{"text": "καμία", "is_correct": False},
+			],
+		}
+		pk = (
+			old_apps.get_model("quiz", "Statement")
+			.objects.create(
+				category_id="GEOGRAPHY", type="MULTIPLE_CHOICE", content=content
+			)
+			.pk
+		)
+
+		executor.loader.build_graph()
+		executor.migrate(MIGRATE_TO)
+
+		actual = StatementSerializer(Statement.objects.get(pk=pk)).data["content"]
+		self.assertEqual(
+			[choice["text"] for choice in actual["choices"]],
+			["45", "0.05", "0", "1952", "καμία"],
 		)
