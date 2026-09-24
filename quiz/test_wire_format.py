@@ -420,6 +420,48 @@ CONTENT_CORPUS = [
 		{},
 	),
 	(
+		# The schema never required the columns to be the same length.
+		"matching: a right-column distractor no left item points at",
+		"Matching",
+		{
+			"columns": [
+				{
+					"title": "Α",
+					"items": [
+						{"id": 1, "matched_id": 4, "text": "α1"},
+						{"id": 2, "matched_id": 5, "text": "α2"},
+					],
+				},
+				{
+					"title": "Β",
+					"items": [
+						{"id": 3, "matched_id": 0, "text": "β-extra"},
+						{"id": 4, "matched_id": 1, "text": "β1"},
+						{"id": 5, "matched_id": 2, "text": "β2"},
+					],
+				},
+			]
+		},
+		{},
+	),
+	(
+		"matching: a left item whose partner is not in the right column",
+		"Matching",
+		{
+			"columns": [
+				{
+					"title": "Α",
+					"items": [
+						{"id": 1, "matched_id": 3, "text": "α1"},
+						{"id": 2, "matched_id": 99, "text": "α2"},
+					],
+				},
+				{"title": "Β", "items": [{"id": 3, "matched_id": 1, "text": "β1"}]},
+			]
+		},
+		{},
+	),
+	(
 		"fill in the blank: single-choice blanks with a word bank",
 		"FillInTheBlank",
 		{

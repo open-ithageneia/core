@@ -802,8 +802,11 @@ class MatchingAdmin(AbstractQuizAdmin):
 		# the way the serializer sorts it. Drawing both in left order would show
 		# a page the candidate never sees — and a shuffled right column is the
 		# whole point of ``right_order``.
+		# A row missing a side has no item in that column; see ``MatchPair``.
+		left_sequence = [pair for pair in pairs if pair.has_left]
 		right_sequence = sorted(
-			pairs, key=lambda pair: (pair.right_order, pair.order, pair.pk)
+			(pair for pair in pairs if pair.has_right),
+			key=lambda pair: (pair.right_order, pair.order, pair.pk),
 		)
 
 		def label(text, image):
@@ -862,7 +865,7 @@ class MatchingAdmin(AbstractQuizAdmin):
                 {}
             </div>
             """,
-			render_col(instance.left_title, "1", pairs, "left"),
+			render_col(instance.left_title, "1", left_sequence, "left"),
 			render_col(instance.right_title, "A", right_sequence, "right"),
 			result_list_html,
 		)

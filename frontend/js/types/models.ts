@@ -84,7 +84,8 @@ export interface DragAndDropModel extends QuizBase {
 
 export interface MatchingItem {
 	id?: number
-	matched_id?: number
+	// null for an item with no partner, e.g. a right-column distractor
+	matched_id?: number | null
 	text: string
 	asset_url?: string
 }

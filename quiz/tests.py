@@ -2,6 +2,7 @@ import importlib
 import sys
 import types
 
+from django.apps import apps as django_apps
 from django.contrib.admin.sites import site
 from django.contrib.admin.utils import flatten_fieldsets
 from django.contrib.auth import get_user_model
@@ -726,17 +727,108 @@ class BackfillTests(TestCase):
 		canonical = backfill.canonical_from_json("Matching", content)
 
 		self.assertEqual(
-			canonical["pairs"],
-			[
+			canonical["left"], [{"text": "α1", "asset_id": None, "partner": 0}]
+		)
+		self.assertEqual(canonical["right"], [{"text": "β1", "asset_id": None}])
+
+	def _backfilled_matching(self, content):
+		question = Matching.objects.create(content=content)
+		backfill.backfill_matching(django_apps, question)
+		return question
+
+	def test_matching_keeps_a_right_item_no_left_item_points_at(self):
+		"""A right-column distractor becomes a right-only row, rather than being
+		dropped because nothing on the left claims it."""
+		content = {
+			"columns": [
+				{"title": "Α", "items": [{"id": 1, "matched_id": 3, "text": "α1"}]},
 				{
-					"left_text": "α1",
-					"left_asset_id": None,
-					"right_text": "β1",
-					"right_asset_id": None,
-					# where that right item sat in its own column
-					"right_order": 0,
-				}
+					"title": "Β",
+					"items": [
+						{"id": 2, "matched_id": 0, "text": "β-extra"},
+						{"id": 3, "matched_id": 1, "text": "β1"},
+					],
+				},
+			]
+		}
+
+		question = self._backfilled_matching(content)
+
+		self.assertEqual(
+			[
+				(pair.left_text, pair.right_text, pair.right_order)
+				for pair in question.pairs.all()
 			],
+			[("α1", "β1", 1), ("", "β-extra", 0)],
+		)
+		self.assertEqual(
+			backfill.canonical_from_rows("Matching", question),
+			backfill.canonical_from_json("Matching", content),
+		)
+		items = MatchingSerializer(question).data["content"]["columns"]
+		self.assertEqual([item["text"] for item in items[0]["items"]], ["α1"])
+		self.assertEqual(
+			[item["text"] for item in items[1]["items"]], ["β-extra", "β1"]
+		)
+		self.assertEqual(items[0]["items"][0]["matched_id"], items[1]["items"][1]["id"])
+		self.assertIsNone(items[1]["items"][0]["matched_id"])
+
+	def test_matching_does_not_copy_a_right_item_two_left_items_share(self):
+		"""The first claimant keeps it; the second is left with no partner, and
+		the right item the second one's position would have given is kept too."""
+		content = {
+			"columns": [
+				{
+					"title": "Α",
+					"items": [
+						{"id": 1, "matched_id": 3, "text": "α1"},
+						{"id": 2, "matched_id": 3, "text": "α2"},
+					],
+				},
+				{
+					"title": "Β",
+					"items": [
+						{"id": 3, "matched_id": 1, "text": "β1"},
+						{"id": 4, "matched_id": 2, "text": "β2"},
+					],
+				},
+			]
+		}
+
+		question = self._backfilled_matching(content)
+
+		self.assertEqual(
+			[(pair.left_text, pair.right_text) for pair in question.pairs.all()],
+			[("α1", "β1"), ("α2", ""), ("", "β2")],
+		)
+		self.assertEqual(
+			backfill.canonical_from_rows("Matching", question),
+			backfill.canonical_from_json("Matching", content),
+		)
+
+	def test_matching_verify_notices_a_lost_right_item(self):
+		"""The verify side reads the right column on its own, so it disagrees
+		with rows that dropped an item rather than agreeing with them."""
+		content = {
+			"columns": [
+				{"title": "Α", "items": [{"id": 1, "matched_id": 2, "text": "α1"}]},
+				{
+					"title": "Β",
+					"items": [
+						{"id": 2, "matched_id": 1, "text": "β1"},
+						{"id": 3, "matched_id": 0, "text": "β-extra"},
+					],
+				},
+			]
+		}
+		question = Matching.objects.create(content=content)
+		MatchPair.objects.create(
+			question=question, left_text="α1", right_text="β1", order=0
+		)
+
+		self.assertNotEqual(
+			backfill.canonical_from_rows("Matching", question),
+			backfill.canonical_from_json("Matching", content),
 		)
 
 	def test_rebuilt_json_round_trips_through_the_canonical_form(self):

@@ -157,6 +157,18 @@ def text(value):
     return value or ""
 
 
+def matching_sequences(question):
+    """A matching question's rows as its two columns, the way the serializer
+    lays them out: a row with no text or image on a side has no item there."""
+    pairs = list(question.pairs.order_by("order", "id"))
+    left_sequence = [pair for pair in pairs if pair.left_text or pair.left_image_id]
+    right_sequence = sorted(
+        (pair for pair in pairs if pair.right_text or pair.right_image_id),
+        key=lambda pair: (pair.right_order, pair.order, pair.pk),
+    )
+    return left_sequence, right_sequence
+
+
 # --------------------------------------------------------------------------
 # Step 1 — MapArea
 # --------------------------------------------------------------------------
@@ -257,13 +269,70 @@ def backfill_drag_and_drop(apps, question):
     )
 
 
-def backfill_matching(apps, question):
-    MatchPair = apps.get_model("quiz", "MatchPair")
-    content = question.content or {}
+def matching_columns(content):
+    """The two columns of a matching question, in either stored shape."""
     # 0004 moved from a bare list of columns to {"columns": [...]}; both are read.
     columns = content.get("columns", []) if isinstance(content, dict) else content
     left_column = columns[0] if len(columns) > 0 else {}
     right_column = columns[1] if len(columns) > 1 else {}
+    return left_column, right_column
+
+
+def is_blank_item(item):
+    """An item with neither text nor image, which a ``MatchPair`` side cannot
+    hold: an empty side is how a row says that side is absent."""
+    return not text(item.get("text")) and not item.get("asset_id")
+
+
+def matching_partners(left_items, right_items):
+    """Which right item, by index in its column, each left item points at.
+
+    Pair by the stored ids rather than by position: nothing ever checked that
+    the two columns' ids agreed, so position is the fallback, not the rule.
+    ``None`` where there is nothing to point at.
+    """
+    right_by_id = {
+        item.get("id"): position
+        for position, item in enumerate(right_items)
+        if "id" in item
+    }
+    partners = []
+    for index, left in enumerate(left_items):
+        found = right_by_id.get(left.get("matched_id"))
+        if found is None and index < len(right_items):
+            # No id to follow — fall back to the item sitting opposite.
+            found = index
+        partners.append(found)
+    return partners
+
+
+def right_slots(right_items):
+    """Each carried right item's index in its column → its ``right_order``.
+
+    Blank items are not carried (see ``is_blank_item``), so they take no slot.
+    """
+    slots = {}
+    for position, item in enumerate(right_items):
+        if not is_blank_item(item):
+            slots[position] = len(slots)
+    return slots
+
+
+def backfill_matching(apps, question):
+    """One row per left item, then one right-only row per right item no left
+    item claimed.
+
+    The columns were free to differ in length — a right-column distractor, a
+    left item pointing at nothing — and one row per left item alone would drop
+    the extra right items. A right item two left items both point at goes to
+    the first; the second becomes a left-only row, since a row holds one
+    partner. That is the one pairing this changes, and the old client could only
+    ever mark one of the two correct anyway: the candidate had a single copy of
+    that right item to give.
+    """
+    MatchPair = apps.get_model("quiz", "MatchPair")
+    content = question.content or {}
+    left_column, right_column = matching_columns(content)
 
     # The bare-list form carries no prompt; only the object form does.
     question.prompt_text = text(
@@ -275,34 +344,41 @@ def backfill_matching(apps, question):
 
     left_items = left_column.get("items") or []
     right_items = right_column.get("items") or []
-    # Pair by the stored ids rather than by position: nothing ever checked that
-    # the two columns' ids agreed, so position is the fallback, not the rule.
-    right_by_id = {
-        item.get("id"): (position, item)
-        for position, item in enumerate(right_items)
-        if "id" in item
-    }
+    slots = right_slots(right_items)
 
     pairs = []
-    for index, left in enumerate(left_items):
-        found = right_by_id.get(left.get("matched_id"))
-        if found is None:
-            # No id to follow — fall back to the item sitting opposite.
-            right_order = index
-            right = right_items[index] if index < len(right_items) else {}
-        else:
-            right_order, right = found
+    claimed = set()
+    for left, partner in zip(
+        left_items, matching_partners(left_items, right_items), strict=True
+    ):
+        if is_blank_item(left):
+            continue
+        pair = MatchPair(
+            question=question,
+            left_text=text(left.get("text")),
+            left_image_id=left.get("asset_id") or None,
+            order=len(pairs),
+        )
+        if partner in slots and partner not in claimed:
+            claimed.add(partner)
+            right = right_items[partner]
+            pair.right_text = text(right.get("text"))
+            pair.right_image_id = right.get("asset_id") or None
+            # Where the right item sat in its own column, which is not
+            # necessarily opposite its partner.
+            pair.right_order = slots[partner]
+        pairs.append(pair)
+    for position, slot in slots.items():
+        if position in claimed:
+            continue
+        right = right_items[position]
         pairs.append(
             MatchPair(
                 question=question,
-                left_text=text(left.get("text")),
-                left_image_id=left.get("asset_id") or None,
                 right_text=text(right.get("text")),
                 right_image_id=right.get("asset_id") or None,
-                order=index,
-                # Where the right item sat in its own column, which is not
-                # necessarily opposite its partner.
-                right_order=right_order,
+                order=len(pairs),
+                right_order=slot,
             )
         )
     MatchPair.objects.bulk_create(pairs)
@@ -475,31 +551,29 @@ def canonical_from_json(model_name, content):
             )
         ]
     if model_name == "Matching":
-        columns = content.get("columns", []) if isinstance(content, dict) else content
-        left_column = columns[0] if len(columns) > 0 else {}
-        right_column = columns[1] if len(columns) > 1 else {}
+        # Each column is read on its own rather than through the pairing the
+        # backfill builds, so a right item the rows lost is a missing entry here
+        # instead of an agreement between two copies of the same mistake.
+        left_column, right_column = matching_columns(content)
         left_items = left_column.get("items") or []
         right_items = right_column.get("items") or []
-        right_by_id = {
-            item.get("id"): (position, item)
-            for position, item in enumerate(right_items)
-            if "id" in item
-        }
-        pairs = []
-        for index, left in enumerate(left_items):
-            found = right_by_id.get(left.get("matched_id"))
-            if found is None:
-                right_order = index
-                right = right_items[index] if index < len(right_items) else {}
-            else:
-                right_order, right = found
-            pairs.append(
+        slots = right_slots(right_items)
+        left = []
+        claimed = set()
+        for item, partner in zip(
+            left_items, matching_partners(left_items, right_items), strict=True
+        ):
+            if is_blank_item(item):
+                continue
+            # A right item keeps only its first claimant; see backfill_matching.
+            if partner in claimed:
+                partner = None
+            claimed.add(partner)
+            left.append(
                 {
-                    "left_text": text(left.get("text")),
-                    "left_asset_id": left.get("asset_id") or None,
-                    "right_text": text(right.get("text")),
-                    "right_asset_id": right.get("asset_id") or None,
-                    "right_order": right_order,
+                    "text": text(item.get("text")),
+                    "asset_id": item.get("asset_id") or None,
+                    "partner": slots.get(partner),
                 }
             )
         return {
@@ -508,7 +582,14 @@ def canonical_from_json(model_name, content):
             ),
             "left_title": text(left_column.get("title")),
             "right_title": text(right_column.get("title")),
-            "pairs": pairs,
+            "left": left,
+            "right": [
+                {
+                    "text": text(right_items[position].get("text")),
+                    "asset_id": right_items[position].get("asset_id") or None,
+                }
+                for position in slots
+            ],
         }
     if model_name == "FillInTheBlank":
         return {
@@ -577,19 +658,23 @@ def canonical_from_rows(model_name, question):
             )
         ]
     if model_name == "Matching":
+        left_sequence, right_sequence = matching_sequences(question)
+        right_position = {pair.pk: index for index, pair in enumerate(right_sequence)}
         return {
             "prompt_text": text(question.prompt_text),
             "left_title": text(question.left_title),
             "right_title": text(question.right_title),
-            "pairs": [
+            "left": [
                 {
-                    "left_text": text(pair.left_text),
-                    "left_asset_id": pair.left_image_id,
-                    "right_text": text(pair.right_text),
-                    "right_asset_id": pair.right_image_id,
-                    "right_order": pair.right_order,
+                    "text": text(pair.left_text),
+                    "asset_id": pair.left_image_id,
+                    "partner": right_position.get(pair.pk),
                 }
-                for pair in question.pairs.order_by("order", "id")
+                for pair in left_sequence
+            ],
+            "right": [
+                {"text": text(pair.right_text), "asset_id": pair.right_image_id}
+                for pair in right_sequence
             ],
         }
     if model_name == "FillInTheBlank":
@@ -710,24 +795,25 @@ def json_from_rows(model_name, question):
             )
         ]
     if model_name == "Matching":
-        left_sequence = list(question.pairs.order_by("order", "id"))
+        left_sequence, right_sequence = matching_sequences(question)
         total = len(left_sequence)
-        right_sequence = sorted(
-            left_sequence, key=lambda pair: (pair.right_order, pair.order, pair.pk)
-        )
-        left_position = {pair.pk: index for index, pair in enumerate(left_sequence)}
-        right_position = {pair.pk: index for index, pair in enumerate(right_sequence)}
+        left_id = {pair.pk: index + 1 for index, pair in enumerate(left_sequence)}
+        right_id = {
+            pair.pk: index + 1 + total for index, pair in enumerate(right_sequence)
+        }
 
         def item(pair, is_left):
+            # The old schema required a ``matched_id``; an item with no partner
+            # points at 0, which is no item's id.
             if is_left:
                 entry = {
-                    "id": left_position[pair.pk] + 1,
-                    "matched_id": right_position[pair.pk] + 1 + total,
+                    "id": left_id[pair.pk],
+                    "matched_id": right_id.get(pair.pk, 0),
                 }
             else:
                 entry = {
-                    "id": right_position[pair.pk] + 1 + total,
-                    "matched_id": left_position[pair.pk] + 1,
+                    "id": right_id[pair.pk],
+                    "matched_id": left_id.get(pair.pk, 0),
                 }
             image_id = pair.left_image_id if is_left else pair.right_image_id
             if image_id:

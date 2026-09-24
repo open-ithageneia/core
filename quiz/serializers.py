@@ -202,15 +202,22 @@ class MatchingSerializer(serializers.ModelSerializer):
 		# existed so the client could link one column's item to the other's. Left
 		# item i gets id i+1 and points at i+1+n, which is what the importer
 		# synthesised from the pair index before the rows existed.
-		left_sequence = list(obj.pairs.all())
+		pairs = list(obj.pairs.all())
+		# A row missing a side is an item with no partner — see ``MatchPair`` —
+		# so each column holds only the rows that have that side, and an item
+		# whose partner is absent points at nothing.
+		left_sequence = [pair for pair in pairs if pair.has_left]
 		total = len(left_sequence)
 		# The right column is ordered on its own, so that a question whose right
 		# column is shuffled does not come back sorted into the answer.
 		right_sequence = sorted(
-			left_sequence, key=lambda pair: (pair.right_order, pair.order, pair.pk)
+			(pair for pair in pairs if pair.has_right),
+			key=lambda pair: (pair.right_order, pair.order, pair.pk),
 		)
-		left_position = {pair.pk: index for index, pair in enumerate(left_sequence)}
-		right_position = {pair.pk: index for index, pair in enumerate(right_sequence)}
+		left_id = {pair.pk: index + 1 for index, pair in enumerate(left_sequence)}
+		right_id = {
+			pair.pk: index + 1 + total for index, pair in enumerate(right_sequence)
+		}
 
 		return {
 			"prompt_text": text_or_none(obj.prompt_text),
@@ -221,10 +228,10 @@ class MatchingSerializer(serializers.ModelSerializer):
 						{
 							"text": text_or_none(pair.left_text),
 							"asset_url": image_url(pair.left_image),
-							"id": index + 1,
-							"matched_id": right_position[pair.pk] + 1 + total,
+							"id": left_id[pair.pk],
+							"matched_id": right_id.get(pair.pk),
 						}
-						for index, pair in enumerate(left_sequence)
+						for pair in left_sequence
 					],
 				},
 				{
@@ -233,10 +240,10 @@ class MatchingSerializer(serializers.ModelSerializer):
 						{
 							"text": text_or_none(pair.right_text),
 							"asset_url": image_url(pair.right_image),
-							"id": index + 1 + total,
-							"matched_id": left_position[pair.pk] + 1,
+							"id": right_id[pair.pk],
+							"matched_id": left_id.get(pair.pk),
 						}
-						for index, pair in enumerate(right_sequence)
+						for pair in right_sequence
 					],
 				},
 			],

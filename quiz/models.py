@@ -613,6 +613,12 @@ class MatchPair(models.Model):
 	runs parallel to its left gives the answers away by position. They are equal
 	for every question authored so far, but the shape has always been able to
 	express otherwise and still can.
+
+	A side with neither text nor image is *absent*, and the item is left out of
+	its column. That is how the columns come to differ in length: a row with no
+	left side is a right-column distractor that no left item matches, and a row
+	with no right side is a left item with nothing to match — the two shapes the
+	old JSON could hold that a pair cannot.
 	"""
 
 	question = models.ForeignKey(
@@ -654,6 +660,14 @@ class MatchPair(models.Model):
 
 	def __str__(self):
 		return f"{self.left_text or '—'} ↔ {self.right_text or '—'}"
+
+	@property
+	def has_left(self):
+		return bool(self.left_text or self.left_image_id)
+
+	@property
+	def has_right(self):
+		return bool(self.right_text or self.right_image_id)
 
 
 class FillInTheBlank(AbstractQuiz):
