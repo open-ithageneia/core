@@ -3,56 +3,440 @@
 		"model": "quiz.openended",
 		"pk": 1,
 		"fields": {
-			"category": "GEOGRAPHY",
-			"content": {
-				"prompt_text": "Ποια είναι 4 νησιά των Κυκλάδων;",
-				"min_correct_answers": 4,
-				"texts": [
-					{ "alternatives": ["Πάρος"] },
-					{ "alternatives": ["Νάξος"] },
-					{ "alternatives": ["Σαντορίνη"] },
-					{ "alternatives": ["Μύκονος"] },
-					{ "alternatives": ["Ίος"] },
-					{ "alternatives": ["Σέριφος"] },
-					{ "alternatives": ["Σίφνος"] },
-					{ "alternatives": ["Κύθνος"] },
-					{ "alternatives": ["Αμοργός"] },
-					{ "alternatives": ["Φολέγανδρος"] },
-					{ "alternatives": ["Σύρος"] },
-					{ "alternatives": ["Μήλος"] },
-					{ "alternatives": ["Κέα"] },
-					{ "alternatives": ["Δονούσα"] },
-					{ "alternatives": ["Ηρακλειά"] },
-					{ "alternatives": ["Κουφονήσια"] },
-					{ "alternatives": ["Σχοινούσα"] },
-					{ "alternatives": ["Αντίπαρος"] },
-					{ "alternatives": ["Καρπάθος"] },
-					{ "alternatives": ["Κάσος"] },
-					{ "alternatives": ["Τήνος"] },
-					{ "alternatives": ["Άνδρος"] }
-				]
-			},
-			"exam_sessions": [1, 2],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "GEOGRAPHY",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "Ποια είναι 4 νησιά των Κυκλάδων;",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"min_correct_answers": 4
 		}
 	},
 	{
 		"model": "quiz.openended",
 		"pk": 2,
 		"fields": {
-			"category": "GEOGRAPHY",
-			"content": {
-				"prompt_text": "Ποια είναι τα πελάγη από τα οποία βρέχεται η Κρήτη;",
-				"min_correct_answers": 2,
-				"texts": [
-					{ "alternatives": ["Λιβυκό Πέλαγος"] },
-					{ "alternatives": ["Κρητικό Πέλαγος"] }
-				]
-			},
-			"exam_sessions": [1, 2],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "GEOGRAPHY",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "Ποια είναι τα πελάγη από τα οποία βρέχεται η Κρήτη;",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"min_correct_answers": 2
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 1,
+		"fields": {
+			"question": 1,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 2,
+		"fields": {
+			"question": 1,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 3,
+		"fields": {
+			"question": 1,
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 4,
+		"fields": {
+			"question": 1,
+			"order": 3
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 5,
+		"fields": {
+			"question": 1,
+			"order": 4
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 6,
+		"fields": {
+			"question": 1,
+			"order": 5
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 7,
+		"fields": {
+			"question": 1,
+			"order": 6
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 8,
+		"fields": {
+			"question": 1,
+			"order": 7
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 9,
+		"fields": {
+			"question": 1,
+			"order": 8
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 10,
+		"fields": {
+			"question": 1,
+			"order": 9
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 11,
+		"fields": {
+			"question": 1,
+			"order": 10
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 12,
+		"fields": {
+			"question": 1,
+			"order": 11
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 13,
+		"fields": {
+			"question": 1,
+			"order": 12
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 14,
+		"fields": {
+			"question": 1,
+			"order": 13
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 15,
+		"fields": {
+			"question": 1,
+			"order": 14
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 16,
+		"fields": {
+			"question": 1,
+			"order": 15
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 17,
+		"fields": {
+			"question": 1,
+			"order": 16
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 18,
+		"fields": {
+			"question": 1,
+			"order": 17
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 19,
+		"fields": {
+			"question": 1,
+			"order": 18
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 20,
+		"fields": {
+			"question": 1,
+			"order": 19
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 21,
+		"fields": {
+			"question": 1,
+			"order": 20
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 22,
+		"fields": {
+			"question": 1,
+			"order": 21
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 23,
+		"fields": {
+			"question": 2,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedanswer",
+		"pk": 24,
+		"fields": {
+			"question": 2,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 1,
+		"fields": {
+			"answer": 1,
+			"text": "Πάρος",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 2,
+		"fields": {
+			"answer": 2,
+			"text": "Νάξος",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 3,
+		"fields": {
+			"answer": 3,
+			"text": "Σαντορίνη",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 4,
+		"fields": {
+			"answer": 4,
+			"text": "Μύκονος",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 5,
+		"fields": {
+			"answer": 5,
+			"text": "Ίος",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 6,
+		"fields": {
+			"answer": 6,
+			"text": "Σέριφος",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 7,
+		"fields": {
+			"answer": 7,
+			"text": "Σίφνος",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 8,
+		"fields": {
+			"answer": 8,
+			"text": "Κύθνος",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 9,
+		"fields": {
+			"answer": 9,
+			"text": "Αμοργός",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 10,
+		"fields": {
+			"answer": 10,
+			"text": "Φολέγανδρος",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 11,
+		"fields": {
+			"answer": 11,
+			"text": "Σύρος",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 12,
+		"fields": {
+			"answer": 12,
+			"text": "Μήλος",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 13,
+		"fields": {
+			"answer": 13,
+			"text": "Κέα",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 14,
+		"fields": {
+			"answer": 14,
+			"text": "Δονούσα",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 15,
+		"fields": {
+			"answer": 15,
+			"text": "Ηρακλειά",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 16,
+		"fields": {
+			"answer": 16,
+			"text": "Κουφονήσια",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 17,
+		"fields": {
+			"answer": 17,
+			"text": "Σχοινούσα",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 18,
+		"fields": {
+			"answer": 18,
+			"text": "Αντίπαρος",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 19,
+		"fields": {
+			"answer": 19,
+			"text": "Καρπάθος",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 20,
+		"fields": {
+			"answer": 20,
+			"text": "Κάσος",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 21,
+		"fields": {
+			"answer": 21,
+			"text": "Τήνος",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 22,
+		"fields": {
+			"answer": 22,
+			"text": "Άνδρος",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 23,
+		"fields": {
+			"answer": 23,
+			"text": "Λιβυκό Πέλαγος",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.openendedalternative",
+		"pk": 24,
+		"fields": {
+			"answer": 24,
+			"text": "Κρητικό Πέλαγος",
+			"order": 0
 		}
 	}
 ]

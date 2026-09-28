@@ -3,57 +3,69 @@
 		"model": "quiz.matching",
 		"pk": 1,
 		"fields": {
-			"category": "GEOGRAPHY",
-			"content": {
-				"prompt_text": "Αντιστοιχίστε τα γεωγραφικά διαμερίσματα με τις περιφερειακές ενότητες",
-				"columns": [
-					{
-						"title": "Γεωγραφικά διαμερίσματα",
-						"items": [
-							{
-								"id": 1,
-								"text": "Στερεά Ελλάδα - Εύβοια"
-							},
-							{
-								"id": 2,
-								"text": "Πελοπόννησος"
-							},
-							{
-								"id": 3,
-								"text": "Kρήτη"
-							},
-							{
-								"id": 4,
-								"text": "Νησιά Αιγαίου"
-							}
-						]
-					},
-					{
-						"title": "Περιφερειακές ενότητες",
-						"items": [
-							{
-								"matched_id": 3,
-								"text": "Λασιθίου"
-							},
-							{
-								"matched_id": 4,
-								"text": "Λέσβου"
-							},
-							{
-								"matched_id": 1,
-								"text": "Βοιωτίας"
-							},
-							{
-								"matched_id": 2,
-								"text": "Αρκαδίας"
-							}
-						]
-					}
-				]
-			},
-			"exam_sessions": [1, 2],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "GEOGRAPHY",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "Αντιστοιχίστε τα γεωγραφικά διαμερίσματα με τις περιφερειακές ενότητες",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"left_title": "Γεωγραφικά διαμερίσματα",
+			"right_title": "Περιφερειακές ενότητες"
+		}
+	},
+	{
+		"model": "quiz.matchpair",
+		"pk": 1,
+		"fields": {
+			"question": 1,
+			"left_text": "Στερεά Ελλάδα - Εύβοια",
+			"left_image": null,
+			"right_text": "Λασιθίου",
+			"right_image": null,
+			"order": 0,
+			"right_order": 0
+		}
+	},
+	{
+		"model": "quiz.matchpair",
+		"pk": 2,
+		"fields": {
+			"question": 1,
+			"left_text": "Πελοπόννησος",
+			"left_image": null,
+			"right_text": "Λέσβου",
+			"right_image": null,
+			"order": 1,
+			"right_order": 1
+		}
+	},
+	{
+		"model": "quiz.matchpair",
+		"pk": 3,
+		"fields": {
+			"question": 1,
+			"left_text": "Kρήτη",
+			"left_image": null,
+			"right_text": "Βοιωτίας",
+			"right_image": null,
+			"order": 2,
+			"right_order": 2
+		}
+	},
+	{
+		"model": "quiz.matchpair",
+		"pk": 4,
+		"fields": {
+			"question": 1,
+			"left_text": "Νησιά Αιγαίου",
+			"left_image": null,
+			"right_text": "Αρκαδίας",
+			"right_image": null,
+			"order": 3,
+			"right_order": 3
 		}
 	}
 ]

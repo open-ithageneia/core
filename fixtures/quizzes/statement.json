@@ -3,245 +3,504 @@
 		"model": "quiz.statement",
 		"pk": 1,
 		"fields": {
-			"type": "TRUE_FALSE",
-			"category": "CIVICS",
-			"content": {
-				"prompt_text": "Στην Ελλάδα η ελευθερία της Τέχνης προστατεύεται από το Σύνταγμα. Παρ’όλα αυτά σε ποιες περιπτώσεις θα μπορούσαν να επιβληθούν περιορισμοί στην καλλιτεχνική δημιουργία;",
-				"choices": [
-					{
-						"text": "Απαγόρευση εισόδου ανηλίκων σε κινηματογραφική αίθουσα, αν το έργο που προβάλλεται κρίνεται ως ακατάλληλο",
-						"is_correct": true
-					},
-					{
-						"text": "Απαγόρευση κυκλοφορίας βιβλίου μυθοπλασίας, επειδή θεωρήθηκε από μερίδα πολιτών ότι προσβάλλει το θρησκευτικό τους αίσθημα",
-						"is_correct": false
-					},
-					{
-						"text": "Απαγόρευση αυτοσχέδιας παράστασης σε κοινόχρηστο χώρο χωρίς να έχει ζητηθεί άδεια",
-						"is_correct": true
-					},
-					{
-						"text": "Απαγόρευση δημιουργίας graﬃti στους τοίχους ενός ξένου σπιτιού, χωρίς τη συναίνεση του ιδιοκτήτη",
-						"is_correct": true
-					}
-				]
-			},
-			"exam_sessions": [1, 2],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "CIVICS",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "Στην Ελλάδα η ελευθερία της Τέχνης προστατεύεται από το Σύνταγμα. Παρ’όλα αυτά σε ποιες περιπτώσεις θα μπορούσαν να επιβληθούν περιορισμοί στην καλλιτεχνική δημιουργία;",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"type": "TRUE_FALSE",
+			"listening": null,
+			"part": null,
+			"order": 0
 		}
 	},
 	{
 		"model": "quiz.statement",
 		"pk": 2,
 		"fields": {
-			"type": "TRUE_FALSE",
-			"category": "GEOGRAPHY",
-			"content": {
-				"choices": [
-					{ "text": "Στην Κάλυμνο αλιεύονται σφουγγάρια", "is_correct": true },
-					{ "text": "Στην Πιερία ευδοκιμούν τα ακτινίδια", "is_correct": true },
-					{
-						"text": "Ο Παγασητικός κόλπος φημίζεται για τις μυδοκαλλιέργειες",
-						"is_correct": false
-					},
-					{ "text": "Στην Κρήτη παράγονται μπανάνες", "is_correct": true }
-				]
-			},
-			"exam_sessions": [2],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "GEOGRAPHY",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"type": "TRUE_FALSE",
+			"listening": null,
+			"part": null,
+			"order": 0
 		}
 	},
 	{
 		"model": "quiz.statement",
 		"pk": 3,
 		"fields": {
-			"type": "TRUE_FALSE",
-			"category": "HISTORY",
-			"content": {
-				"choices": [
-					{
-						"text": "Η Ελένη Σκούρα, η πρώτη ελληνίδα βουλευτής, εκλέχθηκε το 1953.",
-						"is_correct": true
-					},
-					{
-						"text": "Ο βασιλιάς Όθωνας ήρθε στην Ελλάδα το 1821.",
-						"is_correct": false
-					},
-					{
-						"text": "Η Ελλάδα ήταν το πρώτο εθνικό κράτος στα Βαλκάνια που έγινε ανεξάρτητο το 1830",
-						"is_correct": true
-					},
-					{
-						"text": "Τόσο στον Πρώτο όσο και στον Δεύτερο Παγκόσμιο Πόλεμο η Ελλάδα ήταν με τη μεριά των νικητών.",
-						"is_correct": true
-					}
-				]
-			},
-
-			"exam_sessions": [2],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "HISTORY",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"type": "TRUE_FALSE",
+			"listening": null,
+			"part": null,
+			"order": 0
 		}
 	},
 	{
 		"model": "quiz.statement",
 		"pk": 4,
 		"fields": {
-			"type": "TRUE_FALSE",
-			"category": "CULTURE",
-			"content": {
-				"choices": [
-					{
-						"text": "Σαράντα ημέρες μετά τον θάνατο τελείται μνημόσυνο και φτιάχνουμε κόλλυβα",
-						"is_correct": true
-					},
-					{
-						"text": "Οι Καλικάντζαροι, σύμφωνα με την παράδοση, είναι τα καλά πνεύματα των Χριστουγέννων που φέρνουν καλοτυχία",
-						"is_correct": false
-					},
-					{
-						"text": "Όταν ξεκινάει η καινούρια σχολική χρονιά τελούμε αγιασμό",
-						"is_correct": true
-					},
-					{
-						"text": "Όταν κάποιος αρρωσταίνει φτιάχνουμε Φανουρόπιτα για να γίνει καλά",
-						"is_correct": false
-					}
-				]
-			},
-			"exam_sessions": [1, 2],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "CULTURE",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"type": "TRUE_FALSE",
+			"listening": null,
+			"part": null,
+			"order": 0
 		}
 	},
 	{
 		"model": "quiz.statement",
 		"pk": 5,
 		"fields": {
-			"type": "MULTIPLE_CHOICE",
-			"category": "CULTURE",
-			"content": {
-				"prompt_text": "Τι είναι η μαγειρίτσα;",
-				"choices": [
-					{
-						"text": "Μαγειρευτό φαγητό που τρώγεται την πρώτη μέρα του νέου έτους",
-						"is_correct": false
-					},
-					{
-						"text": "Το εθνικό φαγητό των Ελλήνων",
-						"is_correct": false
-					},
-					{
-						"text": "Παραδοσιακή σούπα με κρέας, που τρώγεται το βράδυ του Μεγάλου Σαββάτου",
-						"is_correct": true
-					},
-					{
-						"text": "Παραδοσιακή, ηπειρώτικη πίττα με κρέας",
-						"is_correct": false
-					}
-				]
-			},
-			"exam_sessions": [1, 2],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "CULTURE",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "Τι είναι η μαγειρίτσα;",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"type": "MULTIPLE_CHOICE",
+			"listening": null,
+			"part": null,
+			"order": 0
 		}
 	},
 	{
 		"model": "quiz.statement",
 		"pk": 6,
 		"fields": {
-			"type": "MULTIPLE_CHOICE",
-			"category": "HISTORY",
-			"content": {
-				"prompt_text": "Σπουδαίος Έλληνας Πρωθυπουργός του 19ου αιώνα ήταν:",
-				"choices": [
-					{
-						"text": "Ο Κωνσταντίνος Καραμανλής",
-						"is_correct": false
-					},
-					{
-						"text": "Ο Θεόδωρος Κολοκοτρώνης",
-						"is_correct": false
-					},
-					{
-						"text": "Ο Χαρίλαος Τρικούπης",
-						"is_correct": true
-					},
-					{
-						"text": "Ο Ρήγας Βελεστινλής",
-						"is_correct": false
-					}
-				]
-			},
-			"exam_sessions": [2],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "HISTORY",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "Σπουδαίος Έλληνας Πρωθυπουργός του 19ου αιώνα ήταν:",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"type": "MULTIPLE_CHOICE",
+			"listening": null,
+			"part": null,
+			"order": 0
 		}
 	},
 	{
 		"model": "quiz.statement",
 		"pk": 7,
 		"fields": {
-			"type": "MULTIPLE_CHOICE",
-			"category": "CIVICS",
-			"content": {
-				"prompt_text": "Κατά το διάστημα που η Βουλή είναι ανοιχτή πόσες φορές την εβδομάδα απαντάειο Πρωθυπουργός σε Επίκαιρες Ερωτήσεις (Ώρα του Πρωθυπουργού);",
-				"choices": [
-					{
-						"text": "Μια φορά",
-						"is_correct": true
-					},
-					{
-						"text": "Δύο φορές",
-						"is_correct": false
-					},
-					{
-						"text": "Καμία φορά",
-						"is_correct": false
-					},
-					{
-						"text": "Απεριόριστος αριθμός",
-						"is_correct": false
-					}
-				]
-			},
-			"exam_sessions": [2],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "CIVICS",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "Κατά το διάστημα που η Βουλή είναι ανοιχτή πόσες φορές την εβδομάδα απαντάειο Πρωθυπουργός σε Επίκαιρες Ερωτήσεις (Ώρα του Πρωθυπουργού);",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"type": "MULTIPLE_CHOICE",
+			"listening": null,
+			"part": null,
+			"order": 0
 		}
 	},
 	{
 		"model": "quiz.statement",
 		"pk": 8,
 		"fields": {
-			"type": "MULTIPLE_CHOICE",
-			"category": "GEOGRAPHY",
-			"content": {
-				"prompt_text": "Η Ερμούπολη είναι πρωτεύουσα:",
-				"choices": [
-					{
-						"text": "της Νάξου",
-						"is_correct": false
-					},
-					{
-						"text": "της Σύρου",
-						"is_correct": true
-					},
-					{
-						"text": "της Περιφερειακής Ενότητας Λακωνίας",
-						"is_correct": false
-					},
-					{
-						"text": "της Περιφερειακής Ενότητας Αχαΐας",
-						"is_correct": false
-					}
-				]
-			},
-			"exam_sessions": [1, 2],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "GEOGRAPHY",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "Η Ερμούπολη είναι πρωτεύουσα:",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"type": "MULTIPLE_CHOICE",
+			"listening": null,
+			"part": null,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 1,
+		"fields": {
+			"statement": 1,
+			"text": "Απαγόρευση εισόδου ανηλίκων σε κινηματογραφική αίθουσα, αν το έργο που προβάλλεται κρίνεται ως ακατάλληλο",
+			"image": null,
+			"is_correct": true,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 2,
+		"fields": {
+			"statement": 1,
+			"text": "Απαγόρευση κυκλοφορίας βιβλίου μυθοπλασίας, επειδή θεωρήθηκε από μερίδα πολιτών ότι προσβάλλει το θρησκευτικό τους αίσθημα",
+			"image": null,
+			"is_correct": false,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 3,
+		"fields": {
+			"statement": 1,
+			"text": "Απαγόρευση αυτοσχέδιας παράστασης σε κοινόχρηστο χώρο χωρίς να έχει ζητηθεί άδεια",
+			"image": null,
+			"is_correct": true,
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 4,
+		"fields": {
+			"statement": 1,
+			"text": "Απαγόρευση δημιουργίας graﬃti στους τοίχους ενός ξένου σπιτιού, χωρίς τη συναίνεση του ιδιοκτήτη",
+			"image": null,
+			"is_correct": true,
+			"order": 3
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 5,
+		"fields": {
+			"statement": 2,
+			"text": "Στην Κάλυμνο αλιεύονται σφουγγάρια",
+			"image": null,
+			"is_correct": true,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 6,
+		"fields": {
+			"statement": 2,
+			"text": "Στην Πιερία ευδοκιμούν τα ακτινίδια",
+			"image": null,
+			"is_correct": true,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 7,
+		"fields": {
+			"statement": 2,
+			"text": "Ο Παγασητικός κόλπος φημίζεται για τις μυδοκαλλιέργειες",
+			"image": null,
+			"is_correct": false,
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 8,
+		"fields": {
+			"statement": 2,
+			"text": "Στην Κρήτη παράγονται μπανάνες",
+			"image": null,
+			"is_correct": true,
+			"order": 3
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 9,
+		"fields": {
+			"statement": 3,
+			"text": "Η Ελένη Σκούρα, η πρώτη ελληνίδα βουλευτής, εκλέχθηκε το 1953.",
+			"image": null,
+			"is_correct": true,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 10,
+		"fields": {
+			"statement": 3,
+			"text": "Ο βασιλιάς Όθωνας ήρθε στην Ελλάδα το 1821.",
+			"image": null,
+			"is_correct": false,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 11,
+		"fields": {
+			"statement": 3,
+			"text": "Η Ελλάδα ήταν το πρώτο εθνικό κράτος στα Βαλκάνια που έγινε ανεξάρτητο το 1830",
+			"image": null,
+			"is_correct": true,
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 12,
+		"fields": {
+			"statement": 3,
+			"text": "Τόσο στον Πρώτο όσο και στον Δεύτερο Παγκόσμιο Πόλεμο η Ελλάδα ήταν με τη μεριά των νικητών.",
+			"image": null,
+			"is_correct": true,
+			"order": 3
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 13,
+		"fields": {
+			"statement": 4,
+			"text": "Σαράντα ημέρες μετά τον θάνατο τελείται μνημόσυνο και φτιάχνουμε κόλλυβα",
+			"image": null,
+			"is_correct": true,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 14,
+		"fields": {
+			"statement": 4,
+			"text": "Οι Καλικάντζαροι, σύμφωνα με την παράδοση, είναι τα καλά πνεύματα των Χριστουγέννων που φέρνουν καλοτυχία",
+			"image": null,
+			"is_correct": false,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 15,
+		"fields": {
+			"statement": 4,
+			"text": "Όταν ξεκινάει η καινούρια σχολική χρονιά τελούμε αγιασμό",
+			"image": null,
+			"is_correct": true,
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 16,
+		"fields": {
+			"statement": 4,
+			"text": "Όταν κάποιος αρρωσταίνει φτιάχνουμε Φανουρόπιτα για να γίνει καλά",
+			"image": null,
+			"is_correct": false,
+			"order": 3
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 17,
+		"fields": {
+			"statement": 5,
+			"text": "Μαγειρευτό φαγητό που τρώγεται την πρώτη μέρα του νέου έτους",
+			"image": null,
+			"is_correct": false,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 18,
+		"fields": {
+			"statement": 5,
+			"text": "Το εθνικό φαγητό των Ελλήνων",
+			"image": null,
+			"is_correct": false,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 19,
+		"fields": {
+			"statement": 5,
+			"text": "Παραδοσιακή σούπα με κρέας, που τρώγεται το βράδυ του Μεγάλου Σαββάτου",
+			"image": null,
+			"is_correct": true,
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 20,
+		"fields": {
+			"statement": 5,
+			"text": "Παραδοσιακή, ηπειρώτικη πίττα με κρέας",
+			"image": null,
+			"is_correct": false,
+			"order": 3
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 21,
+		"fields": {
+			"statement": 6,
+			"text": "Ο Κωνσταντίνος Καραμανλής",
+			"image": null,
+			"is_correct": false,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 22,
+		"fields": {
+			"statement": 6,
+			"text": "Ο Θεόδωρος Κολοκοτρώνης",
+			"image": null,
+			"is_correct": false,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 23,
+		"fields": {
+			"statement": 6,
+			"text": "Ο Χαρίλαος Τρικούπης",
+			"image": null,
+			"is_correct": true,
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 24,
+		"fields": {
+			"statement": 6,
+			"text": "Ο Ρήγας Βελεστινλής",
+			"image": null,
+			"is_correct": false,
+			"order": 3
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 25,
+		"fields": {
+			"statement": 7,
+			"text": "Μια φορά",
+			"image": null,
+			"is_correct": true,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 26,
+		"fields": {
+			"statement": 7,
+			"text": "Δύο φορές",
+			"image": null,
+			"is_correct": false,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 27,
+		"fields": {
+			"statement": 7,
+			"text": "Καμία φορά",
+			"image": null,
+			"is_correct": false,
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 28,
+		"fields": {
+			"statement": 7,
+			"text": "Απεριόριστος αριθμός",
+			"image": null,
+			"is_correct": false,
+			"order": 3
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 29,
+		"fields": {
+			"statement": 8,
+			"text": "της Νάξου",
+			"image": null,
+			"is_correct": false,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 30,
+		"fields": {
+			"statement": 8,
+			"text": "της Σύρου",
+			"image": null,
+			"is_correct": true,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 31,
+		"fields": {
+			"statement": 8,
+			"text": "της Περιφερειακής Ενότητας Λακωνίας",
+			"image": null,
+			"is_correct": false,
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.statementchoice",
+		"pk": 32,
+		"fields": {
+			"statement": 8,
+			"text": "της Περιφερειακής Ενότητας Αχαΐας",
+			"image": null,
+			"is_correct": false,
+			"order": 3
 		}
 	}
 ]

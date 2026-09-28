@@ -43,7 +43,7 @@ def text_or_none(value):
 	every row. A column cannot be absent, so empty stands in for unset and is
 	reported the same way. The one behaviour this does not preserve is a value
 	deliberately stored as an empty string, which now reports as null too; both
-	are falsy to the client, and the original JSON is still on the row.
+	are falsy to the client.
 	"""
 	return value or None
 

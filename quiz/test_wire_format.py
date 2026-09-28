@@ -598,7 +598,22 @@ MIGRATE_FROM = [("quiz", "0021_quiz_content_tables")]
 MIGRATE_TO = [("quiz", "0022_backfill_quiz_content")]
 
 
-class BackfillEquivalenceTests(TransactionTestCase):
+class MigratingTestCase(TransactionTestCase):
+	"""Put the schema back at the latest migration after each test.
+
+	The tests stop at ``MIGRATE_TO``, where the ``content`` columns 0023 drops
+	still exist — and are ``NOT NULL`` with no database default, so every later
+	test that inserts through the live models would fail against them.
+	"""
+
+	def tearDown(self):
+		executor = MigrationExecutor(connection)
+		executor.loader.build_graph()
+		executor.migrate(executor.loader.graph.leaf_nodes())
+		super().tearDown()
+
+
+class BackfillEquivalenceTests(MigratingTestCase):
 	"""Seed legacy rows, run the real migration, compare to the old serializer.
 
 	``TransactionTestCase`` because this migrates the database, which cannot
@@ -671,14 +686,13 @@ class BackfillEquivalenceTests(TransactionTestCase):
 		)
 
 
-class KnownDeviationTests(TransactionTestCase):
+class KnownDeviationTests(MigratingTestCase):
 	"""The places the output deliberately differs, asserted rather than hidden.
 
 	A JSON key that was absent came back as ``null``; a column cannot be absent,
 	so empty stands in for unset and is reported the same way. A value
 	deliberately stored as ``""`` therefore now reports as ``null`` too. Both are
-	falsy to the client, and the original JSON is still on the row — but it is a
-	difference, so it is written down.
+	falsy to the client — but it is a difference, so it is written down.
 	"""
 
 	serialized_rollback = True
