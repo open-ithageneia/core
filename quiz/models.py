@@ -32,24 +32,6 @@ def fold_for_search(text):
 	return unicodedata.normalize("NFC", stripped).strip().casefold()
 
 
-def legacy_content_field(default=dict):
-	"""The pre-refactor ``content`` JSON column: still on the row, read by nothing.
-
-	Migration 0022 copied every one of these into the content tables and verified
-	the copy. The column deliberately survives that migration — it is the only
-	record of what the row looked like beforehand, so a mistake the verify step
-	did not catch stays recoverable, and an older image redeployed against this
-	database still finds the shape it expects.
-
-	``editable=False`` keeps it out of every form and the admin. Do not read it
-	and do not write it: rows created from now on get the empty default, so it is
-	a frozen snapshot rather than a second copy kept in step. A follow-up
-	migration drops these six columns once production has run on the content
-	tables.
-	"""
-	return models.JSONField(blank=True, default=default, editable=False)
-
-
 class QuizAsset(TimeStampedModel):
 	title = models.CharField(max_length=255, blank=True, default="")
 	image = models.ImageField(upload_to=get_quiz_asset_upload_to, blank=True, null=True)
@@ -378,8 +360,6 @@ class Statement(AbstractQuiz):
 		default=StatementType.TRUE_FALSE,
 	)
 
-	content = legacy_content_field()
-
 	listening = models.ForeignKey(
 		"Listening",
 		on_delete=models.CASCADE,
@@ -464,7 +444,7 @@ class StatementChoice(models.Model):
 		verbose_name_plural = "Statement choices"
 		# Deliberately no "must have text or an image" check constraint. It would
 		# be true of every choice the admin and the importer produce, but the
-		# backfill has to accept whatever the JSON columns are actually holding,
+		# backfill had to accept whatever the JSON columns were actually holding,
 		# and a constraint that rejects one legacy row turns a deploy into a
 		# crash-looping container. Worth adding once the data is known clean.
 
@@ -555,8 +535,6 @@ class DragAndDrop(AbstractQuiz):
 	left_title = models.CharField(max_length=255, blank=True, default="")
 	right_title = models.CharField(max_length=255, blank=True, default="")
 
-	content = legacy_content_field(default=list)
-
 	class Meta:
 		verbose_name_plural = "Drag And Drop"
 
@@ -591,8 +569,6 @@ class Matching(AbstractQuiz):
 
 	left_title = models.CharField(max_length=255, blank=True, default="")
 	right_title = models.CharField(max_length=255, blank=True, default="")
-
-	content = legacy_content_field()
 
 	class Meta:
 		verbose_name_plural = "Matching"
@@ -674,8 +650,6 @@ class FillInTheBlank(AbstractQuiz):
 	INSTRUCTION_TEXT = "Συμπληρώστε τα κενά"
 
 	show_answers_as_choices = models.BooleanField(default=False)
-
-	content = legacy_content_field()
 
 	class Meta:
 		verbose_name_plural = "Fill in the blank"
@@ -984,8 +958,6 @@ class MinCorrectAnswersMixin(models.Model):
 
 
 class OpenEnded(MinCorrectAnswersMixin, AbstractQuiz):
-	content = legacy_content_field()
-
 	class Meta:
 		verbose_name_plural = "Open Ended"
 
@@ -1045,8 +1017,6 @@ class MapPointer(MinCorrectAnswersMixin, AbstractQuiz):
 		help_text="Administrative division level used for the map.",
 	)
 	show_answers = models.BooleanField(default=True)
-
-	content = legacy_content_field()
 
 	class Meta:
 		verbose_name_plural = "Map Pointer"

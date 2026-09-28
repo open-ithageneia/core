@@ -3,60 +3,251 @@
 		"model": "quiz.draganddrop",
 		"pk": 1,
 		"fields": {
-			"category": "GEOGRAPHY",
-			"content": [
-				{
-					"title": "Ποταμοί",
-					"values": ["Αλιάκμονας", "Πηνειός", "Εβρος", "Αχελώος"]
-				},
-				{
-					"title": "Λίμνες",
-					"values": ["Κερκίνη", "Τριχωνίδα", "Βιστωνίδα", "Κορώνεια"]
-				}
-			],
-			"exam_sessions": [1, 2],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "GEOGRAPHY",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"left_title": "Ποταμοί",
+			"right_title": "Λίμνες"
 		}
 	},
 	{
 		"model": "quiz.draganddrop",
 		"pk": 2,
 		"fields": {
-			"category": "CULTURE",
-			"content": [
-				{
-					"title": "Με το Πάσχα",
-					"values": ["βάψιμο κόκκινων αβγών", "περιφορά επιταφίου"]
-				},
-				{
-					"title": "Με την Πρωτοχρονιά/τα Φώτα",
-					"values": ["ρίξιμο σταυρού στη θάλασσα", "σπάσιμο ροδιού"]
-				}
-			],
-			"exam_sessions": [2],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "CULTURE",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"left_title": "Με το Πάσχα",
+			"right_title": "Με την Πρωτοχρονιά/τα Φώτα"
 		}
 	},
 	{
 		"model": "quiz.draganddrop",
 		"pk": 3,
 		"fields": {
-			"category": "GEOGRAPHY",
-			"content": [
-				{
-					"title": "Ηπειρωτική Ελλάδα",
-					"values": ["Σπάρτη", "Θεσσαλονίκη", "Ιωάννινα", "Κοζάνη"]
-				},
-				{
-					"title": "Νησιωτική Ελλάδα",
-					"values": ["Σητεία", "Λήμνος", "Ζάκυνθος", "Ρέθυμνο"]
-				}
-			],
-			"exam_sessions": [1, 2],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "GEOGRAPHY",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"left_title": "Ηπειρωτική Ελλάδα",
+			"right_title": "Νησιωτική Ελλάδα"
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 1,
+		"fields": {
+			"question": 1,
+			"side": "LEFT",
+			"text": "Αλιάκμονας",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 2,
+		"fields": {
+			"question": 1,
+			"side": "LEFT",
+			"text": "Πηνειός",
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 3,
+		"fields": {
+			"question": 1,
+			"side": "LEFT",
+			"text": "Εβρος",
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 4,
+		"fields": {
+			"question": 1,
+			"side": "LEFT",
+			"text": "Αχελώος",
+			"order": 3
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 5,
+		"fields": {
+			"question": 1,
+			"side": "RIGHT",
+			"text": "Κερκίνη",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 6,
+		"fields": {
+			"question": 1,
+			"side": "RIGHT",
+			"text": "Τριχωνίδα",
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 7,
+		"fields": {
+			"question": 1,
+			"side": "RIGHT",
+			"text": "Βιστωνίδα",
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 8,
+		"fields": {
+			"question": 1,
+			"side": "RIGHT",
+			"text": "Κορώνεια",
+			"order": 3
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 9,
+		"fields": {
+			"question": 2,
+			"side": "LEFT",
+			"text": "βάψιμο κόκκινων αβγών",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 10,
+		"fields": {
+			"question": 2,
+			"side": "LEFT",
+			"text": "περιφορά επιταφίου",
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 11,
+		"fields": {
+			"question": 2,
+			"side": "RIGHT",
+			"text": "ρίξιμο σταυρού στη θάλασσα",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 12,
+		"fields": {
+			"question": 2,
+			"side": "RIGHT",
+			"text": "σπάσιμο ροδιού",
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 13,
+		"fields": {
+			"question": 3,
+			"side": "LEFT",
+			"text": "Σπάρτη",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 14,
+		"fields": {
+			"question": 3,
+			"side": "LEFT",
+			"text": "Θεσσαλονίκη",
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 15,
+		"fields": {
+			"question": 3,
+			"side": "LEFT",
+			"text": "Ιωάννινα",
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 16,
+		"fields": {
+			"question": 3,
+			"side": "LEFT",
+			"text": "Κοζάνη",
+			"order": 3
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 17,
+		"fields": {
+			"question": 3,
+			"side": "RIGHT",
+			"text": "Σητεία",
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 18,
+		"fields": {
+			"question": 3,
+			"side": "RIGHT",
+			"text": "Λήμνος",
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 19,
+		"fields": {
+			"question": 3,
+			"side": "RIGHT",
+			"text": "Ζάκυνθος",
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.draganddropvalue",
+		"pk": 20,
+		"fields": {
+			"question": 3,
+			"side": "RIGHT",
+			"text": "Ρέθυμνο",
+			"order": 3
 		}
 	}
 ]

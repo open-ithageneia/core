@@ -3,86 +3,434 @@
 		"model": "quiz.fillintheblank",
 		"pk": 1,
 		"fields": {
-			"category": "HISTORY",
-			"is_active": true,
-			"content": {
-				"show_answers_as_choices": false,
-				"texts": [
-					{
-						"text": "The <{{13th}}*, {{Thirteenth}}> Amendment abolished slavery."
-					}
-				]
-			},
-			"exam_sessions": [],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "HISTORY",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"show_answers_as_choices": false
 		}
 	},
 	{
 		"model": "quiz.fillintheblank",
 		"pk": 2,
 		"fields": {
-			"category": "CIVICS",
-			"is_active": true,
-			"content": {
-				"show_answers_as_choices": true,
-				"texts": [
-					{
-						"text": "<{{Congress}}*> makes the laws."
-					},
-					{
-						"text": "The president lives in the <{{White House}}*>."
-					}
-				]
-			},
-			"exam_sessions": [],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "CIVICS",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"show_answers_as_choices": true
 		}
 	},
 	{
 		"model": "quiz.fillintheblank",
 		"pk": 3,
 		"fields": {
-			"category": "GEOGRAPHY",
-			"is_active": true,
-			"content": {
-				"show_answers_as_choices": false,
-				"texts": [
-					{
-						"text": "The capital of <{{France}}*> is <{{Paris}}*>."
-					},
-					{
-						"text": "<{{The Amazon}}*, {{Amazon River}}> is the longest river in South America."
-					},
-					{
-						"text": "The <{{Pacific}}*> is the largest ocean."
-					}
-				],
-				"prompt_asset_id": 42
-			},
-			"exam_sessions": [],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "GEOGRAPHY",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"show_answers_as_choices": false
 		}
 	},
 	{
 		"model": "quiz.fillintheblank",
 		"pk": 4,
 		"fields": {
-			"category": "CULTURE",
-			"is_active": true,
-			"content": {
-				"show_answers_as_choices": true,
-				"texts": [
-					{
-						"text": "<{{Shakespeare}}*> wrote Romeo and Juliet."
-					}
-				]
-			},
-			"exam_sessions": [],
 			"created_at": "2026-01-01T10:00:00Z",
-			"updated_at": "2026-01-01T10:00:00Z"
+			"updated_at": "2026-01-01T10:00:00Z",
+			"is_active": true,
+			"category": "CULTURE",
+			"test_number": 0,
+			"question_number": 0,
+			"prompt_text": "",
+			"prompt_image": null,
+			"prompt_audio": null,
+			"show_answers_as_choices": true
+		}
+	},
+	{
+		"model": "quiz.fillintheblanktext",
+		"pk": 1,
+		"fields": {
+			"question": 1,
+			"text": "The <{{13th}}*, {{Thirteenth}}> Amendment abolished slavery.",
+			"has_multiple_choices": true,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblanktext",
+		"pk": 2,
+		"fields": {
+			"question": 2,
+			"text": "<{{Congress}}*> makes the laws.",
+			"has_multiple_choices": false,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblanktext",
+		"pk": 3,
+		"fields": {
+			"question": 2,
+			"text": "The president lives in the <{{White House}}*>.",
+			"has_multiple_choices": false,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.fillintheblanktext",
+		"pk": 4,
+		"fields": {
+			"question": 3,
+			"text": "The capital of <{{France}}*> is <{{Paris}}*>.",
+			"has_multiple_choices": false,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblanktext",
+		"pk": 5,
+		"fields": {
+			"question": 3,
+			"text": "<{{The Amazon}}*, {{Amazon River}}> is the longest river in South America.",
+			"has_multiple_choices": true,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.fillintheblanktext",
+		"pk": 6,
+		"fields": {
+			"question": 3,
+			"text": "The <{{Pacific}}*> is the largest ocean.",
+			"has_multiple_choices": false,
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.fillintheblanktext",
+		"pk": 7,
+		"fields": {
+			"question": 4,
+			"text": "<{{Shakespeare}}*> wrote Romeo and Juliet.",
+			"has_multiple_choices": false,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 1,
+		"fields": {
+			"sentence": 1,
+			"text": "The ",
+			"is_blank": false,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 2,
+		"fields": {
+			"sentence": 1,
+			"text": "",
+			"is_blank": true,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 3,
+		"fields": {
+			"sentence": 1,
+			"text": " Amendment abolished slavery.",
+			"is_blank": false,
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 4,
+		"fields": {
+			"sentence": 2,
+			"text": "",
+			"is_blank": true,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 5,
+		"fields": {
+			"sentence": 2,
+			"text": " makes the laws.",
+			"is_blank": false,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 6,
+		"fields": {
+			"sentence": 3,
+			"text": "The president lives in the ",
+			"is_blank": false,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 7,
+		"fields": {
+			"sentence": 3,
+			"text": "",
+			"is_blank": true,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 8,
+		"fields": {
+			"sentence": 3,
+			"text": ".",
+			"is_blank": false,
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 9,
+		"fields": {
+			"sentence": 4,
+			"text": "The capital of ",
+			"is_blank": false,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 10,
+		"fields": {
+			"sentence": 4,
+			"text": "",
+			"is_blank": true,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 11,
+		"fields": {
+			"sentence": 4,
+			"text": " is ",
+			"is_blank": false,
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 12,
+		"fields": {
+			"sentence": 4,
+			"text": "",
+			"is_blank": true,
+			"order": 3
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 13,
+		"fields": {
+			"sentence": 4,
+			"text": ".",
+			"is_blank": false,
+			"order": 4
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 14,
+		"fields": {
+			"sentence": 5,
+			"text": "",
+			"is_blank": true,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 15,
+		"fields": {
+			"sentence": 5,
+			"text": " is the longest river in South America.",
+			"is_blank": false,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 16,
+		"fields": {
+			"sentence": 6,
+			"text": "The ",
+			"is_blank": false,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 17,
+		"fields": {
+			"sentence": 6,
+			"text": "",
+			"is_blank": true,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 18,
+		"fields": {
+			"sentence": 6,
+			"text": " is the largest ocean.",
+			"is_blank": false,
+			"order": 2
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 19,
+		"fields": {
+			"sentence": 7,
+			"text": "",
+			"is_blank": true,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblankpart",
+		"pk": 20,
+		"fields": {
+			"sentence": 7,
+			"text": " wrote Romeo and Juliet.",
+			"is_blank": false,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.fillintheblankchoice",
+		"pk": 1,
+		"fields": {
+			"part": 2,
+			"text": "13th",
+			"is_correct": true,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblankchoice",
+		"pk": 2,
+		"fields": {
+			"part": 2,
+			"text": "Thirteenth",
+			"is_correct": false,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.fillintheblankchoice",
+		"pk": 3,
+		"fields": {
+			"part": 4,
+			"text": "Congress",
+			"is_correct": true,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblankchoice",
+		"pk": 4,
+		"fields": {
+			"part": 7,
+			"text": "White House",
+			"is_correct": true,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblankchoice",
+		"pk": 5,
+		"fields": {
+			"part": 10,
+			"text": "France",
+			"is_correct": true,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblankchoice",
+		"pk": 6,
+		"fields": {
+			"part": 12,
+			"text": "Paris",
+			"is_correct": true,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblankchoice",
+		"pk": 7,
+		"fields": {
+			"part": 14,
+			"text": "The Amazon",
+			"is_correct": true,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblankchoice",
+		"pk": 8,
+		"fields": {
+			"part": 14,
+			"text": "Amazon River",
+			"is_correct": false,
+			"order": 1
+		}
+	},
+	{
+		"model": "quiz.fillintheblankchoice",
+		"pk": 9,
+		"fields": {
+			"part": 17,
+			"text": "Pacific",
+			"is_correct": true,
+			"order": 0
+		}
+	},
+	{
+		"model": "quiz.fillintheblankchoice",
+		"pk": 10,
+		"fields": {
+			"part": 19,
+			"text": "Shakespeare",
+			"is_correct": true,
+			"order": 0
 		}
 	}
 ]

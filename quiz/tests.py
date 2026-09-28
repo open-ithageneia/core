@@ -732,7 +732,9 @@ class BackfillTests(TestCase):
 		self.assertEqual(canonical["right"], [{"text": "β1", "asset_id": None}])
 
 	def _backfilled_matching(self, content):
-		question = Matching.objects.create(content=content)
+		# The column is gone; the backfill only reads the attribute.
+		question = Matching.objects.create()
+		question.content = content
 		backfill.backfill_matching(django_apps, question)
 		return question
 
@@ -821,7 +823,7 @@ class BackfillTests(TestCase):
 				},
 			]
 		}
-		question = Matching.objects.create(content=content)
+		question = Matching.objects.create()
 		MatchPair.objects.create(
 			question=question, left_text="α1", right_text="β1", order=0
 		)
