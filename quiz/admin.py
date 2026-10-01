@@ -36,6 +36,8 @@ from .models import (
 	QuizCategory,
 	Statement,
 	StatementChoice,
+	WordRelation,
+	WordRelationChoice,
 	validate_listening_question_types,
 )
 from .resources import (
@@ -44,6 +46,7 @@ from .resources import (
 	MatchingResource,
 	OpenEndedResource,
 	StatementResource,
+	WordRelationResource,
 	clear_image_store,
 	load_images_from_zip,
 )
@@ -308,7 +311,7 @@ class AbstractQuizAdmin(ZipImportMixin, ImportExportModelAdmin):
 
 
 class StatementChoiceFormSet(forms.BaseInlineFormSet):
-	"""Repeats ``Statement._validate_content`` for admin saves.
+	"""Repeats ``Statement.clean``'s choice rule for admin saves.
 
 	The rule counts choices, and the admin saves the question before its inlines,
 	so the model check cannot see them on a create. This is where it bites.
@@ -448,6 +451,90 @@ class StatementAdmin(AbstractQuizAdmin):
 				)
 				for choice in choices
 			),
+		)
+
+
+class WordRelationChoiceFormSet(forms.BaseInlineFormSet):
+	"""Repeats ``WordRelation.clean``'s choice rule for admin saves — the
+	question is saved before its choices, so the model cannot see them on a
+	create."""
+
+	def clean(self):
+		super().clean()
+		if any(self.errors):
+			return
+
+		live = [
+			form.cleaned_data
+			for form in self.forms
+			if form.cleaned_data and not form.cleaned_data.get("DELETE")
+		]
+		if sum(1 for choice in live if choice.get("is_correct")) != 1:
+			raise forms.ValidationError(
+				"Word relation questions must have exactly one correct choice."
+			)
+
+
+class WordRelationChoiceInline(admin.TabularInline):
+	model = WordRelationChoice
+	formset = WordRelationChoiceFormSet
+	extra = 4
+	fields = ["order", "text", "is_correct"]
+	ordering = ["order", "id"]
+
+
+@admin.register(WordRelation)
+class WordRelationAdmin(AbstractQuizAdmin):
+	resource_classes = [WordRelationResource]
+	inlines = [WordRelationChoiceInline]
+	list_prefetch = ("choices",)
+	list_display = [
+		"id",
+		"type",
+		"category",
+		"test_number",
+		"question_number",
+		"is_active",
+		"prompt_preview",
+		"answer_preview",
+		"created_at",
+		"updated_at",
+	]
+	search_fields = AbstractQuizAdmin.search_fields + [
+		"prompt_text",
+		"choices__text",
+	]
+	list_filter = ["type"] + AbstractQuizAdmin.list_filter
+
+	def get_fieldsets(self, request, obj=None):
+		return self.base_fieldsets(extra_fields=("type",))
+
+	@admin.display(description="Prompt", ordering="prompt_text")
+	def prompt_preview(self, instance):
+		parts = instance.sentence_parts()
+		sentence = (
+			format_html("{}<u>{}</u>{}", *parts) if parts else instance.prompt_text
+		)
+		return format_html(
+			'<div style="color:#666;">{}:</div><div>{}</div>',
+			instance.instruction,
+			sentence,
+		)
+
+	@admin.display(description="Answer")
+	def answer_preview(self, instance):
+		choices = list(instance.choices.all())
+
+		if not choices:
+			return None
+
+		return format_html_join(
+			"",
+			'<div style="display:flex;gap:10px;margin:4px 0;">'
+			'  <span style="width:20px">{}</span>'
+			"  <span>{}</span>"
+			"</div>",
+			(("✅" if choice.is_correct else "◻️", choice.text) for choice in choices),
 		)
 
 
@@ -1180,7 +1267,7 @@ class MapPointerAnswerForm(AlternativesInlineForm):
 
 
 class MapPointerAnswerFormSet(MinCorrectAnswersFormSet):
-	"""Repeats ``MapPointer._validate_content``'s level rule for admin saves.
+	"""Repeats ``MapPointer.clean``'s level rule for admin saves.
 
 	The model rule reads the areas linked to each answer, and those links are
 	written from ``save_related`` — after ``save_model`` has already run it. On a

@@ -9,6 +9,7 @@ from .filters import (
 	MatchingFilter,
 	OpenEndedFilter,
 	StatementFilter,
+	WordRelationFilter,
 )
 from .models import (
 	DragAndDrop,
@@ -19,6 +20,7 @@ from .models import (
 	OpenEnded,
 	QuizCategory,
 	Statement,
+	WordRelation,
 )
 from .serializers import (
 	DragAndDropSerializer,
@@ -28,6 +30,7 @@ from .serializers import (
 	MatchingSerializer,
 	OpenEndedSerializer,
 	StatementSerializer,
+	WordRelationSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -116,6 +119,12 @@ class QuizService:
 		)
 
 	@staticmethod
+	def word_relation_list(params=None):
+		return QuizService._list(
+			WordRelation, WordRelationFilter, WordRelationSerializer, params
+		)
+
+	@staticmethod
 	def random_quiz(params, n=20):
 		def sample(model, filterset_class, serializer_class, extra_params=None):
 			p = params.copy()
@@ -152,6 +161,9 @@ class QuizService:
 			"matching": sample(Matching, MatchingFilter, MatchingSerializer),
 			"open_ended": sample(OpenEnded, OpenEndedFilter, OpenEndedSerializer),
 			"map_pointer": sample(MapPointer, MapPointerFilter, MapPointerSerializer),
+			"word_relation": sample(
+				WordRelation, WordRelationFilter, WordRelationSerializer
+			),
 		}
 
 	# Question pool for the knowledge exam simulation.
@@ -186,6 +198,7 @@ class QuizService:
 			(FillInTheBlank, FillInTheBlankFilter, FillInTheBlankSerializer),
 			(OpenEnded, OpenEndedFilter, OpenEndedSerializer),
 			(MapPointer, MapPointerFilter, MapPointerSerializer),
+			(WordRelation, WordRelationFilter, WordRelationSerializer),
 			(Listening, ListeningFilter, ListeningSerializer),
 		]
 

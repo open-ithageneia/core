@@ -105,7 +105,8 @@ class Listening(AbstractQuiz):
 	def audio_url(self):
 		return self.audio.audio.url if self.audio_id and self.audio.audio else None
 
-	def _validate_content(self):
+	def clean(self):
+		super().clean()
 		if not self.pk:
 			return
 		types = list(self.questions.values_list("type", flat=True))

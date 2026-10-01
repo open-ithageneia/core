@@ -22,7 +22,8 @@ class MapPointer(MinCorrectAnswersMixin, AbstractQuiz):
 	class Meta:
 		verbose_name_plural = "Map Pointer"
 
-	def _validate_content(self):
+	def clean(self):
+		super().clean()
 		self._validate_min_correct_answers()
 		if not self.pk:
 			return
@@ -129,7 +130,7 @@ class MapPointerAnswerArea(models.Model):
 		verbose_name = "Map pointer answer area"
 		verbose_name_plural = "Map pointer answer areas"
 		# No unique (answer, area) constraint, for the same reason
-		# ``StatementChoice`` has no check constraint: ``_validate_content``
+		# ``StatementChoice`` has no check constraint: ``MapPointer.clean``
 		# rejects a repeated area, so none should exist, but the backfill must
 		# not be the thing that discovers otherwise on a production deploy.
 

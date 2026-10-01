@@ -1,4 +1,9 @@
-﻿import type { MapLevel, QuizCategory, StatementType } from "@/types/enums"
+﻿import type {
+	MapLevel,
+	QuizCategory,
+	StatementType,
+	WordRelationType,
+} from "@/types/enums"
 
 interface TimeStamped {
 	created_at: string
@@ -20,7 +25,7 @@ interface QuizBase extends TimeStamped, Activatable {
 	category: QuizCategory
 }
 
-interface QuizChoice {
+export interface QuizChoice {
 	text?: string
 	asset_url?: string
 	is_correct: boolean
@@ -164,6 +169,28 @@ export interface MapPointerModel extends QuizBase {
 	content: MapPointerContent
 }
 
+/** The sentence split around the word or phrase shown underlined. */
+export interface WordRelationSentence {
+	before: string
+	underlined: string
+	after: string
+}
+
+export interface WordRelationContent {
+	sentence: WordRelationSentence
+	/** Exactly one is correct. */
+	choices: QuizChoice[]
+}
+
+/**
+ * Find the synonym or antonym of the underlined word. The instruction is not
+ * sent: it follows from `type`.
+ */
+export interface WordRelationModel extends QuizBase {
+	type: WordRelationType
+	content: WordRelationContent
+}
+
 export type QuizDataItem =
 	| (StatementModel & { quiz_type: "Statement" })
 	| (DragAndDropModel & { quiz_type: "DragAndDrop" })
@@ -172,5 +199,6 @@ export type QuizDataItem =
 	| (OpenEndedModel & { quiz_type: "OpenEnded" })
 	| (MapPointerModel & { quiz_type: "MapPointer" })
 	| (ListeningModel & { quiz_type: "Listening" })
+	| (WordRelationModel & { quiz_type: "WordRelation" })
 
 export type QuizData = QuizDataItem[]

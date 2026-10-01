@@ -24,6 +24,7 @@ from .models import (
 	QuizAsset,
 	QuizCategory,
 	Statement,
+	WordRelation,
 )
 
 
@@ -364,6 +365,42 @@ class MapPointerSerializer(serializers.ModelSerializer):
 		}
 
 
+class WordRelationSerializer(serializers.ModelSerializer):
+	content = serializers.SerializerMethodField()
+
+	content_prefetch = ("choices",)
+
+	class Meta:
+		model = WordRelation
+		fields = [
+			"id",
+			"category",
+			"type",
+			"content",
+			"is_active",
+			"created_at",
+			"updated_at",
+		]
+
+	def get_content(self, obj):
+		# The sentence goes out already split, so the client never parses the
+		# ``{…}`` marker. A row that somehow lacks one is shown whole, with
+		# nothing underlined, rather than failing the request.
+		parts = obj.sentence_parts() or (obj.prompt_text, "", "")
+		before, underlined, after = parts
+		return {
+			"sentence": {
+				"before": before,
+				"underlined": underlined,
+				"after": after,
+			},
+			"choices": [
+				{"text": choice.text, "is_correct": choice.is_correct}
+				for choice in obj.choices.all()
+			],
+		}
+
+
 class ExerciseQuerySerializer(serializers.Serializer):
 	category = serializers.CharField(default="", allow_blank=True)
 	amount = serializers.ChoiceField(default=10, choices=[5, 10, 20])
@@ -378,6 +415,7 @@ class ExerciseQuerySerializer(serializers.Serializer):
 			("Matching", "Matching"),
 			("MapPointer", "MapPointer"),
 			("Listening", "Listening"),
+			("WordRelation", "WordRelation"),
 		],
 	)
 

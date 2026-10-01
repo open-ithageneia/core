@@ -10,6 +10,7 @@ from .models import (
 	OpenEnded,
 	MapPointer,
 	QuizCategory,
+	WordRelation,
 )
 
 
@@ -66,3 +67,13 @@ class MapPointerFilter(AbstractQuizFilter):
 	class Meta:
 		model = MapPointer
 		fields = ["category", "is_active"]
+
+
+class WordRelationFilter(AbstractQuizFilter):
+	type = django_filters.ChoiceFilter(
+		choices=WordRelation.WordRelationType.choices,
+	)
+
+	class Meta:
+		model = WordRelation
+		fields = ["category", "is_active", "type"]

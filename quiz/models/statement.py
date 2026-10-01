@@ -57,7 +57,6 @@ class Statement(AbstractQuiz):
 				{"part": "The part must belong to the same listening question."}
 			)
 
-	def _validate_content(self):
 		if not self.pk:
 			return
 		if self.type == self.StatementType.MULTIPLE_CHOICE:
