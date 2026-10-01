@@ -29,7 +29,6 @@ def split_sentence(sentence):
 
 
 class WordRelation(AbstractQuiz):
-
 	INSTRUCTION_TEXT = {
 		"SYNONYM": "Να βρείτε το συνώνυμο της υπογραμμισμένης λέξης/φράσης",
 		"ANTONYM": "Να βρείτε το αντώνυμο της υπογραμμισμένης λέξης/φράσης",
