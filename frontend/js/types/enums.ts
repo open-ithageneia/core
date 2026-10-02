@@ -11,6 +11,11 @@ export enum StatementType {
 	MULTIPLE_CHOICE = "MULTIPLE_CHOICE",
 }
 
+export enum WordRelationType {
+	SYNONYM = "SYNONYM",
+	ANTONYM = "ANTONYM",
+}
+
 /**
  * Names for the sections a listening question is split into, by position: the
  * parts themselves are unnamed on the server, so the naming lives here. Indexed
@@ -59,6 +64,10 @@ export const QUIZ_INSTRUCTIONS = {
 	FILL_IN_THE_BLANK: "Συμπληρώστε τα κενά",
 	MAP_POINTER: "Τοποθετήστε κάθε επιλογή στη σωστή περιοχή του χάρτη",
 	LISTENING: "Ακούστε το ηχητικό και απαντήστε στις ερωτήσεις",
+	WORD_RELATION_SYNONYM:
+		"Να βρείτε το συνώνυμο της υπογραμμισμένης λέξης/φράσης",
+	WORD_RELATION_ANTONYM:
+		"Να βρείτε το αντώνυμο της υπογραμμισμένης λέξης/φράσης",
 } as const
 
 export type QuizType = keyof typeof QUIZ_INSTRUCTIONS

@@ -23,6 +23,7 @@ from quiz.admin import (
 	MapPointerAdmin,
 	MatchingAdmin,
 	StatementChoiceFormSet,
+	WordRelationChoiceFormSet,
 )
 from quiz.models import (
 	DragAndDrop,
@@ -48,12 +49,16 @@ from quiz.models import (
 	QuizCategory,
 	Statement,
 	StatementChoice,
+	WordRelation,
+	WordRelationChoice,
+	split_sentence,
 )
 from quiz.resources import (
 	DragAndDropResource,
 	MatchingResource,
 	OpenEndedResource,
 	StatementResource,
+	WordRelationResource,
 )
 from quiz.serializers import (
 	DragAndDropSerializer,
@@ -63,6 +68,7 @@ from quiz.serializers import (
 	MatchingSerializer,
 	OpenEndedSerializer,
 	StatementSerializer,
+	WordRelationSerializer,
 )
 from quiz.services import QuizService
 
@@ -105,6 +111,19 @@ def _multiple_choice(prompt, **kwargs):
 		[
 			StatementChoice(statement=question, text="A", is_correct=True, order=0),
 			StatementChoice(statement=question, text="B", is_correct=False, order=1),
+		]
+	)
+	return question
+
+
+def _word_relation(sentence, *choices, **kwargs):
+	question = WordRelation.objects.create(prompt_text=sentence, **kwargs)
+	WordRelationChoice.objects.bulk_create(
+		[
+			WordRelationChoice(
+				question=question, text=text, is_correct=is_correct, order=index
+			)
+			for index, (text, is_correct) in enumerate(choices)
 		]
 	)
 	return question
@@ -687,7 +706,7 @@ class StatementChoiceFormSetTests(TestCase):
 		self.assertFalse(formset.is_valid())
 
 	def test_a_true_false_question_may_lose_its_choices(self):
-		"""Only multiple choice carries the rule — as in ``_validate_content``."""
+		"""Only multiple choice carries the rule — as in ``Statement.clean``."""
 		formset = self._formset(_true_false(("Σωστό", True)), deleted={0})
 
 		self.assertTrue(formset.is_valid(), formset.errors or formset.non_form_errors())
@@ -1905,6 +1924,8 @@ class AdminSmokeTests(TestCase):
 		_true_false(("first", True), listening=listening, part=part)
 		_multiple_choice("q", listening=listening, part=part)
 
+		_word_relation("Η τιμή ήταν {προσιτή}.", ("ακριβή", False), ("φθηνή", True))
+
 	MODELS = [
 		"statement",
 		"draganddrop",
@@ -1913,6 +1934,7 @@ class AdminSmokeTests(TestCase):
 		"openended",
 		"mappointer",
 		"listening",
+		"wordrelation",
 		"maparea",
 		"quizasset",
 		"quizcategory",
@@ -2080,3 +2102,183 @@ class BlankParserAgreementTests(TestCase):
 
 				with self.assertRaises(ValidationError):
 					FillInTheBlankText(question=question, text=sentence).parse()
+
+
+class WordRelationTests(TestCase):
+	def test_split_sentence(self):
+		self.assertEqual(
+			split_sentence("{Γι' αυτό} επέλεξε να πάει διακοπές."),
+			("", "Γι' αυτό", " επέλεξε να πάει διακοπές."),
+		)
+		self.assertEqual(
+			split_sentence("Η τιμή ήταν { προσιτή }."),
+			("Η τιμή ήταν ", "προσιτή", "."),
+		)
+
+	def test_split_sentence_rejects_anything_but_one_marked_phrase(self):
+		for sentence in [
+			"Η τιμή ήταν προσιτή.",
+			"Η {τιμή} ήταν {προσιτή}.",
+			"Η τιμή ήταν {}.",
+			"Η τιμή ήταν {προσιτή.",
+			"Η τιμή} ήταν {προσιτή}.",
+		]:
+			with self.subTest(sentence=sentence):
+				self.assertIsNone(split_sentence(sentence))
+
+	def test_a_sentence_without_a_marked_phrase_is_rejected(self):
+		with self.assertRaises(ValidationError) as caught:
+			WordRelation(prompt_text="Η τιμή ήταν προσιτή.").full_clean()
+
+		self.assertIn("prompt_text", caught.exception.message_dict)
+
+	def test_the_sentence_is_required(self):
+		with self.assertRaises(ValidationError):
+			WordRelation(prompt_text="").full_clean()
+
+	def test_needs_exactly_one_correct_choice(self):
+		for choices in [
+			[("ακριβή", False), ("φθηνή", False)],
+			[("οικονομική", True), ("φθηνή", True)],
+		]:
+			with self.subTest(choices=choices):
+				question = _word_relation("Η τιμή ήταν {προσιτή}.", *choices)
+
+				with self.assertRaises(ValidationError):
+					question.full_clean()
+
+	def test_the_choice_rule_waits_for_the_choices(self):
+		"""The admin saves the question before its inlines."""
+		WordRelation(prompt_text="Η τιμή ήταν {προσιτή}.").full_clean()
+
+	def test_the_instruction_follows_the_type(self):
+		self.assertEqual(
+			WordRelation(type=WordRelation.WordRelationType.SYNONYM).instruction,
+			"Να βρείτε το συνώνυμο της υπογραμμισμένης λέξης/φράσης",
+		)
+		self.assertEqual(
+			WordRelation(type=WordRelation.WordRelationType.ANTONYM).instruction,
+			"Να βρείτε το αντώνυμο της υπογραμμισμένης λέξης/φράσης",
+		)
+
+	def test_wire_format(self):
+		question = _word_relation(
+			"Η τιμή του εισιτηρίου ήταν {προσιτή}.",
+			("ακριβή", True),
+			("φθηνή", False),
+			type=WordRelation.WordRelationType.ANTONYM,
+		)
+
+		data = WordRelationSerializer(question).data
+
+		self.assertEqual(data["type"], "ANTONYM")
+		self.assertEqual(
+			data["content"],
+			{
+				"sentence": {
+					"before": "Η τιμή του εισιτηρίου ήταν ",
+					"underlined": "προσιτή",
+					"after": ".",
+				},
+				"choices": [
+					{"text": "ακριβή", "is_correct": True},
+					{"text": "φθηνή", "is_correct": False},
+				],
+			},
+		)
+
+	def test_is_sampled_into_training(self):
+		_word_relation("Η τιμή ήταν {προσιτή}.", ("φθηνή", True))
+
+		items = QuizService.get_by_category(
+			category="", amount=5, quiz_type="WordRelation"
+		)
+
+		self.assertEqual([item["quiz_type"] for item in items], ["WordRelation"])
+
+
+class WordRelationChoiceFormSetTests(TestCase):
+	@staticmethod
+	def _formset(question, correct, deleted=()):
+		FormSet = inlineformset_factory(
+			WordRelation,
+			WordRelationChoice,
+			formset=WordRelationChoiceFormSet,
+			fields=["order", "text", "is_correct"],
+			extra=0,
+		)
+		choices = list(question.choices.all())
+		data = {
+			"choices-TOTAL_FORMS": str(len(choices)),
+			"choices-INITIAL_FORMS": str(len(choices)),
+			"choices-MIN_NUM_FORMS": "0",
+			"choices-MAX_NUM_FORMS": "1000",
+		}
+		for index, choice in enumerate(choices):
+			data[f"choices-{index}-id"] = str(choice.pk)
+			data[f"choices-{index}-order"] = str(choice.order)
+			data[f"choices-{index}-text"] = choice.text
+			if index in correct:
+				data[f"choices-{index}-is_correct"] = "on"
+			if index in deleted:
+				data[f"choices-{index}-DELETE"] = "on"
+		return FormSet(data, instance=question, prefix="choices")
+
+	def setUp(self):
+		self.question = WordRelation.objects.create(
+			prompt_text="Η τιμή ήταν {προσιτή}."
+		)
+		for index, text in enumerate(["ακριβή", "φθηνή", "οικονομική"]):
+			WordRelationChoice.objects.create(
+				question=self.question, text=text, order=index
+			)
+
+	def test_accepts_one_correct_choice(self):
+		formset = self._formset(self.question, correct={1})
+
+		self.assertTrue(formset.is_valid(), formset.non_form_errors())
+
+	def test_rejects_no_correct_choice(self):
+		self.assertFalse(self._formset(self.question, correct=set()).is_valid())
+
+	def test_rejects_two_correct_choices(self):
+		self.assertFalse(self._formset(self.question, correct={1, 2}).is_valid())
+
+	def test_rejects_deleting_the_correct_choice(self):
+		formset = self._formset(self.question, correct={1}, deleted={1})
+
+		self.assertFalse(formset.is_valid())
+
+
+class WordRelationResourceTests(TestCase):
+	def test_round_trip(self):
+		question = _word_relation(
+			"{Γι' αυτό} επέλεξε να πάει διακοπές.",
+			("Επομένως", True),
+			("Όμως", False),
+			question_number=7,
+		)
+		exported = WordRelationResource().export(queryset=WordRelation.objects.all())
+		question.delete()
+
+		result = WordRelationResource().import_data(exported, raise_errors=True)
+
+		self.assertFalse(result.has_errors())
+		imported = WordRelation.objects.get()
+		self.assertEqual(imported.prompt_text, "{Γι' αυτό} επέλεξε να πάει διακοπές.")
+		self.assertEqual(imported.question_number, 7)
+		self.assertEqual(
+			[(c.text, c.is_correct) for c in imported.choices.all()],
+			[("Επομένως", True), ("Όμως", False)],
+		)
+
+	def test_rejects_a_sheet_without_a_correct_choice(self):
+		dataset = WordRelationResource().export(queryset=WordRelation.objects.none())
+		dataset.append(
+			["", "SYNONYM", "GEOGRAPHY", 0, 0, "Η τιμή ήταν {προσιτή}."]
+			+ ["φθηνή", "false", "", "", "", "", "", ""]
+		)
+
+		result = WordRelationResource().import_data(dataset)
+
+		self.assertTrue(result.has_errors() or result.has_validation_errors())

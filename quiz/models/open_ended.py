@@ -7,7 +7,8 @@ class OpenEnded(MinCorrectAnswersMixin, AbstractQuiz):
 	class Meta:
 		verbose_name_plural = "Open Ended"
 
-	def _validate_content(self):
+	def clean(self):
+		super().clean()
 		self._validate_min_correct_answers()
 
 

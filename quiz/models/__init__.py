@@ -26,6 +26,7 @@ from .map_pointer import (
 from .matching import Matching, MatchPair
 from .open_ended import OpenEnded, OpenEndedAlternative, OpenEndedAnswer
 from .statement import Statement, StatementChoice
+from .word_relation import WordRelation, WordRelationChoice, split_sentence
 
 __all__ = [
 	"AbstractQuiz",
@@ -55,7 +56,10 @@ __all__ = [
 	"QuizCategory",
 	"Statement",
 	"StatementChoice",
+	"WordRelation",
+	"WordRelationChoice",
 	"fold_for_search",
 	"get_quiz_asset_upload_to",
+	"split_sentence",
 	"validate_listening_question_types",
 ]

@@ -9,6 +9,7 @@ import OpenEnded from "@/components/quiz/open-ended"
 import { QuizActiveProvider } from "@/components/quiz/shared/quiz-active-context"
 import { QuizResultsProvider } from "@/components/quiz/shared/quiz-results-context"
 import TrueFalse from "@/components/quiz/true-false"
+import WordRelation from "@/components/quiz/word-relation"
 import type { QuizData } from "@/types/models"
 
 export function QuizRenderer({
@@ -102,6 +103,16 @@ export function QuizRenderer({
 			case "Listening": {
 				return (
 					<Listening
+						item={item}
+						item_index={index}
+						forceValidation={forceValidation}
+						onScore={onScore}
+					/>
+				)
+			}
+			case "WordRelation": {
+				return (
+					<WordRelation
 						item={item}
 						item_index={index}
 						forceValidation={forceValidation}

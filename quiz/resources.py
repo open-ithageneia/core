@@ -24,6 +24,8 @@ from quiz.models import (
 	QuizAsset,
 	Statement,
 	StatementChoice,
+	WordRelation,
+	WordRelationChoice,
 )
 
 # ---------------------------------------------------------------------------
@@ -829,3 +831,106 @@ class OpenEndedResource(AbstractQuizResource):
 			", ".join(text_parts),
 			instance.min_correct_answers,
 		]
+
+
+class WordRelationResource(AbstractQuizResource):
+	"""``prompt_text`` is the sentence with its ``{…}`` marker; the choices are
+	``choiceN_text`` / ``choiceN_is_correct`` pairs, as many as the sheet has."""
+
+	MIN_EXPORT_CHOICES = 4
+
+	BASE_HEADERS = [
+		"id",
+		"type",
+		"category",
+		"test_number",
+		"question_number",
+		"prompt_text",
+	]
+
+	EXPORT_HEADERS = [
+		*BASE_HEADERS,
+		*(
+			column
+			for index in range(1, MIN_EXPORT_CHOICES + 1)
+			for column in (f"choice{index}_text", f"choice{index}_is_correct")
+		),
+	]
+
+	_export_choices = MIN_EXPORT_CHOICES
+
+	export_prefetch = ("choices",)
+
+	choice_pattern = re.compile(r"choice(\d+)_text")
+
+	class Meta(AbstractQuizResource.Meta):
+		model = WordRelation
+		fields = ("id", "type", "category", "test_number", "question_number")
+
+	def build_choices(self, row):
+		numbers = sorted(
+			int(match.group(1))
+			for key in row.keys()
+			if (match := self.choice_pattern.match(key))
+		)
+		choices = []
+		for i in numbers:
+			text = row.get(f"choice{i}_text")
+			if _is_blank(text):
+				continue
+			choices.append(
+				WordRelationChoice(
+					text=str(text).strip(),
+					is_correct=_parse_bool(row.get(f"choice{i}_is_correct")),
+					order=len(choices),
+				)
+			)
+		return choices
+
+	def before_save_instance(self, instance, row, **kwargs):
+		instance.prompt_text = row.get("prompt_text") or ""
+
+	def save_content(self, instance, row):
+		instance.choices.all().delete()
+		choices = self.build_choices(row)
+		for choice in choices:
+			choice.question = instance
+		WordRelationChoice.objects.bulk_create(choices)
+
+	# ------------------------------------------------------------------
+	# Export
+	# ------------------------------------------------------------------
+
+	def get_export_headers_for(self, queryset) -> list:
+		"""Widen the sheet rather than drop choices past the usual four — see
+		``StatementResource.get_export_headers_for``."""
+		widest = queryset.annotate(_choices=Count("choices")).aggregate(
+			Max("_choices")
+		)["_choices__max"]
+		self._export_choices = max(self.MIN_EXPORT_CHOICES, widest or 0)
+		return [
+			*self.BASE_HEADERS,
+			*(
+				column
+				for index in range(1, self._export_choices + 1)
+				for column in (f"choice{index}_text", f"choice{index}_is_correct")
+			),
+		]
+
+	def get_export_row(self, instance):
+		row = [
+			instance.id,
+			instance.type,
+			instance.category_id,
+			instance.test_number,
+			instance.question_number,
+			instance.prompt_text,
+		]
+		choices = list(instance.choices.all())
+		for index in range(self._export_choices):
+			if index < len(choices):
+				row.append(choices[index].text)
+				row.append("true" if choices[index].is_correct else "false")
+			else:
+				row.extend(["", ""])
+		return row

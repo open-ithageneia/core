@@ -51,20 +51,12 @@ class AbstractQuiz(TimeStampedModel, ActivatableModel, metaclass=ModelABCMeta):
 		help_text="Audio clip played with the question.",
 	)
 
-	def clean(self):
-		super().clean()
-		self._validate_content()
-
-	def _validate_content(self):
-		"""Business rules spanning the question's child rows.
-
-		A rule that counts child rows has to guard on ``self.pk``: the admin
-		saves the parent before its inlines, so a question being created has no
-		children yet and would fail a rule it satisfies a moment later. Such a
-		rule therefore lives in two places — here for programmatic saves, and in
-		the inline's formset for admin ones. ``Statement`` and ``Listening`` both
-		show the pattern.
-		"""
+	# A ``clean()`` rule that counts child rows has to guard on ``self.pk``: the
+	# admin saves the parent before its inlines, so a question being created has
+	# no children yet and would fail a rule it satisfies a moment later. Such a
+	# rule therefore lives in two places — the model's ``clean()`` for
+	# programmatic saves, and the inline's formset for admin ones. ``Statement``
+	# and ``Listening`` both show the pattern.
 
 	def save(self, *args, **kwargs):
 		self.full_clean()

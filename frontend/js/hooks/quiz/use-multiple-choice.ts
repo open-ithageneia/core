@@ -1,15 +1,19 @@
 ﻿import { useCallback, useMemo, useState } from "react"
 import { useValidation } from "@/hooks/quiz/use-validation"
 import { ValidationStatus } from "@/types/enums"
-import type { StatementModel } from "@/types/models"
+import type { QuizChoice } from "@/types/models"
 import type { ValidationState } from "@/types/quiz"
 
 type UseMultipleChoiceOptions = {
 	forceValidation?: boolean
 }
 
+/** Anything with a list of choices to pick from — a multiple-choice statement
+ * or a word relation question. */
+type ChoiceQuestion = { content: { choices: QuizChoice[] } }
+
 export function useMultipleChoice(
-	item: StatementModel,
+	item: ChoiceQuestion,
 	options?: UseMultipleChoiceOptions,
 ) {
 	const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set())
