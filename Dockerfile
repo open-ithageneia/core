@@ -65,6 +65,9 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 CMD ["gunicorn", "open_ithageneia.wsgi", \
      "--bind", "0.0.0.0:8000", \
-     "--workers", "4", \
+     "--workers", "1", \
+     "--threads", "2", \
+     "--max-requests", "100", \
+     "--max-requests-jitter", "10", \
      "--access-logfile", "-", \
      "--error-logfile", "-"]
