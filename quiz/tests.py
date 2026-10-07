@@ -2196,6 +2196,18 @@ class WordRelationTests(TestCase):
 
 		self.assertEqual([item["quiz_type"] for item in items], ["WordRelation"])
 
+	def test_is_kept_out_of_the_knowledge_simulation(self):
+		_word_relation("Η τιμή ήταν {προσιτή}.", ("φθηνή", True))
+
+		response = self.client.get(
+			reverse("quiz:knowledge_simulation"),
+			{"start": "1"},
+			headers={"X-Inertia": "true"},
+		)
+
+		quiz_types = {item["quiz_type"] for item in response.json()["props"]["data"]}
+		self.assertNotIn("WordRelation", quiz_types)
+
 
 class WordRelationChoiceFormSetTests(TestCase):
 	@staticmethod
