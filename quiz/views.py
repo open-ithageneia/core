@@ -90,7 +90,9 @@ def simulation(request):
 	)
 
 
-def _run_simulation(request, *, variant, amount, categories=None, quiz_type=""):
+def _run_simulation(
+	request, *, variant, amount, categories=None, quiz_type="", exclude_quiz_types=None
+):
 	# Without an explicit start, send the user back to the mode picker.
 	if not request.GET.get("start"):
 		return redirect("quiz:simulation")
@@ -100,6 +102,7 @@ def _run_simulation(request, *, variant, amount, categories=None, quiz_type=""):
 		amount=amount,
 		categories=categories,
 		quiz_type=quiz_type,
+		exclude_quiz_types=exclude_quiz_types,
 	)
 
 	return render(
@@ -114,6 +117,7 @@ def knowledge_simulation(request):
 		request,
 		variant="knowledge",
 		categories=QuizService.KNOWLEDGE_SIMULATION_CATEGORIES,
+		exclude_quiz_types=QuizService.KNOWLEDGE_SIMULATION_EXCLUDED_TYPES,
 		amount=KNOWLEDGE_SIMULATION_QUESTIONS,
 	)
 

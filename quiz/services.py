@@ -173,6 +173,9 @@ class QuizService:
 		QuizCategory.HISTORY,
 		QuizCategory.CULTURE,
 	]
+	# Vocabulary (synonym/antonym) questions are training-only: the knowledge
+	# exam does not include them, whatever category they are tagged with.
+	KNOWLEDGE_SIMULATION_EXCLUDED_TYPES = [WordRelation.__name__]
 	# The listening exam is its own section, selected by quiz type rather than by
 	# category, so a clip can still be tagged with the subject it covers.
 	LISTENING_QUIZ_TYPE = Listening.__name__
@@ -183,13 +186,15 @@ class QuizService:
 		amount: int,
 		quiz_type: str = "",
 		categories: list | None = None,
+		exclude_quiz_types: list | None = None,
 	):
 		"""
 		Return `amount` random serialized active quiz items for the given
 		category, using ORM queries and DRF serializers.
 
 		When `categories` is given, only questions in those categories are
-		included (used by the exam simulation).
+		included, and quiz types named in `exclude_quiz_types` are skipped
+		(both used by the exam simulation).
 		"""
 		QUIZ_CONFIG = [
 			(Statement, StatementFilter, StatementSerializer),
@@ -212,6 +217,11 @@ class QuizService:
 			# Listening is a separate exam section: it is only ever sampled when
 			# asked for by name, never mixed into the general pool.
 			configs_to_query = [c for c in QUIZ_CONFIG if c[0] is not Listening]
+
+		if exclude_quiz_types:
+			configs_to_query = [
+				c for c in configs_to_query if c[0].__name__ not in exclude_quiz_types
+			]
 
 		# Build filter params
 		filter_params = {}
