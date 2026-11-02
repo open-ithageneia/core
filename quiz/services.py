@@ -166,13 +166,14 @@ class QuizService:
 			),
 		}
 
-	# Question pool for the knowledge exam simulation.
-	KNOWLEDGE_SIMULATION_CATEGORIES = [
-		QuizCategory.GEOGRAPHY,
-		QuizCategory.CIVICS,
-		QuizCategory.HISTORY,
-		QuizCategory.CULTURE,
-	]
+	# How many questions the knowledge exam simulation draws from each category,
+	# matching the real exam's 20-question split.
+	KNOWLEDGE_SIMULATION_QUOTAS = {
+		QuizCategory.HISTORY: 6,
+		QuizCategory.CIVICS: 6,
+		QuizCategory.GEOGRAPHY: 4,
+		QuizCategory.CULTURE: 4,
+	}
 	# Vocabulary (synonym/antonym) questions are training-only: the knowledge
 	# exam does not include them, whatever category they are tagged with.
 	KNOWLEDGE_SIMULATION_EXCLUDED_TYPES = [WordRelation.__name__]
@@ -185,16 +186,14 @@ class QuizService:
 		category: str,
 		amount: int,
 		quiz_type: str = "",
-		categories: list | None = None,
 		exclude_quiz_types: list | None = None,
 	):
 		"""
 		Return `amount` random serialized active quiz items for the given
 		category, using ORM queries and DRF serializers.
 
-		When `categories` is given, only questions in those categories are
-		included, and quiz types named in `exclude_quiz_types` are skipped
-		(both used by the exam simulation).
+		Quiz types named in `exclude_quiz_types` are skipped (used by the exam
+		simulation).
 		"""
 		QUIZ_CONFIG = [
 			(Statement, StatementFilter, StatementSerializer),
@@ -232,8 +231,6 @@ class QuizService:
 		for model, filterset_class, serializer_class in configs_to_query:
 			per_model_amount = amount * 2 if model is Statement else amount
 			base_qs = model.objects.active()
-			if categories:
-				base_qs = base_qs.filter(category__in=categories)
 			# Statements belonging to a listening question are only ever shown
 			# inside that question, never standalone.
 			if model is Statement:
@@ -251,3 +248,23 @@ class QuizService:
 
 		random.shuffle(items)
 		return items[:amount]
+
+	@staticmethod
+	def get_knowledge_simulation():
+		"""
+		Sample the knowledge exam: each category contributes its quota from
+		`KNOWLEDGE_SIMULATION_QUOTAS`, then the questions are mixed together.
+		A category with fewer active questions than its quota contributes what
+		it has.
+		"""
+		items = []
+		for category, amount in QuizService.KNOWLEDGE_SIMULATION_QUOTAS.items():
+			items.extend(
+				QuizService.get_by_category(
+					category=category,
+					amount=amount,
+					exclude_quiz_types=QuizService.KNOWLEDGE_SIMULATION_EXCLUDED_TYPES,
+				)
+			)
+		random.shuffle(items)
+		return items
