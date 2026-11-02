@@ -69,10 +69,10 @@ SIMULATION_MODES = [
 	("listening", "quiz:listening_simulation"),
 ]
 
-# How many questions each simulation variant draws. The listening exam is a
-# single audio question whose sub-answers (true/false + multiple choice) carry
-# the whole score, so one question is the entire test.
-KNOWLEDGE_SIMULATION_QUESTIONS = 20
+# The listening exam is a single audio question whose sub-answers
+# (true/false + multiple choice) carry the whole score, so one question is the
+# entire test. The knowledge exam's size comes from its per-category quotas
+# (`QuizService.KNOWLEDGE_SIMULATION_QUOTAS`).
 LISTENING_SIMULATION_QUESTIONS = 1
 
 
@@ -90,35 +90,21 @@ def simulation(request):
 	)
 
 
-def _run_simulation(
-	request, *, variant, amount, categories=None, quiz_type="", exclude_quiz_types=None
-):
+def _run_simulation(request, *, variant, sample):
 	# Without an explicit start, send the user back to the mode picker.
 	if not request.GET.get("start"):
 		return redirect("quiz:simulation")
 
-	data_by_category = QuizService.get_by_category(
-		category="",
-		amount=amount,
-		categories=categories,
-		quiz_type=quiz_type,
-		exclude_quiz_types=exclude_quiz_types,
-	)
-
 	return render(
 		request,
 		"Simulation",
-		props={"data": data_by_category, "variant": variant},
+		props={"data": sample(), "variant": variant},
 	)
 
 
 def knowledge_simulation(request):
 	return _run_simulation(
-		request,
-		variant="knowledge",
-		categories=QuizService.KNOWLEDGE_SIMULATION_CATEGORIES,
-		exclude_quiz_types=QuizService.KNOWLEDGE_SIMULATION_EXCLUDED_TYPES,
-		amount=KNOWLEDGE_SIMULATION_QUESTIONS,
+		request, variant="knowledge", sample=QuizService.get_knowledge_simulation
 	)
 
 
@@ -126,6 +112,9 @@ def listening_simulation(request):
 	return _run_simulation(
 		request,
 		variant="listening",
-		quiz_type=QuizService.LISTENING_QUIZ_TYPE,
-		amount=LISTENING_SIMULATION_QUESTIONS,
+		sample=lambda: QuizService.get_by_category(
+			category="",
+			amount=LISTENING_SIMULATION_QUESTIONS,
+			quiz_type=QuizService.LISTENING_QUIZ_TYPE,
+		),
 	)

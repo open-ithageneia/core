@@ -1172,6 +1172,45 @@ class CategorySamplingTests(TestCase):
 		)
 
 
+class KnowledgeSimulationQuotaTests(TestCase):
+	"""The knowledge exam draws a fixed number of questions per category:
+	6 history, 6 civics, 4 geography, 4 culture."""
+
+	def setUp(self):
+		for code in QuizService.KNOWLEDGE_SIMULATION_QUOTAS:
+			for index in range(10):
+				_multiple_choice(f"{code} {index}", category_id=code)
+
+	def test_each_category_contributes_its_quota(self):
+		response = self.client.get(
+			reverse("quiz:knowledge_simulation"),
+			{"start": "1"},
+			headers={"X-Inertia": "true"},
+		)
+
+		counts = {}
+		for item in response.json()["props"]["data"]:
+			counts[item["category"]] = counts.get(item["category"], 0) + 1
+		self.assertEqual(
+			counts,
+			{
+				QuizCategory.HISTORY: 6,
+				QuizCategory.CIVICS: 6,
+				QuizCategory.GEOGRAPHY: 4,
+				QuizCategory.CULTURE: 4,
+			},
+		)
+
+	def test_a_short_category_contributes_what_it_has(self):
+		Statement.objects.filter(category_id=QuizCategory.CULTURE).exclude(
+			prompt_text__in=[f"{QuizCategory.CULTURE} 0", f"{QuizCategory.CULTURE} 1"]
+		).delete()
+
+		items = QuizService.get_knowledge_simulation()
+
+		self.assertEqual(len(items), 18)
+
+
 class CategoryNameTests(TestCase):
 	def setUp(self):
 		QuizCategory.objects.filter(code=QuizCategory.GEOGRAPHY).update(
