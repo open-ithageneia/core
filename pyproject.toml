@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
 	"django-environ~=0.12.0",
-	"django~=6.0.0",
+	"django~=6.0.10",
 	# No longer used by any model — migration 0001 imports
 	# django_jsonform.models.fields.JSONField, so removing the package
 	# breaks `migrate` on a fresh database. Drop it when 0001 is squashed.
@@ -17,8 +17,8 @@ dependencies = [
 	"django-import-export~=4.4.0",
 	"tablib[xlsx]~=3.8.0",
 	"gunicorn~=23.0.0",
-	"pillow~=12.1.0",
-	"djangorestframework>=3.16.1",
+	"pillow~=13.0.0",
+	"djangorestframework>=3.18.3",
 	"django-filter>=25.2",
 ]
 
